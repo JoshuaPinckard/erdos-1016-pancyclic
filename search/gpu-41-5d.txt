@@ -1,0 +1,1 @@
+NONE n=41 k=5 tested=17615450195 seconds=18

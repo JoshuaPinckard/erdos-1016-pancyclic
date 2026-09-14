@@ -1,0 +1,17 @@
+.lake/
+*.log
+*.err
+*.out
+*.exe
+search/*.txt
+search/gpu-state-*.json
+**/__pycache__/
+papers/construction/*.out
+papers/construction/*.exe
+papers/construction/*-gpu-state.json
+search/k6/*.txt
+ax*.lean
+*.tmp
+papers/**/*.pdf
+papers/*.pdf
+papers/draft/*.pdf
