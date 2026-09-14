@@ -1,0 +1,1 @@
+RANDOM n=41 k=5 count=1000000 seed=410052 pancyclic=0 cpu_seconds=125.914

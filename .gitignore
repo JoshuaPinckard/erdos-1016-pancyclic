@@ -15,3 +15,39 @@ ax*.lean
 papers/**/*.pdf
 papers/*.pdf
 papers/draft/*.pdf
+
+# Evidence files cited as primary sources by papers/draft/SOURCES.md and
+# papers/draft/pancyclic-exact-values.md Section 3.4. Kept tracked so the
+# draft's claims are checkable from the repository alone; see
+# papers/REPORT-record-integrity.md for the list and rationale.
+!search/n38k5-A0.txt
+!search/n38k5-A1.txt
+!search/n38k5-A2.txt
+!search/n38k5-A3.txt
+!search/n38k5-A4.txt
+!search/n38k5-A5.txt
+!search/n38k5-A6.txt
+!search/n38k5-A7.txt
+!search/n38k5-BC.txt
+!search/ls-41-6.txt
+!search/gpu-41-5.txt
+!search/sh-41-A0.txt
+!search/sh-41-A1.txt
+!search/sh-41-A2.txt
+!search/sh-41-A3.txt
+!search/sh-41-A4.txt
+!search/sh-41-A5.txt
+!search/sh-41-A6.txt
+!search/sh-41-A7.txt
+!search/sh-41-BC.txt
+!search/k6/gpu128-41-5.txt
+!search/k6/coord-66.txt
+!search/k6/strict-66.txt
+!search/k6/gkw-K4.txt
+!papers/construction/unrank.out
+!papers/construction/gpu41b2s0.out
+!papers/construction/indep-gpu41.log
+!papers/construction/indep-gpu41b2-corrected.log
+!papers/construction/random41-1.out
+!papers/construction/random41-2.out
+!Axioms.lean

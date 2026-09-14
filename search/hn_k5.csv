@@ -2,8 +2,5 @@ n,k,result,witness,seconds,tested
 39,5,WITNESS,"(0,2) (0,18) (1,12) (3,19) (17,20)",3201,61561098
 40,5,WITNESS,"(0,5) (1,5) (2,30) (3,10) (4,11)",7424,132830426
 41,5,ABORTED-no-output-processes-died,,8044,0
-
-41,5,NONE,,66,0
-done
-41,5,NONE,,187,0
-done
+41,5,INVALID-NONE-tested-zero-processes-died,,66,0
+41,5,INVALID-NONE-tested-zero-processes-died,,187,0

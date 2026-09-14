@@ -1,0 +1,13 @@
+PASS r=2 M=10 tested=45 total=45
+PASS r=2 M=50 tested=1225 total=1225
+PASS r=2 M=200 tested=19900 total=19900
+PASS r=2 M=779 tested=1000000 total=303031
+PASS r=3 M=10 tested=120 total=120
+PASS r=3 M=50 tested=19600 total=19600
+PASS r=3 M=200 tested=1313400 total=1313400
+PASS r=3 M=779 tested=1000000 total=78485029
+PASS r=4 M=10 tested=210 total=210
+PASS r=4 M=50 tested=230300 total=230300
+PASS r=4 M=200 tested=64684950 total=64684950
+PASS r=4 M=779 tested=1000000 total=15226095626
+SUMMARY seed=20260914 failures=0

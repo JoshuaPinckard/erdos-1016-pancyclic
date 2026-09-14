@@ -1,0 +1,2 @@
+start n=66 k=6 missing_count=3
+STALLED n=66 k=6 missing_count=3 chords=[(0, 2), (0, 48), (1, 40), (11, 41), (44, 47), (47, 52)] missing=[5, 7, 8]
