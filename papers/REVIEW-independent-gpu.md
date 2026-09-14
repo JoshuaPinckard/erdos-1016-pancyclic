@@ -18,6 +18,12 @@ This is a substantial independent corroboration of the claimed (n=41,k=5) NONE r
 
 Follow-up exhaustive attempt: a one-billion-rank foreground slice beginning at rank 67,108,864 was started with the persistent state file, but exceeded the nine-minute slice ceiling and was stopped. Its checkpoint was not advanced. The previously completed b=2 prefix remains 671,088,640 ranks with zero hits; the uncompleted remainder is explicitly unknown.
 
+## Checkpoint/prune revision (2026-09-14)
+
+`construction/indep_gpu.py` now subdivides every requested range into launches of at most `2^26` ranks and writes a completed entry to the JSON state file after each launch. This is intended to make a killed foreground slice lose at most one launch. The kernel also applies the endpoint-gap necessary condition before direct DFS: for consecutive sorted chord endpoints, it rejects an arc with more than `(n-2)/2` interior vertices, allowing one extra only when the arc endpoints are themselves joined by a chord. This is the corollary of the subdivision lemma cited in `notes/01` and reviewed in `REVIEW-notes01.md`.
+
+Validation after this revision: a 1,048,576-rank n=41,b=2 test at start 672,137,216 completed with zero hits in 1.223 seconds under BelowNormal priority. The corrected full `2^26` chunk at the same start completed with zero hits in 40.729 seconds and is recorded in `indep-gpu-state-corrected.json`; together with the previously valid prefix this gives a corrected contiguous prefix through rank 739,246,079 (739,246,080 ranks). An earlier 67,108,864-rank run used a mistaken gap expression and rejected every candidate; its apparent completion is invalid and must not be counted. Consequently the exhaustive b=2 total remains UNKNOWN pending continuation from the corrected checkpoint. No residual triangle-case scan has been claimed.
+
 ## Runtime / safety
 
 No GPU code from `search/gpu_pancyc.py` was executed. Each launch was a single BelowNormal Python process with `cp.cuda.runtime.setDeviceFlags(4)`. No compute process remains active. The prompt’s count 15,147,912,850 is consistent with ​(​\binom{778}{4}), the mode-A candidate count after fixing `(0,2)`; the independent kernel reports this same total for (n=41,b=2).

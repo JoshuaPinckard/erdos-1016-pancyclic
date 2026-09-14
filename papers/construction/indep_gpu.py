@@ -12,6 +12,13 @@ extern "C" __global__ void go(int n,int k,int fixedb,int r,const int* ca,const i
  for(int i=0;i<r;i++){A[i+1]=ca[idx[i]];B[i+1]=cb[idx[i]];}
  unsigned long long adj[64];for(int i=0;i<n;i++)adj[i]=(1ULL<<((i+n-1)%n))|(1ULL<<((i+1)%n));
  for(int j=0;j<k;j++){adj[A[j]]|=1ULL<<B[j];adj[B[j]]|=1ULL<<A[j];}
+ /* Necessary endpoint-gap prune (subdivision lemma corollary): an arc
+    between consecutive chord endpoints may have at most (n-2)/2 interior
+    vertices, or (n-1)/2 when its endpoints themselves are chord-adjacent. */
+ int ep[16],ne=0;for(int j=0;j<k;j++){ep[ne++]=A[j];ep[ne++]=B[j];}
+ for(int x=1;x<ne;x++){int z=ep[x],y=x-1;while(y>=0&&ep[y]>z){ep[y+1]=ep[y];y--;}ep[y+1]=z;}
+ bool gapok=true;for(int x=0;x<ne;x++){int u=ep[x],v=ep[(x+1)%ne];int gap=(x+1<ne?v-u:v+n-u)-1;bool joined=false;for(int j=0;j<k;j++)if((A[j]==u&&B[j]==v)||(A[j]==v&&B[j]==u))joined=true;int lim=(n-2)/2+(joined?1:0);if(gap>lim)gapok=false;}
+ if(!gapok)return;
  unsigned long long lens=0;int sv[64],sn[64],sd[64];
  for(int s=0;s<n;s++){int top=0;sv[0]=s;sn[0]=0;sd[0]=0;unsigned long long used=1ULL<<s;
   while(top>=0){int v=sv[top],d=sd[top];unsigned long long rem=adj[v];while(sn[top]<n && !(rem&(1ULL<<sn[top])))sn[top]++;if(sn[top]>=n){top--;if(top>=0)used&=~(1ULL<<v);continue;}int w=sn[top]++;if(w==s&&d+1>=3){lens|=1ULL<<(d+1);continue;}if(w<=s||(used&(1ULL<<w)))continue;if(d+1>=n)continue;top++;sv[top]=w;sn[top]=0;sd[top]=d+1;used|=1ULL<<w;}
@@ -27,11 +34,18 @@ def table():
  return t.reshape(-1)
 def chords(n): return [(a,b) for a in range(n) for b in range(a+2,n) if not(a==0 and b==n-1)]
 def main():
- p=argparse.ArgumentParser();p.add_argument('n',type=int);p.add_argument('k',type=int);p.add_argument('b',type=int);p.add_argument('--start',type=int,default=0);p.add_argument('--count',type=int,default=1<<24);p.add_argument('--state',default='indep-gpu-state.json');a=p.parse_args();n,k,b=a.n,a.k,a.b
+ p=argparse.ArgumentParser();p.add_argument('n',type=int);p.add_argument('k',type=int);p.add_argument('b',type=int);p.add_argument('--start',type=int,default=0);p.add_argument('--count',type=int,default=1<<24);p.add_argument('--state',default='indep-gpu-state.json');p.add_argument('--log',default=None);p.add_argument('--max-chunk',type=int,default=1<<26);a=p.parse_args();n,k,b=a.n,a.k,a.b
  allc=chords(n); cand=[e for e in allc if e!=(0,b)];r=k-1;total=math.comb(len(cand),r);start=min(a.start,total);count=min(a.count,total-start)
- ca=cp.asarray([x[0] for x in cand],dtype=cp.int32);cb=cp.asarray([x[1] for x in cand],dtype=cp.int32);ct=cp.asarray(table());hits=cp.zeros(1,dtype=cp.uint64);out=cp.zeros(8*16,dtype=cp.int32);ker=cp.RawKernel(KERNEL,'go');t=time.perf_counter();threads=128;blocks=(count+threads-1)//threads;ker((blocks,),(threads,),(n,k,b,r,ca,cb,len(cand),ct,np.uint64(start),np.uint64(count),hits,out));cp.cuda.Device().synchronize();dt=time.perf_counter()-t;nh=int(hits.get()[0]);arr=out.get();ws=[]
- for q in range(min(nh,8)):ws.append([(int(arr[q*16+2*j]),int(arr[q*16+2*j+1])) for j in range(k)])
- print(json.dumps({'n':n,'k':k,'b':b,'start':start,'count':count,'total':total,'hits':nh,'witnesses':ws,'seconds':dt},separators=(',',':')))
- if a.state:
-  d=json.load(open(a.state)) if os.path.exists(a.state) else {};d[f'{n}-{k}-{b}-{start}']={'count':count,'hits':nh,'seconds':dt};json.dump(d,open(a.state,'w'))
+ ca=cp.asarray([x[0] for x in cand],dtype=cp.int32);cb=cp.asarray([x[1] for x in cand],dtype=cp.int32);ct=cp.asarray(table())
+ ker=cp.RawKernel(KERNEL,'go');threads=128;left=count;pos=start;allhits=0;ws=[];t0=time.perf_counter();
+ while left:
+  cc=min(left,a.max_chunk);hits=cp.zeros(1,dtype=cp.uint64);out=cp.zeros(8*16,dtype=cp.int32);blocks=(cc+threads-1)//threads
+  ker((blocks,),(threads,),(n,k,b,r,ca,cb,len(cand),ct,np.uint64(pos),np.uint64(cc),hits,out));cp.cuda.Device().synchronize();dt=time.perf_counter()-t0;nh=int(hits.get()[0]);allhits+=nh;arr=out.get()
+  for q in range(min(nh,8-len(ws))):ws.append([(int(arr[q*16+2*j]),int(arr[q*16+2*j+1])) for j in range(k)])
+  if a.state:
+   d=json.load(open(a.state)) if os.path.exists(a.state) else {};d[f'{n}-{k}-{b}-{pos}']={'count':cc,'hits':nh,'seconds':dt,'completed':True};json.dump(d,open(a.state,'w'))
+  if a.log:
+   with open(a.log,'a',encoding='utf-8') as f:f.write(json.dumps({'n':n,'k':k,'b':b,'start':pos,'count':cc,'hits':nh,'seconds':dt},separators=(',',':'))+'\n')
+  pos+=cc;left-=cc
+ print(json.dumps({'n':n,'k':k,'b':b,'start':start,'count':count,'total':total,'hits':allhits,'witnesses':ws,'seconds':time.perf_counter()-t0},separators=(',',':')))
 if __name__=='__main__':main()

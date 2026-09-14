@@ -28,12 +28,17 @@ LINK lines, and an explicit authorship disclaimer.
 
 ## Part 2 — Jia (1996): citation, statement, and search for the paper itself
 
-### Citation (confirmed by three independent sources)
+### Citation identity (confirmed by three independent sources — bibliographic identity only, not the theorem content; see the correction below)
 
 **X. Jia, "Some extremal problems on cycle distributed graphs," Congressus
 Numerantium, vol. 121 (1996), pp. 216–222. MR1431994 (97i:05068).**
 
-This is confirmed identical across: (1) OCR of the reference list (item [25]) in the
+**What "three independent sources" covers here, precisely:** the bare bibliographic
+fact that this paper exists, under this title, in this journal, at this volume/page
+range, with this MR number — nothing below establishes that any particular theorem
+statement attributed to it is correctly transcribed; that is a separate question,
+corrected further down this file. The citation identity is confirmed identical
+across: (1) OCR of the reference list (item [25]) in the
 locally saved `Lai-Liu-2014-survey.pdf`; (2) two independent `WebSearch` queries, whose
 top results both give the same journal, volume, pages, and MR number; and (3) the MR
 number matches the one already linked in the TerenceTao comment quoted in full in
@@ -93,8 +98,25 @@ matters for content rather than typography is Theorem 1.14's coefficient on the
 double-log term, quoted in raw OCR form since a wrong "correction" here would be worse
 than reporting the garble.) Theorem 1.13's upper bound, `n + (3/2)log_2 n + 1`, matches
 the TerenceTao erdosproblems.com comment's paraphrase exactly
-(`h(n) <= (3/2) log_2 n + 1`), which is independent corroboration that the OCR of that
-specific line is correct. **Conjecture 1.16 is, in substance, Erdős Problem #1016
+(`h(n) <= (3/2) log_2 n + 1`).
+
+**Correction (2026-09-14, later session, per Manager): this match is NOT independent
+corroboration of Jia's theorem, and the word "independent" above was wrong.** It is
+evidence only that the OCR correctly transcribed the Lai-Liu survey's paraphrase —
+not evidence that the Lai-Liu survey correctly represents Jia's actual result — because
+Tao's own comment states, quoted verbatim from the full fetch in `REPORT-lit-4.md`:
+*"An obscure 1996 paper of Jia (which I was not able to directly obtain, but could
+see their results mentioned in this 2014 survey of Lai and Liu)."* Tao read the exact
+same secondary survey this project OCR'd, not Jia's paper. So this project's OCR and
+Tao's paraphrase are two readings of one document, not two independent readings of
+Jia's theorem — the same failure mode as counting a citation twice. What the
+agreement genuinely establishes: the OCR correctly captured what the Lai-Liu survey
+says (a real, useful check on transcription fidelity), and, combined with the
+citation-identity confirmation above, that this specific paper by this specific
+author really is being paraphrased by that survey. It does **not** establish that
+Jia's own proof or statement is correctly represented by that paraphrase — that
+remains unverified, since Jia's paper itself was never obtained (see below). Full
+analysis: `papers/REPORT-fibonacci-asymptotics.md`, Part 3. **Conjecture 1.16 is, in substance, Erdős Problem #1016
 itself** — the survey text says exactly this ("Jia[25] made the following
 conjecture... `g(n) = n + log_2 n + O(1)`"), consistent with TerenceTao's comment that
 Jia's 1996 paper "also makes the conjecture #1016."

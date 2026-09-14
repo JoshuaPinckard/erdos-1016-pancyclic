@@ -18,7 +18,7 @@ extern "C" __global__
 void search(const int n, const int k, const int nfixed, const int r,
             const int* fa, const int* fb,            // fixed chords
             const int* ca, const int* cb, const int M, // candidate chords
-            const unsigned long long* binom,          // binom[c*5 + i] = C(c,i), c < 1024, i <= 4
+            const unsigned long long* binom,          // binom[c*5 + i] = C(c,i), c < BINOM_ROWS, i <= 4; host checks M <= BINOM_ROWS before launch
             const unsigned long long start, const unsigned long long count,
             int* found_count, int* found_chords, const int max_found)
 {
@@ -80,12 +80,28 @@ void search(const int n, const int k, const int nfixed, const int r,
 }
 '''
 
-def binom_table():
-    t = np.zeros((1024, 5), dtype=np.uint64)
-    for c in range(1024):
+# Rows of the unranking table.  The kernel binary-searches binom[c*5+i] for c up to M-1, where M is
+# the candidate-chord count n(n-3)/2 (minus the fixed chords), so the table must have at least M rows.
+# The original 1024-row table silently capped the usable range at n <= 46 (n=47 has 1034 chords):
+# beyond that the kernel read past the table with no diagnostic.  n <= 60 (64-bit masks) needs n(n-3)/2 = 1710 rows;
+# 8192 covers it, and check_binom_rows() fails loudly instead of letting the next raise of n walk
+# off the end again.
+BINOM_ROWS = 8192
+
+def binom_table(rows=BINOM_ROWS):
+    t = np.zeros((rows, 5), dtype=np.uint64)
+    for c in range(rows):
         for i in range(5):
             t[c, i] = math.comb(c, i) if c >= i else 0
     return t
+
+def check_binom_rows(M, binom_d):
+    """Fail loudly, host-side and before any launch, if the candidate count M exceeds the table."""
+    rows = int(binom_d.size) // 5
+    if M > rows:
+        raise ValueError(f"candidate chord count M={M} exceeds binom table rows={rows}: the kernel's colex "
+                         f"unranking would read binom[] out of bounds; enlarge binom_table(rows=...)")
+    return rows
 
 def all_chords(n):
     out = []
@@ -113,6 +129,7 @@ def run_case(kern, n, k, fixed, cands, chunk, enumerate_all, binom_d, log):
         return [], 0
     r = k - len(fixed)
     M = len(cands)
+    check_binom_rows(M, binom_d)
     total = math.comb(M, r)
     fa = cp.asarray([c[0] for c in fixed] or [0], dtype=cp.int32); fb = cp.asarray([c[1] for c in fixed] or [0], dtype=cp.int32)
     ca = cp.asarray([c[0] for c in cands], dtype=cp.int32); cb = cp.asarray([c[1] for c in cands], dtype=cp.int32)

@@ -9,9 +9,15 @@ $3,4,\dots,n$. Let $m(n)$ be the minimum number of edges of a pancyclic graph on
 $n$ vertices, and write $m(n)=n+h(n)$, where $h(n)$ counts the chords added to a
 Hamilton cycle (Erdős Problem #1016, after Bondy 1971). Griffin (2013) determined
 $m(n)$ exactly for $n\le 37$ by exhaustive and constructive search. We report
-$m(n)$ for $38\le n\le 41$, obtained by two independently implemented exhaustive
-GPU/CPU chord searches and cross-checked by two further from-scratch verifiers:
-$h(38)=h(39)=h(40)=5$ and $h(41)=6$, so $m(38{:}41)=43,44,45,47$. We record the
+$m(n)$ for $38\le n\le 41$: $h(38)=h(39)=h(40)=5$ and $h(41)=6$, so
+$m(38{:}41)=43,44,45,47$. The upper bounds are explicit chord sets found by
+GPU/CPU chord search, each reconfirmed by three from-scratch verifiers and
+by a kernel-checked Lean 4 proof. The lower bounds $h(n)\ge5$ follow from
+Griffin's cycle-counting ceiling alone. The one new negative result,
+$h(41)>5$, rests on a single complete GPU enumeration of all $5$-chord sets
+on $C_{41}$ (a 64-bit kernel and its 128-bit port, which walk the same
+enumeration) plus non-exhaustive corroboration; an independently written
+exhaustive replication has not yet been completed (Section 3.4). We record the
 extremal $5$-chord graphs at the $n=40$ threshold, a subdivision lemma showing why
 counting arguments can improve only the additive constant, never the growing
 correction term the conjecture needs, and two numerical observations on the
@@ -66,9 +72,24 @@ is cited to Alon–Krivelevich's paraphrase, not to GKW16 directly.
 $m(n)\ge n+\log_2(n-1)-1$ rigorously (from the elementary cycle-count ceiling
 $2^{k+1}-1$ on the number of cycles in a Hamiltonian graph with $k$ chords, due to
 Shi), and determines $m(n)$ exactly for all $n\le 37$, combining an exhaustive
-search on graphs with up to 29 vertices with a 5-chord construction valid through
-$n=37$. Griffin's Table 1 is the earliest, and until now the only, exact tabulation
-of $m(n)$ beyond the smallest cases.
+search — stated in the paper's own body text as "for Hamiltonian graphs with at
+most 4 chords and for Hamiltonian graphs with 5 chords and at most 31
+vertices"[^griffin-cutoff] — with a 5-chord construction valid through $n=37$ for
+the range beyond that exhaustive cutoff. Griffin's Table 1 is the earliest, and
+until now the only, exact tabulation of $m(n)$ beyond the smallest cases.
+
+[^griffin-cutoff]: Griffin's own abstract instead summarizes this as "an
+    exhaustive search on graphs with up to 29 vertices"; the number 29 does not
+    appear anywhere in the paper's body text, whose own statement (quoted above,
+    `papers/1312.0274.txt`) gives 31, not 29, as the exhaustive cutoff for the
+    5-chord case, and states no vertex cap at all for the $\le4$-chord case (that
+    part is finite for a different reason: Corollary 1's cycle-count ceiling
+    $2^{k+1}-1\ge n-2$ forces $n\le2^{k+1}+1=33$ for $k=4$, so no search beyond
+    $n=33$ is needed regardless). This note quotes the body rather than the
+    abstract, and records the discrepancy here rather than silently picking one,
+    since a reader checking only the abstract would otherwise conclude this
+    paper misread it; see `papers/REPORT-novelty-check.md` (Follow-up 3) and
+    `papers/REPORT-griffin-method.md` for the full derivation.
 
 **Alon and Krivelevich** [AK25] study the analogous question for random graphs:
 for $G\sim G(n,p)$ with $p\ge(1+o(1))\ln n/n$, with high probability $G$ contains
@@ -135,7 +156,7 @@ established in this project (Section 3 gives the method and every witness).
 | **38** | **5** | **43** | this project (`search/n38k5-A0.txt`, witness) |
 | **39** | **5** | **44** | this project (`search/hn_k5.csv`, witness) |
 | **40** | **5** | **45** | this project (`search/gpu-40-5-all.txt`, exhaustive; `search/hn_k5.csv`, first witness) |
-| **41** | **6** | **47** | this project (`search/gpu-41-5d.txt`, exhaustive elimination of $k=5$; `search/ls-41-6.txt`, $k=6$ witness) |
+| **41** | **6** | **47** | this project (`search/gpu-41-5.txt`, complete single-program elimination of $k=5$ - see Section 3.4 for its evidential status; `search/ls-41-6.txt`, $k=6$ witness) |
 
 ### 2.1 Thresholds
 
@@ -224,12 +245,22 @@ the partial chord set is abandoned (`search/pancyc.c`, comment block and the
   construction (binomial-coefficient table `binom[c][i]=\binom{c}{i}` for
   $c<1024,i\le4$, source comment "unrank colex $r$-combination of $\{0..M-1\}$").
   Progress and partial results are checkpointed to a JSON state file
-  (`gpu-state-{n}-{k}.json`) so a run can resume after interruption — this is why
-  `search/gpu-41-5d.txt`'s cumulative `tested=17615450195` spans several
-  restarted invocations (visible as the `ABORTED`/`NONE` sequence in
-  `search/hn_k5.csv`'s $n=41$ rows). Used for the full exhaustive $n=40$ run
-  (`search/gpu-40-5-all.txt`) and the exhaustive $n=41,k=5$ elimination
-  (`search/gpu-41-5d.txt`).
+  (`gpu-state-{n}-{k}.json`) so a run can resume after interruption. The
+  `tested=` figure it prints is the state file's cumulative candidate count;
+  for $n=41,k=5$ that figure, `17615450195`, is exactly the number of
+  candidate chord sets the three-mode case split generates
+  ($\binom{778}{4}$ for mode A plus the mode-B and mode-C sums, recomputed
+  independently in `papers/REPORT-record-integrity.md`), so it identifies a
+  complete walk of the enumeration and nothing more. `search/gpu-41-5.txt`
+  is the log of one uninterrupted such walk (progress lines from 0.4% to
+  100.0%, then `NONE n=41 k=5 tested=17615450195 seconds=845`);
+  `search/gpu-41-5d.txt` is an 18-second re-invocation that reloaded the
+  finished state file and reprinted the same total. (An earlier draft
+  described that total as "cumulative across resumed runs" and pointed to the
+  `ABORTED`/`NONE` rows of `search/hn_k5.csv`; those rows belong to the CPU
+  shard runner, not to this program — see Section 3.4.) Used for the full
+  exhaustive $n=40$ run (`search/gpu-40-5-all.txt`) and the $n=41,k=5$
+  elimination (`search/gpu-41-5.txt`).
 * **`search/localsearch.py`** — randomized local search (simulated-annealing-style
   chord perturbation, scoring by number of missing cycle lengths), used only to
   *find* an upper-bound witness quickly, never to prove a negative. Its output
@@ -269,8 +300,7 @@ the partial chord set is abandoned (`search/pancyc.c`, comment block and the
   via `lake env lean` on a throwaway one-off file (not committed), both report
   exactly `[propext, Classical.choice, Quot.sound]` — the three standard
   Mathlib axioms, with no `sorryAx` and no `native_decide`. This makes Lean a
-  genuine fourth independent verification for $n=38,41$ specifically (not yet
-  extended to $n=39,40$).
+  genuine fourth independent verification for $n=38,41$ specifically.
 
   `Erdos1016/Excess.lean` restates the result in this paper's own language:
   `PancyclicWithChords n k := ∃ cs : Finset (Sym2 (Fin n)), cs.card = k ∧
@@ -279,42 +309,107 @@ the partial chord set is abandoned (`search/pancyc.c`, comment block and the
   a pancyclic graph," matching $h(n)\le k$ directly — and proves
   `pancyclicWithChords_38_5`/`pancyclicWithChords_41_6` from the same
   underlying witnesses via an explicit graph-equality lemma
-  (`G38_eq`/`G41_eq`) rather than restating the hypothesis. `Erdos1016/Witness56.lean`
-  gives `isPancyclic_G56` for the Section 6.3 witness
-  $(0,2)(0,53)(1,39)(20,39)(39,48)(48,53)$, so $t_6\ge56$ is now also
-  kernel-checked (as `IsPancyclic`, not yet restated in `PancyclicWithChords`
-  form — that restatement, along with $n=39,40$, is in progress and not yet
-  in this file). Independently re-verified in this session exactly as above:
-  `lake build Erdos1016 Erdos1016.Witness56` completes with 0 errors
+  (`G38_eq`/`G41_eq`) rather than restating the hypothesis.
+  `Erdos1016/Witness56.lean` gives `isPancyclic_G56` for the Section 6.3
+  witness $(0,2)(0,53)(1,39)(20,39)(39,48)(48,53)$, and
+  `Erdos1016/Witness39_40.lean` gives `isPancyclic_G39`/`isPancyclic_G40` for
+  the $n=39,40$ witnesses, all by the same `ListCycle.lean` bridge.
+  `Erdos1016/Excess2.lean` then restates all three in `PancyclicWithChords`
+  form — `pancyclicWithChords_39_5`, `pancyclicWithChords_40_5`,
+  `pancyclicWithChords_56_6` — via the same graph-equality technique as
+  `Excess.lean`, so $n=38,39,40,41,56$ are now all stated in the paper's own
+  $h(n)\le k$ language and kernel-checked, leaving only $n=38,41$ (Section
+  3.3 above) additionally checked in the more primitive `IsPancyclic G38/G41`
+  form as well. Independently re-verified in this session exactly as before:
+  `lake build Erdos1016.Excess2` (which pulls in `Witness39_40.lean` and
+  `Witness56.lean` transitively) completes with 0 errors
   (`Build completed successfully (8713 jobs)`; style-linter warnings only),
   and a fresh `#print axioms` on `pancyclicWithChords_38_5`,
-  `pancyclicWithChords_41_6`, and `isPancyclic_G56` all report exactly
-  `[propext, Classical.choice, Quot.sound]`.
+  `pancyclicWithChords_39_5`, `pancyclicWithChords_40_5`,
+  `pancyclicWithChords_41_6`, and `pancyclicWithChords_56_6` all report
+  exactly `[propext, Classical.choice, Quot.sound]`.
 
 ### 3.4 Which program established which bound
 
-For every $n$ in $38..41$, the *lower bound* $h(n)\ge5$ is inherited from Griffin's
-own published elimination of $k\le4$: Griffin's Corollary 1 gives an absolute
-ceiling of $2^{k+1}-1$ cycles for a $k$-chord Hamiltonian graph, so $k=4$ permits
-at most $31$ cycles; combined with Griffin's exhaustive computer search of
-$k\le4$ chords (which the paper states was run without restriction to small $n$)
-this rules out any $4$-chord pancyclic graph on $n\ge25$ vertices outright — no
-new search was needed to re-establish $h(n)\ge5$ for $n=38..41$. What this
-project newly supplies is:
+For every $n$ in $38..41$, the *lower bound* $h(n)\ge5$ needs no new search at
+all: Griffin's Corollary 1 gives an absolute ceiling of $2^{k+1}-1$ cycles for
+a $k$-chord Hamiltonian graph, so $k=4$ permits at most $2^5-1=31$ cycles,
+while pancyclicity on $n$ vertices needs $n-2$ distinct lengths. For
+$n=38,\dots,41$, $n-2\ge36>31$, so pure counting alone already rules out
+$k=4$ (and every $k<4$, since $M(k)$ is increasing) — this is airtight on its
+own and does not additionally rely on how far Griffin's own exhaustive $k\le4$
+search was run, which the paper does not state was unbounded (nor could it
+be). What this project newly supplies is:
 
 | $n$ | what was newly established | program / file | exhaustive? |
 |---:|---|---|---|
 | 38 | a $k=5$ witness (upper bound $h(38)\le5$, hence $=5$) | `search/pancyc.c`, shard search, `search/n38k5-A0.txt` (witness found after `tested=52296703` in that shard) | no — search stopped at first witness |
 | 39 | a $k=5$ witness | `search/pancyc.c`, `search/hn_k5.csv` row (`tested=61561098`) | no |
 | 40 | a $k=5$ witness, and (separately) the full set of extremal graphs | `search/hn_k5.csv` (first witness, `tested=132830426`); `search/gpu_pancyc.py --all`, `search/gpu-40-5-all.txt` (`tested=14373209608`, all 10 witnesses) | the `--all` run is exhaustive |
-| 41 | $h(41)>5$ (elimination of all $k=5$ chord sets) and a $k=6$ witness | `search/gpu_pancyc.py`, `search/gpu-41-5d.txt` (`tested=17615450195`, `NONE`, cumulative across resumed runs); `search/localsearch.py`, `search/ls-41-6.txt` (witness) | the $k=5$ elimination is exhaustive; the $k=6$ witness search is not |
+| 41 | $h(41)>5$ (no $5$-chord set on $C_{41}$ is pancyclic) and a $k=6$ witness | elimination: `search/gpu_pancyc.py`, `search/gpu-41-5.txt` (one complete walk, `NONE n=41 k=5 tested=17615450195 seconds=845`; `search/gpu-41-5d.txt` is a re-invocation reprinting the finished state); witness: `search/localsearch.py`, `search/ls-41-6.txt` | the $k=5$ elimination is one complete enumeration by one program — see "What is multiply confirmed" below; the $k=6$ witness search is not exhaustive |
 
-Every witness reported as a table entry in Section 2 was independently
-reconfirmed by at least two of the three from-scratch verifiers
-(`search/verify.py`, `papers/construction/check.py`,
-`papers/construction/indep.c`); see `papers/REVIEW-search.md` for the exact
-reconfirmation runs and lengths recovered. For $n=38,41$, the Lean proofs of
-Section 3.3 add a fourth, kernel-checked confirmation.
+**What is multiply confirmed, and what is not.** The evidence behind the four
+new values is of two different kinds and should not be read as one.
+
+*Witnesses (every upper bound; all of $h(38),h(39),h(40)\le5$ and
+$h(41)\le6$).* Each witness chord set in Section 2 is an explicit object that
+any program can check. Each was independently reconfirmed by the three
+from-scratch verifiers of Section 3.3 — `search/verify.py` (networkx
+`simple_cycles`), `papers/construction/check.py` (a second cycle-space
+implementation) and `papers/construction/indep.c` (direct DFS, no cycle
+space) — see `papers/REVIEW-search.md` and `papers/REVIEW-independent.md` for
+the runs and the length sets recovered — and, for all of $n=38,39,40,41$ (and
+$56$), by a kernel-checked Lean 4 proof (`pancyclicWithChords_38_5` …
+`_41_6`, Section 3.3). These claims are multiply and independently confirmed.
+
+*The lower bounds $h(n)\ge5$ for $n=38..41$.* Pure counting, as shown at the
+top of this subsection; no search is involved.
+
+*The non-existence result $h(41)>5$.* This is the only new negative claim,
+and the only place in $n=38..41$ where the threshold moves. Unlike a
+witness, it cannot be checked by inspecting an object; it can only be
+re-established by another complete enumeration. Its present evidential
+status, read directly from the artifacts, is:
+
+* It **is** established by one complete enumeration: `search/gpu-41-5.txt`
+  logs `search/gpu_pancyc.py` walking mode A from 0.4% to 100.0% and then
+  printing `NONE n=41 k=5 tested=17615450195`, and `17615450195` is exactly
+  the candidate count of the three-mode case split (Section 3.3), so the walk
+  was complete, not truncated.
+* It is **not** independently replicated. The second `NONE` run,
+  `search/k6/gpu128-41-5.txt` (`NONE n=41 k=5 tested=17615450195`), is
+  `search/k6/gpu_pancyc128.py`, whose own docstring describes it as a
+  "128-bit (two-word) port of `search/gpu_pancyc.py` … Nothing else about the
+  algorithm changes." The identical `tested=` total shows the two programs
+  walk the identical enumeration; this is a check on 64-bit mask overflow,
+  not on a logic error that both would share.
+* The CPU shard run — the one structurally separate exhaustive path that was
+  attempted — did not complete: `search/hn_k5.csv` records
+  `41,5,ABORTED-no-output-processes-died,,8044,0`, and its shard outputs
+  `search/sh-41-A0.txt` … `sh-41-A7.txt`, `sh-41-BC.txt` are all zero bytes.
+  Two later rows in the same file recorded `NONE` with `tested=0` (the shard
+  runner's default when every process exits without output); they test no
+  candidates, are not evidence, and are re-labelled `INVALID-NONE-…` in the
+  file (`search/hn_k5-README.md`).
+* The from-scratch direct-DFS GPU replication
+  (`papers/construction/indep_gpu.py`, `papers/REVIEW-independent-gpu.md`)
+  is unfinished: a corrected contiguous prefix of $739{,}246{,}080$ of the
+  $15{,}147{,}912{,}850$ mode-A ranks (under 5% of one of the three modes)
+  with $0$ hits, and, in that review's words, "the exhaustive b=2 total
+  remains UNKNOWN pending continuation from the corrected checkpoint."
+* Non-exhaustive corroboration exists: $2{,}000{,}000$ uniformly random
+  $5$-subsets checked by `indep.c` with $0$ hits, against a positive control
+  that does find a witness at $n=24,k=4$ (next paragraph).
+* Nothing about this negative result is formalised in Lean; the project's
+  `Axioms.lean` states that the lower bounds "are NOT formalised here; they
+  rest on the exhaustive search programs in `search/`."
+
+So $h(41)=6$ currently rests on one algorithm (plus a port of it) for its
+lower half. We report it as established by that enumeration, and we report
+the enumeration's replication status as above rather than as
+"cross-checked." Completing an independently written exhaustive run
+(`indep_gpu.py` or a CPU direct-DFS enumeration) is the outstanding step
+that would raise this claim to the same footing as the witnesses.
 
 **Independent corroboration of the search machinery itself**
 (`papers/REVIEW-gpu-corroboration.md`, `papers/REVIEW-independent.md`, both
@@ -338,7 +433,7 @@ demonstrating the random-sampling method can detect a true positive when one
 exists, which is why its zero-hit result at $n=41$ is meaningful corroboration
 (not proof) rather than a null result from a broken detector.
 
-## 4. The subdivision lemma and why counting cannot suffice
+## 4. The subdivision lemma, and what counting can and cannot give
 
 The elementary argument behind every lower bound in this area (Bondy, Griffin,
 Shi) is a pure counting bound: a $k$-chord Hamiltonian graph has at most
@@ -372,11 +467,26 @@ formed by the arc plus its closing chord.
 **Consequence 1 (the counting bound is exactly tight at every recursive level).**
 For each chord subset $K$ with both of Shi's two associated cycles present,
 exactly one of them uses $uv$ (since $uv$ lies in exactly one of the two
-alternating arc classes). So $|A|\le 2^k-1$ and $|B|\le 2^k$ — giving back
+alternating arc classes); the one exception is $K=\varnothing$, whose only
+possible cycle is the full Hamilton cycle itself, which always uses $uv$ and
+so can only ever land in $B$, never $A$. Summing over the $2^k$ subsets with
+this one adjustment gives $|A|\le 2^k-1$ and $|B|\le 2^k$ — hence
 $s\le 2^k+1$, $n-s\le 2^k-1$, i.e. the trivial bound again, exactly balanced.
-**Any improvement must come from arithmetic (which sums of gaps are
-realisable), never from counting alone.** This part of the argument is
-unaffected by the correction above.
+This part of the argument is unaffected by the correction above.
+
+**What this does and does not say about counting.** Since nested chords
+already realise at least $2^k$ cycles, any refinement of the form
+$n-2\le M(k)$ for the true maximum cycle count $M(k)$ inverts to
+$h(n)\ge\log_2(n-1)-1+O(1)$: because $M(k)=\Theta(2^k)$ under *any* such
+refinement (only the lower-order terms change), inverting it can only ever
+adjust the additive constant, never produce a term that grows without bound
+in $n$. So **cycle counting can, and does, improve the constant** — Shi's and
+Rautenbach–Stella's sharper exact values for $M(k)$ (below) are real
+improvements of exactly this kind — **but it can never by itself supply the
+$\log_* n$-type growing correction** the full conjecture asks for. This is a
+narrower and more defensible claim than "counting never helps," and it is
+consistent with, rather than contradicted by, the Rautenbach–Stella result
+cited next.
 
 **Consequence 2 (largest-arc bound, corrected).** Lengths $3,\dots,m+2$ cannot
 be through-$uv$ cycles unless the arc's endpoints are chord-joined (a
@@ -459,17 +569,32 @@ accounts for that; see `papers/REPORT-cyclecounts.md`'s $N_0$ column, which give
 $5,9,17,33,65$ for $k=1..5$, matching $t_k$ only up to the counting bound's own
 slack.)
 
-**A Fibonacci fit with no known explanation.** Writing $\mathrm{Fib}(1)=\mathrm{Fib}(2)=1$,
+**A Fibonacci fit, and exactly how much it is worth.** This observation
+originates in `papers/REPORT-bondy-construction.md`, not in this note; we
+cite it rather than re-present it as freshly found. Writing
+$\mathrm{Fib}(1)=\mathrm{Fib}(2)=1$,
 $$t_k = 2\,\mathrm{Fib}(k+3)-2\qquad\text{for } k=2,3,4,5:$$
 $$t_2=2\cdot5-2=8,\quad t_3=2\cdot8-2=14,\quad t_4=2\cdot13-2=24,\quad t_5=2\cdot21-2=40.$$
-This is an **observation, not a theorem** — no structural reason for a Fibonacci
-recursion in the threshold sequence is known, and it visibly fails at $k=1$
-($2\,\mathrm{Fib}(4)-2=4\ne5$). If it continued it would predict
+This is an **observation, not a theorem**, and its source explicitly flags
+the closed form as "four data points fitting a **two-parameter family**" (a
+free multiplicative constant, $2$, and a free additive constant, $-2$). A
+2-parameter family fit exactly to two of its four cited points is guaranteed,
+not informative — those two matches carry no information. Fixing the two
+parameters at $k=2,3$, the genuinely nontrivial content is that the *same*
+formula is *also* exact at $k=4,5$: two real coincidences, not four. It
+visibly fails at $k=1$ ($2\,\mathrm{Fib}(4)-2=4\ne5$), and the same source
+notes that a naturally related *additive* recursion,
+$t_k=t_{k-1}+t_{k-2}+2$, also fails at $k=3$ ($8+5+2=15\ne14$) even though
+the closed form holds there — i.e. at least one nearby way of framing "the"
+Fibonacci pattern already breaks inside the range this note calls clean.
+No structural reason for either form is known. If the closed form continued
+it would predict
 $$t_6 = 2\,\mathrm{Fib}(9)-2 = 2\cdot34-2 = 66,$$
-i.e. $h(n)=6$ for $41\le n\le66$ and $h(67)\ge7$ — a falsifiable prediction that
-the present search programs (`search/gpu_pancyc.py`, valid for $n\le60$; extending
-to $n=66$ needs either a 128-bit port of the GPU kernel or the CPU program's
-$n\le60,k\le6$ safe range pushed to $k=6$ at $n$ up to 66) could test directly.
+i.e. $h(n)=6$ for $41\le n\le66$ and $h(67)\ge7$ — a falsifiable prediction
+that the present search programs (`search/gpu_pancyc.py`, valid for
+$n\le60$; extending to $n=66$ needs either a 128-bit port of the GPU kernel
+or the CPU program's $n\le60,k\le6$ safe range pushed to $k=6$ at $n$ up to
+66) could test directly.
 
 **Update: partially tested, not settled.** A dedicated 6-chord search
 (Section 6.3, `papers/REPORT-k6-upper.md`) found a confirmed witness at
@@ -491,7 +616,7 @@ be nice.) 2. Find a good upper bound for $m(v)$." The same sheet records a
 correction to the literature worth preserving here: Sridharan (1978) had claimed
 exact values of $m(v)$ for *all* $v$, but "they have been proven wrong; for
 example, it is claimed that $m(13)=17$, but an example with $m(13)=16$ is given
-in [George–Marr–Wallis 2013]" — consistent with Griffin's Table 1 value
+in [GMW13]" — consistent with Griffin's Table 1 value
 $m(13)=16$ reproduced in Section 2 above. Wallis's Question 1 is the same
 statement as Griffin's Conjecture 1 ($m(n)<m(n+1)$ for all $n\ge3$, non-strict in
 Wallis's phrasing, strict in Griffin's), which Griffin proves only in the weaker
@@ -500,9 +625,9 @@ form $m(n+1)\le m(n)+2$ plus partial cases via an arc-contraction argument
 with strict monotonicity throughout $3\le n\le41$ (every $m(n+1)>m(n)$ in the
 table above), extending Griffin's own $n\le37$ check by four more values, but
 four more data points do not constitute progress on the conjecture itself.
-Wallis's Question 2, the companion upper-bound question, remains exactly at
-George–Khodkar–Wallis's $\log_2n+\log_*n+O(1)$ [GKW16]; nothing in this paper
-improves it.
+Wallis's Question 2, the companion upper-bound question, remains at the
+$\log_2n+\log_*n+O(1)$ bound reportedly proved in [GKW16] (see Section 1's
+caveat on how that attribution is sourced); nothing in this paper improves it.
 
 ## 6. Extremal structure and near-misses
 
@@ -566,14 +691,24 @@ raw data in `search/k6/`) established:
   project's pre-existing `search/verify.py`), agreeing on all lengths
   $3,\dots,56$ (`search/k6/witnesses.csv`). So **$t_6\ge56$**, i.e.
   $h(n)\le6$ is now known for $n$ up to $56$ (previously only up to $41$).
-* **The George–Khodkar–Wallis binary-shortcut recipe**, instantiated with
-  5 shortcut chords $e_0{=}(0,2),e_1{=}(2,5),e_2{=}(5,10),e_3{=}(10,19),
-  e_4{=}(19,36)$ plus one joining edge $(0,36)$ (6 chords total), was
-  verified computationally to be pancyclic at **exactly $n=36$ and $n=40$**,
-  and to be missing *only and exactly* length $5$ for every other $n$ in
-  $[37,69]$ tested — a direct, computed confirmation of the construction
-  theory's own claim that this stage needs to patch a small subset of short
-  lengths (`papers/REPORT-k6-upper.md`, `search/k6/gkw-K4.txt`).
+* **The binary-shortcut recipe Alon and Krivelevich [AK25] attribute to
+  GKW16 and reproduce approximately** (Section 1 explains why the
+  attribution to GKW16 itself is secondary and hedged; every numeric detail
+  here is taken from AK's own paraphrase, transcribed with its exact
+  arithmetic in `papers/REPORT-bondy-construction.md`, not from GKW16
+  directly), instantiated with 5 shortcut chords
+  $e_0{=}(0,2),e_1{=}(2,5),e_2{=}(5,10),e_3{=}(10,19),e_4{=}(19,36)$ plus one
+  joining edge $(0,36)$ (6 chords total), was verified computationally to be
+  pancyclic at **exactly $n=36$ and $n=40$**, and to be missing *only and
+  exactly* length $5$ for every other $n$ in $[37,69]$ tested — a direct,
+  computed confirmation of AK's paraphrased claim that this stage needs to
+  patch a small subset of short lengths (`papers/REPORT-k6-upper.md`,
+  `search/k6/gkw-K4.txt`). Note also that `papers/REPORT-bondy-construction.md`
+  finds this general recipe *undershoots* the actual best-known thresholds
+  $t_k$ substantially for $k\le5$ (by 50% at $k=2$, still 12.5% at $k=5$); it
+  is an asymptotically-motivated construction, not the source of this
+  project's small-$k$ exact values, which come from the separate
+  hand/computer-optimized graphs of Griffin and George–Marr–Wallis.
 * **A direct, dedicated attempt at $n=66$** (the Section 5 Fibonacci
   prediction) — seeded from the $n=56$ witness, then 350s of strict-hill-climb
   search followed by exhaustive single-chord coordinate descent (every one of
@@ -592,6 +727,8 @@ raw data in `search/k6/`) established:
 - [Jia96] X. Jia, "Some extremal problems on cycle distributed graphs," *Congressus
   Numerantium* 121 (1996), 216–222. MR1431994.
 - [Gr13] Sean Griffin, "Minimal Pancyclicity," arXiv:1312.0274 (2013).
+- [GMW13] J. C. George, A. Marr, W. D. Wallis, "Minimal pancyclic graphs,"
+  *J. Combin. Math. Combin. Comput.* 86 (2013), 125–133.
 - [GKW16] J. C. George, Abdollah Khodkar, W. D. Wallis, *Pancyclic and Bipancyclic
   Graphs*, Springer, 2016.
 - [AK25] N. Alon, M. Krivelevich, "Sparse pancyclic subgraphs of random graphs,"
