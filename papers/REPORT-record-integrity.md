@@ -413,3 +413,11 @@ The step that would let Section 3.4 say "independently replicated" for
 `papers/construction/indep_gpu.py` from its corrected checkpoint (mode A
 remainder plus modes B and C), or a CPU direct-DFS enumeration. Under the
 standing 20% compute cap that is a long, single-process job, not a fleet.
+
+## Commit
+
+The changes listed under "What was committed" are commit `e59dd10` on
+`master` ("Record integrity: track cited evidence files, quarantine vacuous
+hn_k5.csv rows"), 36 files. `git ls-files` at that commit returns all 31
+evidence paths plus `search/k6/gpu_pancyc128.py`, `search/hn_k5.csv`,
+`search/hn_k5-README.md`, `.gitignore` and this report.
