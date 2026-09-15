@@ -11,7 +11,9 @@ Code added under `search/shapecsp/`. Nothing under `search/k6/` was modified.
 | | result |
 |---|---|
 | `t_2, t_3, t_4, t_5` | **8, 14, 24, 40** -- exact, from scratch, no lower bound supplied, zero abandoned searches |
-| `t_6` | **not resolved.** Improved bracket `56 <= t_6 <= 93` (a-priori upper bound was 129) |
+| `h(41) > 5` | **independently confirmed.** No 5-chord pancyclic graph on 41 vertices exists: 308 eligible shapes, `sat=0 gaveup=0`, by a method sharing no code with the GPU enumeration (section 4a) |
+| `t_6` | **not resolved.** Bracket `67 <= t_6 <= 93` (a-priori upper bound was 129) |
+| k=3 vs GMW13 | 14 shapes vs 14 published types; the refinement structure matches too, but a type-for-type bijection is **not verified** (section 4b) |
 | shapes | 3 / 14 / 103 / 1236 / 21878 for k = 2..6, of which 1 / 9 / 86 / 1157 / **21324** are the degenerate families |
 | costliest finding | the perfect-matching-only shape model returns the **wrong** maximum: 22 instead of `t_4 = 24`, 37 instead of `t_5 = 40` |
 
@@ -302,20 +304,126 @@ So the positive control passes: **t_2, t_3, t_4, t_5 = 8, 14, 24, 40**, each
 computed from scratch with no lower bound supplied, and each upper bound a
 complete refutation with zero abandoned searches.
 
+### 4a. What the n=41 level says about h(41), and how independent it is
+
+The level at n=41 deserves naming separately, because `h(41) > 5` -- no 5-chord
+pancyclic graph on 41 vertices -- is a claim this repository otherwise supports
+with a single enumeration:
+
+```
+LEVEL k=5 n=41 shapes=1236 eligible=308 sat=0 gaveup=0 search_seconds=593.8
+```
+
+`sat=0` with `gaveup=0` means every one of the 308 shapes that could reach n=41
+was decided, none abandoned on a node budget. **No C_41 plus 5 chords is
+pancyclic.**
+
+Two things a referee will ask, answered plainly:
+
+- **Is 1236 the complete k=5 shape count, including chords that share endpoints?**
+  Yes. `shapes(5)` runs `b` from 4 to 10 and the per-`b` breakdown is
+  `{4:2, 5:28, 6:153, 7:333, 8:417, 9:224, 10:79}` (`shape-census.txt`). Only the
+  79 shapes with `b=10` are perfect matchings; the other **1157 are the degenerate
+  families**. The n=41 level drew its 308 eligible shapes from all 1236. This is
+  not a formality here: every one of the four shapes that actually attains
+  `t_5 = 40` has `b = 9`, so an enumeration without the degenerate families would
+  have been wrong about k=5 in both directions.
+
+- **What does this code share with `search/gpu_pancyc.py`?** Nothing. The import
+  closure of `search/shapecsp/` is the Python standard library, `networkx`
+  (used only in `verify.py` and the gates, never in the search), `ortools` (used
+  only by `solve.py`, which is not in the k=5 path) and `psutil` (CPU pinning
+  only). No module under `search/` or `search/k6/` is imported, and `bb.c` is
+  self-contained C. The algorithms are not merely separate implementations of the
+  same idea: the GPU program enumerates **chord sets** at a fixed n and evaluates
+  each, while this one enumerates **shapes** (which do not depend on n at all) and
+  solves for integer arc lengths. The only thing crossing the boundary anywhere in
+  this report is *data*, not code -- the 56-vertex chord list read out of
+  `search/k6/witnesses.csv` and the n=66/67 chord lists quoted to me, each of
+  which was then re-verified here from scratch. So there is no shared component
+  for a common-mode error to hide in.
+
+The evidence that this solver is sound is not only the `t_2`/`t_3`/`t_4`
+agreement with CP-SAT. It is the gate suite in section 5, in particular the
+cross-check that the cycle forms reproduce the true cycle-length multiset on 201
+materialised graphs, and the red/green mutation pair showing the gates actually
+fail when the enumeration is broken.
+
+### 4b. Third control: k=3 against GMW13's published hand classification
+
+GMW13 (George, Marr, Wallis 2013) classifies the k=3 case by hand into 14 named
+types -- `AAAi, AAAii, AABi, AABii, AAC, ABBi, ABBii, ABC, ACC, BBBi, BBBii, BBC,
+BCC, CCC`. This enumeration independently produces **14 shapes at k=3**. The
+counts agree, but a coincidence of counts is not a correspondence, so here is
+what was actually checked.
+
+GMW13's labels are a multiset of the three pairwise relations between the three
+chords, over an alphabet `{A,B,C}`: all 10 multisets appear, and exactly 4 of them
+-- `AAA`, `AAB`, `ABB`, `BBB` -- carry a roman-numeral refinement into two
+sub-cases. `10 + 4 = 14`.
+
+Computing the same invariant on my 14 shapes (relation = share an endpoint /
+cross / neither) gives:
+
+```
+AAA x1   AAB x1   AAC x1   ABB x1   ABC x1   ACC x1
+BBB x2   BBC x2   BCC x2   CCC x2                     (A = cross, C = shared endpoint)
+```
+
+All 10 multisets appear and exactly 4 carry two shapes -- the same
+`10 singletons-and-doubletons = 14` structure. Moreover, the four doubled classes
+are in both cases *precisely the four multisets drawn from two of the three
+letters*: mine are the four over `{B,C}`, GMW13's are the four over `{A,B}`. Those
+coincide exactly when GMW13's `C` is the crossing relation. So the agreement is
+structural, not just numerical.
+
+**But it is not verified as a bijection, and must not be written as one.** The
+repository's copy of GMW13 (`papers/GMW13-George-Marr-Wallis-2013.pdf`) is a
+scanned PDF with no text layer -- `pdftotext` yields a 0-byte file and PyMuPDF
+reports 0 characters on page 1 -- so I could not read GMW13's own definitions of
+`A`, `B`, `C` or of the roman numerals. The label list used above is the quotation
+in `papers/REPORT-griffin-method.md`, not the paper. Which letter means "crossing"
+is therefore an assumption, and this is a "could not look", not a "checked and it
+matches". What is established: the cardinalities agree at 14, and the refinement
+structure agrees under one of the two possible readings.
+
 ---
 
 ## 6. k=6: what the method establishes, and where it stops
 
 `t_6` is **not** resolved here. What is established:
 
-### Lower bound: t_6 >= 56, and the shape that achieves it is exhausted
+### Lower bound: t_6 >= 67, from witnesses re-verified here
 
-The 56-vertex witness already in `search/k6/witnesses.csv` was re-verified from
-scratch -- rebuilt as a graph, checked simple, cycles enumerated with `networkx`:
-`C_56 + {(0,2),(0,53),(1,39),(20,39),(39,48),(48,53)}` is pancyclic, 6 chords.
+Three 6-chord witnesses were checked from scratch in this lane -- rebuilt as
+graphs, confirmed to have exactly 6 chords with none duplicating a cycle edge,
+then every cycle enumerated with `networkx` and compared against `[3,n]`:
 
-Its shape is `b = 7`, canonical form `((0,1),(0,3),(0,6),(2,4),(4,5),(5,6))`, with
-57 distinct cycle forms, so its cap is 59. Running that one shape exactly:
+```
+n=56  C_56 + {(0,2),(0,53),(1,39),(20,39),(39,48),(48,53)}   missing=[]  (search/k6/witnesses.csv)
+n=66  C_66 + {(0,2),(0,59),(1,13),(3,60),(4,31),(58,61)}     missing=[]  (from the GPU lane)
+n=67  C_67 + {(0,2),(0,60),(1,13),(3,61),(4,31),(59,62)}     missing=[]  (from the GPU lane)
+```
+
+so **t_6 >= 67**. Only the chord lists crossed from the other lane; the verdicts
+above are this lane's own, computed by `verify.py` against the materialised graph
+rather than through the shape reformulation.
+
+#### The n=66 and n=67 witnesses are the same shape, and it is degenerate
+
+Both reduce to `b = 11` branch points with canonical chord set
+`((0,2),(0,8),(1,5),(3,9),(4,6),(7,10))` -- one shape, not two, with branch point
+0 carrying two chords. It is a degenerate shape (11 branch vertices, not 12), it
+is present in the 21878-shape enumeration, and it has **85 distinct cycle forms,
+so its own cap is 87**. That is a concrete handle the chord-set searches do not
+have: whatever the largest n this shape supports is, it is at most 87, and the
+whole n=66/67 family is one point in shape space rather than two separate finds.
+
+### The shape of the 56-vertex witness is exhausted
+
+The 56-vertex witness has shape `b = 7`, canonical form
+`((0,1),(0,3),(0,6),(2,4),(4,5),(5,6))`, with 57 distinct cycle forms, so its cap
+is 59. Running that one shape exactly:
 
 ```
 n=59: SHAPE 1 UNSAT nodes=727169
@@ -335,7 +443,7 @@ decision over every shape that can still reach that `n`. Completed levels
 (`search/shapecsp/level-k6-n*.txt`, `k6-levels.log`):
 
 ```
-n=110 .. 102  eligible=0                        (killed by cap + Hall alone)
+n=111 .. 102  eligible=0                        (killed by cap + Hall alone)
 n=101         eligible=5   sat=0 gaveup=0     18.1s
 n=100         eligible=8   sat=0 gaveup=0     48.1s
 n= 99         eligible=24  sat=0 gaveup=0    521.6s
@@ -353,14 +461,27 @@ necessary conditions (cap, then Hall). At n=96, for instance, 146 of the 21878
 shapes have a large enough cap and 32 of those survive Hall; the other 21846 are
 refuted without search.
 
-Levels 110 down to 94 are contiguous, so **no C_n plus 6 chords with n >= 94 is
+Levels 111 down to 94 are contiguous, so **no C_n plus 6 chords with n >= 94 is
 pancyclic**, i.e. `t_6 <= 93`.
 
-Levels 93 and 92 were launched and are still running when this report is written;
-they write `search/shapecsp/level-k6-n93.txt` and `-n92.txt` and need no
-supervision. If both land UNSAT the bound becomes `t_6 <= 91`; whatever they say
-is in those files, and an empty file means the level did not finish, not that it
-found nothing.
+#### Coverage audit -- which levels are results and which are holes
+
+The aggregate `k6-levels.log` is not the record: parallel workers interleaved
+writes into it (the n=110 line is spliced into the middle of the n=107 line) and
+it carries a line reading `LEVEL k=6 n=93 NO-OUTPUT` from a level whose process
+was stopped. **The per-level files are the record.** Audited:
+
+| n | status |
+|---|---|
+| 111 .. 102 | UNSAT, `eligible=0` -- decided by the cap and Hall bounds with no search at all |
+| 101 .. 94 | UNSAT, `sat=0 gaveup=0`, every eligible shape decided |
+| 93, 92 | **HOLES.** Started, stopped for the CPU cap before finishing. `level-k6-n93.txt` and `-n92.txt` are 0 bytes. These are UNKNOWN, not UNSAT, and are not counted as coverage anywhere in this report. |
+| 91 and below | not attempted |
+
+The `NO-OUTPUT` line in `k6-levels.log` and the two empty files are exactly the
+failure mode this project has had to relabel INVALID elsewhere, so to be explicit:
+**nothing in the `t_6 <= 93` claim depends on n=93 or n=92.** The claim uses only
+the contiguous block 111..94, all of which have a `LEVEL` line with `gaveup=0`.
 
 The cost is the problem, and it is measured rather than guessed: the level time
 goes 18.1 -> 48.1 -> 521.6 -> 1197.9 -> 2727.1 -> 4682.5 -> 9529.9 seconds from
@@ -381,7 +502,7 @@ patience fixes at this constant factor.
 
 So the k=6 status is an **improved bracket, not an exact value**:
 
-    56  <=  t_6  <=  93
+    67  <=  t_6  <=  93
 
 with both ends established here: the lower end by re-verifying the existing
 witness against the real graph, the upper end by 17 contiguous exhaustive levels
@@ -392,8 +513,9 @@ the sweep takes it to 95.
 
 Two further partial results, each with its cap declared:
 
-- **The best known shape is closed.** As above, the shape of the 56-vertex witness
-  is UNSAT at 57, 58 and 59 -- its whole range above 56 -- so it is exhausted.
+- **The 56-vertex witness's shape is closed.** As above, it is UNSAT at 57, 58 and
+  59 -- its whole range above 56 -- so 56 is that shape's exact maximum. (It has
+  since been overtaken: the n=66/67 witnesses live on a different, larger shape.)
 - **Low-cap shapes, partially.** `capscan.py 6 56 62` decides shapes whose cap lies
   in `(56, 62]`, at every n from their cap down to 57. It was stopped for CPU
   before finishing: **the first 750 of those 4059 shapes, in enumeration order,
