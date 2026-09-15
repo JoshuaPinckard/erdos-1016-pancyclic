@@ -17,7 +17,9 @@ Code added under `search/shapecsp/`. Nothing under `search/k6/` was modified.
 | solver soundness | false-negative control passes on all seven witness shapes; red/green gate mutation pair; 201-graph cross-check of the reformulation against `networkx` ground truth |
 | k=3 vs GMW13 | 14 shapes vs 14 published types; the refinement structure matches too, but a type-for-type bijection is **not verified** (section 4b) |
 | shapes | 3 / 14 / 103 / 1236 / 21878 for k = 2..6, of which 1 / 9 / 86 / 1157 / **21324** are the degenerate families |
-| costliest finding | the perfect-matching-only shape model returns the **wrong** maximum: 22 instead of `t_4 = 24`, 37 instead of `t_5 = 40` |
+| costliest finding | an earlier revision of section 0 claimed `t_6 <= 93` was established by **level n=94 alone**. A two-line k=2 command refutes that reading of a level; the bound is unchanged but rests on the **contiguous block n=94..111**, every level of which is load-bearing (section 0a) |
+| costliest modelling finding | the perfect-matching-only shape model returns the **wrong** maximum: 22 instead of `t_4 = 24`, 37 instead of `t_5 = 40` |
+| result integrity | the four review defects in `level.py`/`satcheck.py` are repaired, the six contract tests pass, and all four gates are mutation-checked RED/GREEN. Three of those tests were **vacuous** after the repair and were strengthened (section 0a) |
 
 ---
 
@@ -41,16 +43,230 @@ patches in this report now assert their anchor and refuse to write a no-op.
 
 **Effect on the conclusions: none, and they are stronger than stated.**
 
-- `t_6 <= 93` holds. It is in fact established by the single level at n=94 on its
-  own; levels 95..111 are redundant confirmations of it.
-- `t_5 <= 40` and `h(41) > 5` hold a fortiori, for the same reason.
-- The eligibility argument still closes. Hall's condition at `n0` is a *necessary*
-  condition for feasibility at `n0`, so any shape feasible at some `n0` was
-  eligible at the level whose cutoff is `n0`, and that level returned UNSAT for
-  it.
+- `t_6 <= 93` holds -- but **on the contiguous block n=94..111, not on level 94
+  alone.** An earlier revision of this section claimed the single level at n=94
+  established it and that 95..111 were redundant. That claim is false and is
+  withdrawn; see section 0a, finding 1, for the measured counterexample.
+- `t_5 <= 40` and `h(41) > 5` hold, on the same contiguous-block reading.
+- The eligibility argument closes only over a block. Hall's condition at `n0` is a
+  *necessary* condition for feasibility at `n0`, so any shape feasible at `n0` is
+  eligible **at the level whose cutoff is exactly `n0`** -- but it need not be
+  eligible at any lower cutoff, because Hall at the cutoff is not monotone in n.
+  So a shape feasible at some `n0 >= 94` is caught by the level at `n0`, and every
+  such level from 94 to the largest cap 111 has returned UNSAT with `gaveup=0`.
+  Drop any level from that range and the argument no longer closes.
 - No reported number is wrong. SAT lines were only ever emitted at k=2,3,4 and at
   k=5 n=40, and every one of those witnesses was independently materialised and
   confirmed to have exactly the stated `n`.
+
+---
+
+## 0a. Result-integrity gates: what they now stop, and the two defects found holding them
+
+This section is the record of the integrity lane (Worker 13, 2026-09-15), taking
+the four defects an independent review (Builder `c3a46073`) found in `level.py`
+and `satcheck.py`. Its own costliest finding is not one of those four.
+
+### Finding 1 (costliest) -- this report asserted a bound argument that a two-line command refutes
+
+Section 0 above previously read:
+
+> `t_6 <= 93` holds. It is in fact established by the single level at n=94 on its
+> own; levels 95..111 are redundant confirmations of it.
+
+**That is false.** `t_6 <= 93` is the only upper bound on `t_6` in this report, so
+the sentence overstated the strength of the evidence for the paper's single k=6
+conclusion. It is withdrawn above.
+
+The claim rests on reading `sat=0` at cutoff `n` as "no shape reaches any value
+`>= n`". Eligibility is decided **at the cutoff** by cap and then Hall, and Hall at
+the cutoff is *not monotone in n*: a shape can fail Hall at cutoff `n`, never be
+searched at that level, and still be feasible at some larger `n0`. Measured, at
+k=2 where the whole space is three shapes:
+
+```
+$ python level.py 2 3 1000000
+LEVEL k=2 n=3 shapes=3 eligible=0 sat=0 gaveup=0 search_seconds=0.0 total_seconds=0.0
+
+$ python level.py 2 8 1000000
+   SAT n=8 (cutoff 8) b=3 chords=((0, 1), (0, 2)) arcs=2,3,3 VERIFIED [(0, 2), (0, 5)] -> pancyclic
+   SAT n=8 (cutoff 8) b=4 chords=((0, 1), (2, 3)) arcs=2,1,3,2 VERIFIED [(0, 2), (3, 6)] -> pancyclic
+   SAT n=8 (cutoff 8) b=4 chords=((0, 2), (1, 3)) arcs=1,1,2,4 VERIFIED [(0, 2), (1, 4)] -> pancyclic
+LEVEL k=2 n=8 shapes=3 eligible=3 sat=3 gaveup=0 search_seconds=0.0 total_seconds=0.0
+```
+
+The level at cutoff 3 is a clean `sat=0 gaveup=0` with nothing abandoned, yet
+three shapes reach n=8 >= 3, each independently materialised and confirmed
+pancyclic. A single clean level therefore does not exclude larger n.
+
+**The bound itself survives, unchanged at `t_6 <= 93`**, because the levels were
+actually run as a contiguous block: 111..102 with `eligible=0`, then 101..94 with
+`sat=0 gaveup=0` (table in section 7). A shape feasible at any `n0` in 94..111 is
+eligible at the level whose cutoff is exactly `n0`, and that level refuted it.
+What changes is that **every** level in 94..111 is load-bearing; none is
+redundant. The coverage audit later in this report already stated the block
+reading correctly -- section 0 contradicted it, and section 0 was the wrong one.
+
+`level.py`'s docstring now carries the rule it has to enforce: *"A single `sat=0`
+level therefore does NOT establish 'no shape reaches any value >= n'. ... Cite the
+block, never a single level."*
+
+This also bounds a claim nobody has made yet: n=93 and n=92 are 0-byte holes, so
+the descent below 93 has no coverage at all, and one UNSAT level at 93 alone would
+not tighten the bound to 92 either -- that needs 93 joined onto the block.
+
+### Finding 2 -- the four repaired gates were live, and the tests holding them were vacuous
+
+The six contract tests pass against the repaired code. That was not evidence,
+because three of them passed *with the gate deleted*.
+
+`level.py`'s repair ends every path in `sys.exit(...)`, including the clean one
+(`sys.exit(1 if gu else 0)`). The reviewer's harness classifies the run by
+exception:
+
+```python
+    except (ValueError, RuntimeError, subprocess.CalledProcessError, SystemExit):
+        return output.getvalue(), True          # "rejected"
+```
+
+so after the repair **every** run returned `rejected=True`, and each assertion of
+the form `assertTrue(rejected or not re.search(...))` was unconditionally true.
+The mutation check caught it: disabling the non-zero-exit gate outright left the
+test green.
+
+```
+BROKEN level.py rejects a non-zero solver exit
+         mutant  'if p.returncode != 0:' -> 'if False:  # MUTANT: gate disabled'
+         RED     test_nonzero_solver_exit_cannot_certify_zero_sat_zero_gaveup  exit=0  OK
+```
+
+Fixed in the harness, not in the assertions -- the reviewer's six assertions are
+unchanged, byte for byte:
+
+```python
+    except SystemExit as e:
+        # A clean level ends in sys.exit(0), so treating EVERY SystemExit as a
+        # rejection made all three level.py contracts below vacuously true: they
+        # passed with the gates deleted.  Only a non-zero status is a rejection.
+        return output.getvalue(), bool(e.code)
+```
+
+Direct probe of the repaired `level.py` behind the harness, confirming the gates
+themselves were always correct and only their tests were blind:
+
+```
+child exit 23, 3 valid UNSAT : SystemExit(1)  "LEVEL k=2 n=8 FAILED -- solver exited 23 ..."
+child exit 0, empty output   : SystemExit(1)  "LEVEL k=2 n=8 FAILED -- 3 of 3 eligible shapes produced no terminal record ..."
+invalid SAT witness          : SystemExit(1)  "LEVEL k=2 n=8 FAILED -- shape 1 ...: verify.check REJECTS the materialised graph: n=8 missing [6]"
+CLEAN run, all UNSAT         : SystemExit(0)  "LEVEL k=2 n=8 shapes=3 eligible=3 sat=0 gaveup=0 ..."
+```
+
+### The six contract tests
+
+`search/shapecsp/test_review_contracts.py`, run by me on the repaired tree:
+
+```
+Ran 6 tests in 1.561s
+
+OK
+```
+
+Positive control -- the same strengthened harness against the **pre-fix**
+`level.py` and `satcheck.py` read out of `HEAD` (no checkout; the blobs were
+written in, run, and restored byte-for-byte):
+
+```
+FAIL: test_invalid_witness_is_not_reported_as_sat
+AssertionError: False is not true :    SAT n=8 (cutoff 8) b=3 chords=((0, 1), (0, 2)) arcs=2,2,4
+FAIL: test_missing_results_cannot_certify_zero_sat_zero_gaveup
+AssertionError: False is not true : LEVEL k=2 n=8 shapes=3 eligible=3 sat=0 gaveup=0 ...
+FAIL: test_nonzero_solver_exit_cannot_certify_zero_sat_zero_gaveup
+AssertionError: False is not true : LEVEL k=2 n=8 shapes=3 eligible=3 sat=0 gaveup=0 ...
+FAIL: test_satcheck_budget_failure_has_nonzero_exit
+AssertionError: 0 == 0 : n=56 b=7 cap=59: INCONCLUSIVE -- node budget hit  [0.8s]
+Ran 6 tests in 1.875s
+FAILED (failures=4)
+restored: OK
+```
+
+Four failures, matching the four the review reported, and the same suite is green
+on the repaired code. The suite discriminates.
+
+### Mutation check of the four gates
+
+`search/shapecsp/mutation-check.py`. Its log is `*.log` and therefore gitignored, so
+the full output is quoted below and is reproduced by running the script.
+Each gate is disabled by an exact substitution whose anchor must occur exactly
+once, the covering test must go RED **with `failures=1`**, the file is restored
+from a byte copy and the test must report `OK`. An `errors=1` RED is reported as
+BROKEN, not as a pass: a mutant that crashes stops the test for a reason unrelated
+to the gate, so the gate's real protection would go untested. The mutants
+reproduce the original defects rather than deleting an `if` -- for the
+missing-record gate, deleting the `if` alone dies on `KeyError`, which proves only
+that crashing is fail-closed, so that mutant also reverts the reporting loop to
+`for i in sorted(recs)`.
+
+```
+OK     level.py rejects a non-zero solver exit
+         mutant  'if p.returncode != 0:' -> 'if False:  # MUTANT: gate disabled'
+         RED     test_nonzero_solver_exit_cannot_certify_zero_sat_zero_gaveup  exit=1  FAILED (failures=1)
+         GREEN   test_nonzero_solver_exit_cannot_certify_zero_sat_zero_gaveup  exit=0  OK
+OK     level.py rejects a missing terminal record
+         mutant  'if missing:' -> 'if False:  # MUTANT: gate disabled'
+         mutant  'for i in range(1, len(elig) + 1):' -> 'for i in sorted(recs):  # MUTANT: report only what came back'
+         RED     test_missing_results_cannot_certify_zero_sat_zero_gaveup  exit=1  FAILED (failures=1)
+         GREEN   test_missing_results_cannot_certify_zero_sat_zero_gaveup  exit=0  OK
+OK     level.py rejects a SAT the graph checker refuses
+         mutant  'got, why = V.check_record(line, b, ch, lows, cap, n)' -> "# MUTANT: take the solver's SAT claim without the independen"
+         RED     test_invalid_witness_is_not_reported_as_sat  exit=1  FAILED (failures=1)
+         GREEN   test_invalid_witness_is_not_reported_as_sat  exit=0  OK
+OK     satcheck.py's exit status carries its verdict
+         mutant  'sys.exit(0 if not fails else 1)' -> 'sys.exit(0)  # MUTANT: gate disabled'
+         RED     test_satcheck_budget_failure_has_nonzero_exit  exit=1  FAILED (failures=1)
+         GREEN   test_satcheck_budget_failure_has_nonzero_exit  exit=0  OK
+
+MUTATION CHECK: 4/4 gates went RED (failures=1) when disabled and GREEN when restored
+```
+
+`level.py` and `satcheck.py` were verified byte-identical to their pre-mutation
+copies afterwards (`sha256sum -c`: `level.py: OK`, `satcheck.py: OK`).
+
+### What the four repaired gates now refuse
+
+| review defect | repaired behaviour | symbol |
+|---|---|---|
+| non-zero-exit child accepted as `sat=0` | `LEVEL ... FAILED -- solver exited N`, exit 1 | `level.py` `fail` |
+| empty output accepted as `sat=0` | `... produced no terminal record; an incomplete run is UNKNOWN, not sat=0`, exit 1 | `level.py` `missing` |
+| SAT accepted though the graph checker rejects it | `verify.check REJECTS the materialised graph`, exit 1 | `verify.py` `check_record` |
+| `satcheck.py` prints FAILED, exits 0 | exit status carries the verdict | `satcheck.py` `sys.exit(0 if not fails else 1)` |
+
+`check_record` re-derives arc count, lower bounds, sum, the `[cutoff, cap]` range
+and then materialises the graph through `verify.check`; it returns
+`(result, None)` or `(None, why)` so a rejection cannot be unpacked as a witness.
+`hunt.py` routes every SAT through the same function and treats a refused SAT as a
+solver defect that stops the run.
+
+### Not done, and why -- named rather than left to inference
+
+- **`lastarc.patch` differential: UNKNOWN to me.** The patch is already applied in
+  `search/shapecsp/bb.c` (`int first = (d == b - 1) ? lo[i] + slack : lo[i];`),
+  desktop and laptop byte-identical after newline normalisation. Another agent was
+  running the `bb-orig` vs `bb-new` differential on the laptop while I worked
+  (`difftest.py`, `diffrun.sh`, `difftest-laptop.log`, started 00:26:39). I did
+  not run it and I am not reporting its result. This is "could not look without
+  colliding", not "nothing there".
+- **k=2/3/4 control after the patch: not re-run by me**, same reason.
+- **Range-mode descent from n=93: not started.** I deliberately left the laptop
+  alone. A second agent was mid-build there, and the box was at load average
+  22.61 on 16 cores; adding an 11-worker descent would have slowed the hunt, that
+  differential and two other trees at once. Changing the hunt's worker count is
+  also no longer free: it costs a restart, and only `hunt.py`'s new
+  `hunt-k6-n68-exact.done` resume file keeps that from discarding decided shapes.
+- **n=68 exact hunt: running and healthy, not finished.** Observed 00:28:51
+  local: `# 20/6059 elapsed=613s rate=0.033 shapes/s projected_total=51.6h
+  gaveup=0 errors=0`, 5 workers at nice 10, no SAT yet. **There is no verified
+  witness at n >= 68 to report.**
+
 
 **What was wrong and is now fixed:** `level.py` labelled SAT lines with the
 requested cutoff instead of the `n` `bb.exe` returned; `bb.c` did not document its

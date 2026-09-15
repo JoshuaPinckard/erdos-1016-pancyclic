@@ -1,11 +1,18 @@
 """False-negative control: the solver MUST return SAT on the shape of every known
 witness, at that witness's own n.  `python satcheck.py [nodecap]`
 
-bb.exe treats its n argument as a lower cutoff and returns the largest feasible
-value >= it, so the pass condition is "SAT at some n >= the witness's n", and the
-value it returns is printed rather than assumed.  If any line comes back UNSAT,
-the solver has a false negative and every sat=0 level it has produced is void.  Runs the cases one at a time in a single process
-pinned to one core at BelowNormal.  A GAVEUP is inconclusive, not a pass.
+bb treats its n argument as a lower cutoff and returns the largest feasible value
+>= it, so the pass condition is "SAT at some n >= the witness's n", and the value
+it returns is printed rather than assumed.  If any line comes back UNSAT, the
+solver has a false negative and every sat=0 level it has produced is void.  Runs
+the cases one at a time in a single process pinned to one core at BelowNormal.
+A GAVEUP is inconclusive, not a pass.
+
+Every SAT goes through verify.check_record, so a witness is accepted only after
+its graph has been materialised and tested outside the reformulation.  The exit
+status carries the verdict: 0 only when every case PASSED, non-zero for any
+failure, inconclusive case or execution error, so a gate that reads the exit code
+sees the same answer as a reader of the summary line.
 """
 from __future__ import annotations
 import os, subprocess, sys, time
@@ -60,15 +67,17 @@ for n, b, ch in CASES:
     out = p.communicate(payload)[0].strip()
     dt = round(time.time() - t, 1)
     if " SAT " in out:
-        # bb.exe returns the LARGEST feasible n >= the cutoff, so got >= n is the pass
-        got = int(out.split()[3].split("=")[1])
-        arcs = [int(x) for x in out.split()[4].split("=")[1].split(",")]
-        ok, nn, chE, why = V.check(b, ch, arcs)
-        good = ok and nn == got and got >= n
-        print(f"n={n} b={b} cap={cap}: {'PASS' if good else 'BAD'} SAT at n={got} "
-              f"arcs={arcs} sum={sum(arcs)} -> {why}  [{dt}s]", flush=True)
-        if not good:
+        # bb returns the LARGEST feasible n >= the cutoff, so got >= n is the pass.
+        # check_record re-derives the whole record: arc count, lower bounds, sum,
+        # range, and the materialised graph.
+        got, why = V.check_record(out, b, ch, lows, cap, n)
+        if why is not None:
+            print(f"n={n} b={b} cap={cap}: BAD SAT -- {why}  [{dt}s]", flush=True)
             fails.append(n)
+        else:
+            nv, arcs, chE, expl = got
+            print(f"n={n} b={b} cap={cap}: PASS SAT at n={nv} arcs={arcs} "
+                  f"sum={sum(arcs)} -> {expl}  [{dt}s]", flush=True)
     elif "GAVEUP" in out:
         print(f"n={n} b={b} cap={cap}: INCONCLUSIVE -- node budget hit  [{dt}s]", flush=True)
         fails.append(n)
@@ -79,3 +88,6 @@ for n, b, ch in CASES:
 print()
 print("SATCHECK: all witness shapes returned SAT" if not fails
       else f"SATCHECK FAILED at n={fails}")
+# The exit status must agree with the line above: a gate that only reads the code
+# would otherwise treat a false negative as a pass.
+sys.exit(0 if not fails else 1)

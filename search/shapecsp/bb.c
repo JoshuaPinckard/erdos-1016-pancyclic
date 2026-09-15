@@ -125,7 +125,11 @@ static int dfs(int d, int used)
     if (!matchable(lov, hiv)) return 0;
     if (d == b) return slack == 0;
     int i = order[d];
-    for (int v = lo[i]; v <= lo[i] + slack; v++) {
+    /* Last arc: sum(a) == nn fixes its value at lo[i] + slack, since every other
+     * arc is assigned.  Smaller values reach depth b with slack > 0, where the
+     * leaf test rejects them, so skipping them removes no solution. */
+    int first = (d == b - 1) ? lo[i] + slack : lo[i];
+    for (int v = first; v <= lo[i] + slack; v++) {
         a[i] = v;
         for (int f = 0; f < m; f++) {
             if (inA[f][i]) sumA[f] += v; else sumB[f] += v;

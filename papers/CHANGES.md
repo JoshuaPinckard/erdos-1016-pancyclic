@@ -289,3 +289,44 @@ through `search/verify.py` in this revision; the output is
    accordingly. Not changed: every $n\le41$ value, every Lean statement,
    Section 3.4, and the $M(k)$ table (which Section 3.5 now notes the shape
    census reproduces).
+
+## 2026-09-15 -- shape/CSP result integrity (Worker 13)
+
+6. **The `t_6 <= 93` justification corrected** (`REPORT-shape-csp.md` section 0,
+   new section 0a). Section 0 claimed the bound was "established by the single
+   level at n=94 on its own; levels 95..111 are redundant confirmations of it".
+   That is withdrawn. Eligibility is decided *at the cutoff* by cap and Hall, and
+   Hall at the cutoff is not monotone in $n$, so a clean `sat=0 gaveup=0` level at
+   cutoff $n$ does not exclude larger $n$. Measured counterexample at $k=2$:
+   `level.py 2 3` reports `eligible=0 sat=0 gaveup=0` while `level.py 2 8` returns
+   three independently verified SAT shapes at $n=8$. **The bound is unchanged at
+   $t_6 \le 93$**; what changes is that it rests on the contiguous block
+   $n=94..111$ and every level in it is load-bearing. The coverage audit in
+   section 7 already said this; section 0 contradicted it.
+
+7. **Four result-integrity defects repaired and their gates mutation-checked.**
+   From the independent review by Builder `c3a46073`: a non-zero-exit child
+   accepted as `sat=0`; empty child output accepted as `sat=0`; a SAT accepted
+   although `verify.check` rejects the materialised graph; and `satcheck.py`
+   printing `SATCHECK FAILED` while exiting 0. `level.py` now requires a zero
+   exit, exactly one terminal record per eligible shape, and `verify.check_record`
+   acceptance for every SAT, failing closed with `LEVEL ... FAILED` and a non-zero
+   status; `satcheck.py`'s exit status carries its verdict. The reviewer's six
+   contract tests are in `search/shapecsp/test_review_contracts.py` and pass;
+   `search/shapecsp/mutation-check.py` disables each gate in turn and records
+   `4/4 gates went RED (failures=1) when disabled and GREEN when restored`.
+
+8. **Three of those six contract tests were vacuous and were strengthened.** The
+   repair made `level.py` exit through `sys.exit` on every path including the
+   clean one, and the reviewer's harness counted *any* `SystemExit` as a
+   rejection, so `assertTrue(rejected or ...)` became unconditionally true: the
+   tests passed with the gates deleted. Only the harness changed -- the six
+   assertions are byte-identical to the reviewer's -- and the strengthened suite
+   reproduces exactly the reviewer's four failures against the pre-fix `HEAD`
+   blobs while staying green on the repaired code.
+
+9. **Not established here, and stated as such:** the `lastarc.patch` differential
+   and the post-patch $k=2/3/4$ control were being run on the laptop by another
+   agent and are not reported by this lane; the range-mode descent below $n=93$
+   was not started; and the $n=68$ exact hunt was still running
+   (`20/6059, gaveup=0, errors=0`) with **no witness at $n \ge 68$ found**.
