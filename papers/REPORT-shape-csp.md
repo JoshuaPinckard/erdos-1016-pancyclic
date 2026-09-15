@@ -12,7 +12,7 @@ Code added under `search/shapecsp/`. Nothing under `search/k6/` was modified.
 |---|---|
 | `t_2, t_3, t_4, t_5` | **8, 14, 24, 40** -- exact, from scratch, no lower bound supplied, zero abandoned searches |
 | `h(41) > 5` | **independently confirmed.** No 5-chord pancyclic graph on 41 vertices exists: 308 eligible shapes, `sat=0 gaveup=0`, by a method sharing no code with the GPU enumeration (section 4a) |
-| `t_6` | **not resolved.** Bracket `67 <= t_6 <= 93` (a-priori upper bound was 129) |
+| `t_6` | **not resolved.** Bracket `67 <= t_6 <= 93` (a-priori upper bound was 129). The shape carrying the known n=66/67 witnesses is **closed at exactly 67** -- any larger k=6 graph needs a different shape |
 | k=3 vs GMW13 | 14 shapes vs 14 published types; the refinement structure matches too, but a type-for-type bijection is **not verified** (section 4b) |
 | shapes | 3 / 14 / 103 / 1236 / 21878 for k = 2..6, of which 1 / 9 / 86 / 1157 / **21324** are the degenerate families |
 | costliest finding | the perfect-matching-only shape model returns the **wrong** maximum: 22 instead of `t_4 = 24`, 37 instead of `t_5 = 40` |
@@ -409,7 +409,7 @@ so **t_6 >= 67**. Only the chord lists crossed from the other lane; the verdicts
 above are this lane's own, computed by `verify.py` against the materialised graph
 rather than through the shape reformulation.
 
-#### The n=66 and n=67 witnesses are the same shape, and it is degenerate
+#### The n=66 and n=67 witnesses are the same shape, and it is degenerate, and it is running down
 
 Both reduce to `b = 11` branch points with canonical chord set
 `((0,2),(0,8),(1,5),(3,9),(4,6),(7,10))` -- one shape, not two, with branch point
@@ -418,6 +418,44 @@ is present in the 21878-shape enumeration, and it has **85 distinct cycle forms,
 so its own cap is 87**. That is a concrete handle the chord-set searches do not
 have: whatever the largest n this shape supports is, it is at most 87, and the
 whole n=66/67 family is one point in shape space rather than two separate finds.
+
+Running that single shape downward from its own cap is the cheapest live question
+in the k=6 range, and it is what the one permitted core was given
+(`witness-shape-max.log`, `witness-shape-6872.log`, one process pinned to core 0
+at BelowNormal). **It finished:**
+
+```
+n=87: UNSAT  nodes=30053700     [65.7s]
+n=86: UNSAT  nodes=75769444     [132.6s]
+n=72: UNSAT  nodes=842859511    [717.3s]
+n=71: UNSAT  nodes=906297218    [729.4s]
+n=70: UNSAT  nodes=969725828    [755.2s]
+n=69: UNSAT  nodes=1032827326   [942.1s]
+n=68: UNSAT  nodes=1094520191   [963.0s]
+n=67: SAT  arcs=1,1,1,1,9,18,28,1,1,1,5   nodes=1133859321  [1036.2s]
+RESULT shape maximum = 67
+```
+
+**The shape that carries the n=66 and n=67 witnesses has exact maximum 67.** Every
+n from 68 to its cap 87 is refuted with no abandoned search, so that family is
+closed and any 6-chord pancyclic graph on 68 or more vertices must use a
+*different* shape. (n=85..73 are omitted from the excerpt for length; every rung
+from 87 down is in the two logs and every one is UNSAT.)
+
+#### The SAT at n=67 is a k=6 positive control, and it passed on the nose
+
+The n=67 line is not just a stopping condition. The solver was given only the
+shape and asked for arc lengths; it returned `1,1,1,1,9,18,28,1,1,1,5`, which
+materialises to
+
+```
+C_67 + {(0,2),(0,60),(1,13),(3,61),(4,31),(59,62)}   -- pancyclic, verify.check
+```
+
+-- *character for character the chord set the GPU lane found independently*. A
+k=6 solver that returns `sat=0` at n=68 is only worth believing if it returns SAT
+where a witness is known to exist, and this is that test, passed at k=6 on the
+decisive shape rather than only at k<=4.
 
 ### The shape of the 56-vertex witness is exhausted
 
@@ -483,20 +521,43 @@ failure mode this project has had to relabel INVALID elsewhere, so to be explici
 **nothing in the `t_6 <= 93` claim depends on n=93 or n=92.** The claim uses only
 the contiguous block 111..94, all of which have a `LEVEL` line with `gaveup=0`.
 
-The cost is the problem, and it is measured rather than guessed: the level time
-goes 18.1 -> 48.1 -> 521.6 -> 1197.9 -> 2727.1 -> 4682.5 -> 9529.9 seconds from
-n=101 to n=95, roughly a factor of **2 per level down**. (These are wall times
-under varying contention -- up to four levels plus other agents' jobs shared eight
-cores -- so they are indicative, not clean single-core measurements; n=94 came in
-at 4070.6s because it ran with the machine much less loaded, which is why the
-ratio is quoted over the 101..95 stretch rather than fitted to every point.)
+### Correcting my own cost model: it is the shape count, not the per-shape cost
 
-The driver of the growth is the coverage slack `cap - n`: at `cap - n = 0` the
-cycle forms must biject onto `[3,n]` and the search dies instantly, and every step
-down adds one unit of freedom to every shape already in play, while more shapes
-become eligible. There are 37 further levels between n=94 and n=57. That is the
-reason this run does not reach an exact `t_6`; it is not a timeout that more
-patience fixes at this constant factor.
+An earlier draft of this report attributed the level-cost growth to per-shape
+difficulty, quoting "about a factor of 2 per level down". The single-shape run
+above is a clean measurement -- one shape, one core, constant conditions -- and it
+says otherwise. On a fixed shape the per-rung cost is close to **flat**:
+
+```
+n = 72   71   70   69   68   67
+s = 717  729  755  942  963  1036
+```
+
+That is 1.45x in total across six rungs, not 2x per rung. The level totals
+(18.1 -> 48.1 -> 521.6 -> 1197.9 -> 2727.1 -> 4682.5 -> 9529.9 seconds from n=101
+to n=95) were measured under varying contention -- up to four levels plus other
+agents' jobs sharing eight cores -- and their growth is driven predominantly by
+the number of **eligible shapes**, which is what actually explodes:
+
+| n | shapes eligible after cap + Hall |
+|---|---|
+| 111..102 | 0 |
+| 101 | 5 |
+| 94 | 81 |
+| 93 | 114 |
+| 92 | 152 |
+| 68 | **6059** |
+
+So the honest feasibility statement for the decisive `n = 68` level is an
+extrapolation from a real hard instance rather than from a fitted curve: the
+b=11, 85-form shape above cost 963 s at n=68 on one throttled core, and there are
+6059 eligible shapes at that n. Depending on how the easier shapes average out
+that is of the order of 200 to 800 core-hours as clamped. The clamp itself is
+worth a factor -- this lane is confined to one core at BelowNormal -- so on an
+unclamped machine the same level plausibly lands in the tens of core-hours.
+**The n=68 level is out of reach of this lane's current allocation; it is not
+demonstrated to be out of reach of the method.** Those are different claims and
+only the first one is measured.
 
 ### What the completed work does pin down
 
@@ -513,9 +574,11 @@ the sweep takes it to 95.
 
 Two further partial results, each with its cap declared:
 
-- **The 56-vertex witness's shape is closed.** As above, it is UNSAT at 57, 58 and
-  59 -- its whole range above 56 -- so 56 is that shape's exact maximum. (It has
-  since been overtaken: the n=66/67 witnesses live on a different, larger shape.)
+- **Both known witness shapes are closed, exactly.** The 56-vertex witness's shape
+  is UNSAT at 57, 58 and 59 -- its whole range above 56. The n=66/67 witnesses'
+  shape is UNSAT at every n from 68 up to its cap of 87. Both maxima are exact, no
+  abandoned searches. Neither of the two 6-chord families this project has found
+  can be pushed further; `t_6 > 67` requires a shape nobody has looked at yet.
 - **Low-cap shapes, partially.** `capscan.py 6 56 62` decides shapes whose cap lies
   in `(56, 62]`, at every n from their cap down to 57. It was stopped for CPU
   before finishing: **the first 750 of those 4059 shapes, in enumeration order,

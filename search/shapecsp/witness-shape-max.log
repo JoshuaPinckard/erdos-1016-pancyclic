@@ -1,0 +1,4 @@
+pinned to core 0 at BelowNormal
+shape b=11 chords=((0, 2), (0, 8), (1, 5), (3, 9), (4, 6), (7, 10)) forms=85 cap=87
+n=87: SHAPE 1 UNSAT nodes=30053700  [65.7s]
+n=86: SHAPE 1 UNSAT nodes=75769444  [132.6s]

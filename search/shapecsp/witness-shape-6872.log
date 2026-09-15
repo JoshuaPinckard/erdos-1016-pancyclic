@@ -1,0 +1,9 @@
+pinned to core 0 at BelowNormal
+shape b=11 chords=((0, 2), (0, 8), (1, 5), (3, 9), (4, 6), (7, 10)) forms=85 cap=87
+n=72: SHAPE 1 UNSAT nodes=842859511  [717.3s]
+n=71: SHAPE 1 UNSAT nodes=906297218  [729.4s]
+n=70: SHAPE 1 UNSAT nodes=969725828  [755.2s]
+n=69: SHAPE 1 UNSAT nodes=1032827326  [942.1s]
+n=68: SHAPE 1 UNSAT nodes=1094520191  [963.0s]
+n=67: SHAPE 1 SAT n=67 arcs=1,1,1,1,9,18,28,1,1,1,5 nodes=1133859321  [1036.2s]
+RESULT shape maximum = 67
