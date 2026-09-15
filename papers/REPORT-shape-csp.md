@@ -19,6 +19,7 @@ Code added under `search/shapecsp/`. Nothing under `search/k6/` was modified.
 | shapes | 3 / 14 / 103 / 1236 / 21878 for k = 2..6, of which 1 / 9 / 86 / 1157 / **21324** are the degenerate families |
 | costliest finding | an earlier revision of section 0 claimed `t_6 <= 93` was established by **level n=94 alone**. A two-line k=2 command refutes that reading of a level; the bound is unchanged but rests on the **contiguous block n=94..111**, every level of which is load-bearing (section 0a) |
 | costliest modelling finding | the perfect-matching-only shape model returns the **wrong** maximum: 22 instead of `t_4 = 24`, 37 instead of `t_5 = 40` |
+| solver optimisation | the review's `lastarc` patch is applied and shown answer-preserving where it counts: **1406 record comparisons across two builds, zero disagreements**, 1099 SAT witnesses re-materialised; `sweep.py` carried the same defect family the review found in the other two drivers (section 5c) |
 | result integrity | the four review defects in `level.py`/`satcheck.py` are repaired, the six contract tests pass, and all four gates are mutation-checked RED/GREEN. Three of those tests were **vacuous** after the repair and were strengthened (section 0a) |
 
 ---
@@ -248,24 +249,24 @@ solver defect that stops the run.
 
 ### Not done, and why -- named rather than left to inference
 
-- **`lastarc.patch` differential: UNKNOWN to me.** The patch is already applied in
-  `search/shapecsp/bb.c` (`int first = (d == b - 1) ? lo[i] + slack : lo[i];`),
-  desktop and laptop byte-identical after newline normalisation. Another agent was
-  running the `bb-orig` vs `bb-new` differential on the laptop while I worked
-  (`difftest.py`, `diffrun.sh`, `difftest-laptop.log`, started 00:26:39). I did
-  not run it and I am not reporting its result. This is "could not look without
-  colliding", not "nothing there".
-- **k=2/3/4 control after the patch: not re-run by me**, same reason.
+- **`lastarc.patch` differential: DONE, in the lane that was holding it.** Results
+  in section 5c below -- 1406 record comparisons across two builds, zero
+  disagreements, 1099 SAT witnesses independently materialised and checked.
+- **k=2/3/4 control after the patch: DONE on both machines**, section 5c.
 - **Range-mode descent from n=93: not started.** I deliberately left the laptop
   alone. A second agent was mid-build there, and the box was at load average
   22.61 on 16 cores; adding an 11-worker descent would have slowed the hunt, that
   differential and two other trees at once. Changing the hunt's worker count is
   also no longer free: it costs a restart, and only `hunt.py`'s new
   `hunt-k6-n68-exact.done` resume file keeps that from discarding decided shapes.
-- **n=68 exact hunt: running and healthy, not finished.** Observed 00:28:51
-  local: `# 20/6059 elapsed=613s rate=0.033 shapes/s projected_total=51.6h
-  gaveup=0 errors=0`, 5 workers at nice 10, no SAT yet. **There is no verified
-  witness at n >= 68 to report.**
+- **n=68 exact hunt: running and healthy, not finished.** Restarted 00:32 local on
+  the patched `bb`, resuming the 24 shapes already decided from
+  `hunt-k6-n68-exact.done`; observed 00:35:07 local `# 30/6059 elapsed=193s
+  rate=0.031 shapes/s projected_total=53.8h gaveup=0 errors=0`, 5 workers at
+  nice 10, every decided record so far UNSAT. **There is no verified witness at
+  n >= 68 to report**, and none of the 6059 is decided by anything except a
+  completed solver run -- the hunt records only SAT and UNSAT to its `.done` file,
+  so a GAVEUP or an execution error is retried rather than counted.
 
 
 **What was wrong and is now fixed:** `level.py` labelled SAT lines with the
@@ -561,6 +562,88 @@ the code rather than the other way round: the gate originally asserted that
 dropping the degenerate families loses `t_k` for k=3 as well. It does not -- the
 `b=6` family reaches 14 too. The gate now asserts the measured values (14 and 22)
 and the loss claim only where it holds, k=4.
+
+### 5c. The `lastarc` optimisation, its differential, and the controls after it
+
+The independent review supplied one optimisation (`lastarc.patch`): when only the
+final arc is unassigned, `sum(a) = n` fixes its value, so the loop can start at
+`lo[i] + slack` instead of `lo[i]`.
+
+```c
+    /* Last arc: sum(a) == nn fixes its value at lo[i] + slack, since every other
+     * arc is assigned.  Smaller values reach depth b with slack > 0, where the
+     * leaf test rejects them, so skipping them removes no solution. */
+    int first = (d == b - 1) ? lo[i] + slack : lo[i];
+```
+
+The argument that it removes no solution is short enough to state in full: a
+smaller value for the last arc reaches depth `b` with `slack > 0`, and the leaf
+test there is `return slack == 0`. So the skipped branches were all going to
+return 0.
+
+**That argument is not the evidence.** An answer-preserving claim about a search
+is checked by running both searches, which is what `search/shapecsp/difftest.py`
+does: every shape of a given `k`, every cutoff in a range, both builds, records
+compared with `nodes=` stripped -- the node count is exactly what an optimisation
+is meant to change and the verdict is exactly what it must not -- and every SAT
+either build returns is materialised and re-checked, so two builds cannot agree
+their way past a wrong answer.
+
+| comparison | shapes | record comparisons | disagreements | SAT witnesses re-checked |
+|---|---|---|---|---|
+| `bb-orig` vs patched, k=3, cutoffs 8..20, desktop | 14 | 78 | **0** | 63 |
+| the **running** laptop binary vs patched, k=3, cutoffs 8..20 | 14 | 78 | **0** | 63 |
+| `bb-orig` vs patched, k=4, cutoffs 10..26, laptop | 103 | **1250** | **0** | 973 |
+
+The middle row is the one that matters operationally: it compares the patched
+build against the exact binary that produced the `.done` records the n=68 hunt had
+already banked, so those records did not have to be thrown away when the binary
+was swapped.
+
+Both changes to the search since the last control -- the `exact` mode and this
+patch -- were followed by re-running the positive control **on both machines**,
+against the hardened `sweep.py`, with every witness now verified inline:
+
+```
+desktop, MinGW gcc 16.1.0          laptop, gcc 13.3.0 (independent toolchain)
+RESULT t_2 = 8   gaveup_records=0  RESULT t_2 = 8   gaveup_records=0   exit=0
+RESULT t_3 = 14  gaveup_records=0  RESULT t_3 = 14  gaveup_records=0   exit=0
+RESULT t_4 = 24  gaveup_records=0  RESULT t_4 = 24  gaveup_records=0   exit=0
+   SAT n=24 b=7 chords=((0, 2), (1, 4), (1, 5), (3, 6)) arcs=1,1,1,2,2,11,6
+       VERIFIED [(0, 2), (1, 5), (1, 7), (3, 18)] -> pancyclic
+```
+
+`test_shapecsp.py` also still reports `ALL GATES PASS` on the patched build.
+
+I did **not** measure the patch's speedup on the n=68 workload. The review
+measured 19.3% fewer nodes and 14.4% less elapsed time on a small benchmark; on
+this workload the figure is unknown, and the two runs that would establish it
+(same shapes, both builds, at n=68) have not been run because the core-hours are
+better spent on the hunt itself.
+
+### `sweep.py` had the same defects, and it is the control driver
+
+The review scoped `level.py` and `satcheck.py`. `sweep.py` -- which is what
+produces `RESULT t_k = ...`, the headline positive control -- was not in scope and
+had the same three result-handling defects: no child exit check, no completeness
+check, and a SAT printed straight from the solver's own claim. It now carries the
+identical contract, so the numbers `t_2..t_5` in section 4 are produced under it:
+
+```
+SWEEP k={k} FAILED -- solver exited {rc} at n={n}
+SWEEP k={k} FAILED -- {missing} of {len(elig)} eligible shapes produced no terminal
+                      record at n={n}; that is UNKNOWN, not a refutation
+SWEEP k={k} FAILED -- n={n} b={b} chords={ch}: verify.check REJECTS ...
+```
+
+`runlevels.py` likewise lost its child exit codes -- it read the last `LEVEL` line
+out of the file and ignored the status. It now prints `[child exit N -- NOT a
+clean level]` beside any non-clean level and exits non-zero if any level was not
+clean, which matters now that `level.py` exits 1 on `gaveup > 0`.
+
+This is the same defect family as the four the review found, in a file the review
+did not read, which is the argument for treating the contract as a rule for every
+driver in this directory rather than a patch to two of them.
 
 ### The reformulation itself is cross-checked against ground truth
 
@@ -1076,7 +1159,10 @@ touched.
 | `bb.c` / `bb.exe` | C branch-and-bound with exact greedy interval-matching prune |
 | `sweep.py`, `level.py`, `runlevels.py`, `capscan.py` | drivers: descending-n sweep, single level, parallel levels, per-shape scan by cap |
 | `verify.py` | independent check: rebuild the real graph, confirm simple, enumerate cycles with `networkx` |
+| `hunt.py` | best-first single-cutoff hunt, resumable through `hunt-k<k>-n<n>-<mode>.done` |
 | `test_shapecsp.py` | behaviour gates (section 5) |
+| `test_review_contracts.py`, `mutation-check.py` | the six result-integrity contracts and the RED/GREEN mutation check of the four gates (section 0a) |
+| `difftest.py`, `bb-orig.c` | two-build differential and the pre-`lastarc` C source it compares against (section 5c) |
 | `gates-green.txt`, `gates-red.txt` | gate output before/after the mutation |
 | `control-k2-k5.log`, `k5-levels.log`, `level-k5-n*.txt` | positive control evidence |
 | `k6-levels.log`, `level-k6-n*.txt`, `k6-capscan-62.log`, `hunt-n5*.log` | k=6 evidence |
@@ -1089,6 +1175,9 @@ pip install ortools networkx
 cd search/shapecsp
 gcc -O2 -o bb.exe bb.c
 python test_shapecsp.py          # gates
+python test_review_contracts.py  # result-integrity contracts (6)
+python mutation-check.py         # each of the 4 gates: RED when disabled, GREEN when restored
+python difftest.py bb-orig.exe bb.exe 4 10 26   # the lastarc patch changes no answer
 python sweep.py 2 3              # t_2 = 8
 python sweep.py 3 3              # t_3 = 14
 python sweep.py 4 3              # t_4 = 24
