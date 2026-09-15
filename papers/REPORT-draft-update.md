@@ -253,3 +253,226 @@ whose $k=6$ ladder was still running when this revision was written.
   A commit scoped to my five files is safe; I have left the timing to the
   manager so the draft, its sources and this report land together with the
   concurrent reports rather than ahead of them.
+
+---
+
+# Second pass, 2026-09-15: doc-sealing (Worker 12)
+
+Four items dispatched by Manager `f4d1e0af`. Every number below was re-derived
+from the artifacts in this tree before the text was written; nothing was taken
+on the dispatch's word. Files changed in this pass:
+`papers/draft/pancyclic-exact-values.md`, `papers/draft/SOURCES.md`,
+`papers/REPORT-shape-csp.md`, `.gitignore`, `papers/CHANGES.md`, this file.
+No code was touched.
+
+## Costliest finding: the upper end of the bracket was 36 vertices too weak, and the report the draft now cites for it contradicted itself
+
+`67 <= t_6 <= 129` understated what the project had already computed. The
+shape/CSP lane had exhausted every $n$ from 94 to 111 at $k=6$, which gives
+`t_6 <= 93` — a 36-vertex improvement that the draft was not carrying. The
+exhaustion is real and I checked it file by file rather than from the summary:
+
+```
+level-k6-n94.txt  :: LEVEL k=6 n=94  shapes=21878 eligible=81 sat=0 gaveup=0 search_seconds=4070.6
+level-k6-n95.txt  :: LEVEL k=6 n=95  shapes=21878 eligible=53 sat=0 gaveup=0 search_seconds=9529.9
+level-k6-n96.txt  :: LEVEL k=6 n=96  shapes=21878 eligible=32 sat=0 gaveup=0 search_seconds=4682.5
+level-k6-n97.txt  :: LEVEL k=6 n=97  shapes=21878 eligible=28 sat=0 gaveup=0 search_seconds=2727.1
+level-k6-n98.txt  :: LEVEL k=6 n=98  shapes=21878 eligible=28 sat=0 gaveup=0 search_seconds=1197.9
+level-k6-n99.txt  :: LEVEL k=6 n=99  shapes=21878 eligible=24 sat=0 gaveup=0 search_seconds=521.6
+level-k6-n100.txt :: LEVEL k=6 n=100 shapes=21878 eligible=8  sat=0 gaveup=0 search_seconds=48.1
+level-k6-n101.txt :: LEVEL k=6 n=101 shapes=21878 eligible=5  sat=0 gaveup=0 search_seconds=18.1
+level-k6-n102.txt .. level-k6-n111.txt :: eligible=0 sat=0 gaveup=0   (10 levels)
+```
+
+That is 18 contiguous levels, 94 through 111, none abandoned. 111 is the
+ceiling that makes the block sufficient: `search/shapecsp/shape-census.txt`
+row `6 | 21878 | 554 | 21324 | 4..12 | 109 (distinct 109) | 127` gives a
+maximum of 109 distinct cycle forms over all 21878 shapes, and a shape with
+$F$ forms can be pancyclic only for $n \le F+2 = 111$.
+
+**Why the block and not level 94 alone.** `search/shapecsp/level.py`'s own
+docstring states the rule and the reason: eligibility at a level is decided
+*at the cutoff* by two necessary conditions (cap, then Hall), "and Hall at the
+cutoff is not monotone in n: a shape can fail Hall at cutoff n and still be
+feasible at some larger n0, in which case this level never searched it. ...
+Cite the block, never a single level." The draft now says this in Section 3.5
+in its own words, so the bound cannot be re-cited wrongly from the draft.
+
+**The second half of the finding.** `papers/REPORT-shape-csp.md` — the report
+the draft now cites as the source of this bound — contradicted itself. Its
+section 0a states the corrected block (`111..102 with eligible=0, then 101..94
+with sat=0 gaveup=0`) while its section 9 summary still said:
+
+> the upper end by 17 contiguous exhaustive levels
+> (n = 110 down to 94) over all 21878 shapes with nothing abandoned. ... the
+> measured maximum of 109 distinct cycle forms already improves that to 111
+> with no search at all, and the sweep takes it to 95.
+
+17 levels ending at 110 does not reach the cap 111, and "95" contradicts the
+`67 <= t_6 <= 93` printed two lines above it in the same paragraph. This was
+not one of the four dispatched items. I corrected it anyway, because sealing
+the draft onto a source that says 95 in one place and 93 in another is worse
+than leaving the draft at 129, and I left the old sentences quoted in place in
+that report so the correction is visible rather than silent. Flagged to the
+manager as an unrequested change.
+
+## Abstract: old and new, side by side (this pass)
+
+**Old (bracket):**
+
+> vertices, each re-checked by an independent verifier, so $67\le t_6\le129$,
+> where $129$
+> is the trivial counting ceiling.
+
+**New:**
+
+> vertices, each re-checked by an independent verifier, so $67\le t_6\le93$.
+> The upper end is an exhaustive result, not a counting one: the shape/CSP
+> algorithm below refutes every $n$ from $94$ up to $111$, and $111$ is the
+> largest $n$ any $6$-chord shape can reach at all. The counting ceiling $129$ is
+> now only a trivial prior bound. The upper end is the best the completed levels
+> support and may yet fall: the levels at $n=92$ and $n=93$ are undecided, and a
+> non-existence descent from $93$ downwards is in progress.
+
+**Old ($h(41)$ replication status):**
+
+> The one new negative result,
+> $h(41)>5$, rests on a single complete GPU enumeration of all $5$-chord sets
+> on $C_{41}$ (a 64-bit kernel and its 128-bit port, which walk the same
+> enumeration) plus non-exhaustive corroboration; an independently written
+> exhaustive replication has not yet been completed (Section 3.4).
+
+**New:**
+
+> The one new negative result,
+> $h(41)>5$, was first established by a complete GPU enumeration of all $5$-chord
+> sets on $C_{41}$ (a 64-bit kernel and its 128-bit port, which walk the same
+> enumeration), and has since been independently replicated by a structurally
+> different method: the shape/arc-length feasibility search of Section 3.5
+> enumerates subdivision shapes rather than chord sets, shares no code with the
+> GPU programs, and returns `sat=0 gaveup=0` at $n=41,k=5$ (Section 3.4).
+
+## Section 5: old and new, side by side (this pass)
+
+**Old:**
+
+> $$67\ \le\ t_6\ \le\ 129,$$
+> where $129=2^{6+1}+1$ is the trivial counting ceiling ($N_0$ in
+> `papers/REPORT-cyclecounts.md`'s notation).
+
+**New:**
+
+> $$67\ \le\ t_6\ \le\ 93.$$
+> The upper end is the exhaustive shape/CSP block of Section 3.5: every level
+> from $n=94$ to $n=111$ answers `sat=0` with zero abandoned searches
+> (`search/shapecsp/level-k6-n94.txt` ... `level-k6-n111.txt`), and $111$ is the
+> largest $n$ any $6$-chord shape admits, so no $6$-chord pancyclic graph exists
+> on $94$ or more vertices. It supersedes the trivial counting ceiling
+> $129=2^{6+1}+1$ ($N_0$ in `papers/REPORT-cyclecounts.md`'s notation), which is
+> kept here only as the prior bound this computation replaced. Two levels inside
+> the gap, $n=92$ and $n=93$, have not been decided and are counted on neither
+> side; a non-existence descent from $93$ downwards is running, and each level it
+> closes lowers this upper end by one.
+
+Section 5's closing sentence also changed from "whose $k=6$ ladder was still
+running when this revision was written" to "whose $k=6$ ladder has closed the
+range $94\le n\le111$ and is now descending through the $68\le n\le93$ gap that
+separates the two ends of the bracket."
+
+## h(41)>5: what the replication is, and what it is not
+
+`search/shapecsp/level-k5-n41.txt`, read directly:
+
+```
+LEVEL k=5 n=41 shapes=1236 eligible=308 sat=0 gaveup=0 search_seconds=593.8 total_seconds=593.9
+```
+
+The independence is structural, and the draft now names it as such: the GPU
+path enumerates **chord sets** on $C_{41}$ and tests each with bitmask cycle
+walks; the shape/CSP path enumerates the 1236 **subdivision shapes** on 5
+chords and asks, per shape, whether integer arc lengths exist whose 0/1 linear
+cycle forms cover $[3,41]$. Different enumeration, different search, different
+language, no shared code.
+
+**A single level is enough here, and the draft says why.** This is the exact
+distinction that section 0a of `REPORT-shape-csp.md` was written to correct, so
+it matters that the draft not re-import the error in the opposite direction:
+for the $k=6$ *upper bound* you need the contiguous block, because Hall at a
+cutoff is not monotone in $n$; for a statement about **one** value of $n$, like
+$h(41)>5$, the single level at that $n$ suffices, because Hall is a necessary
+condition evaluated at that same $n=41$, so any shape feasible at 41 is
+eligible at the $n=41$ level and was searched there. 308 of 1236 shapes
+survived the necessary conditions, all 308 were decided, and `gaveup=0` means
+none was abandoned on the node budget — no shape is UNKNOWN.
+
+**Kept, not dropped:** the 128-bit run is still a port of the 64-bit kernel and
+still counts as one method; `indep_gpu.py` is still unfinished and would be a
+third independent exhaustive path.
+
+## REPORT-shape-csp.md: the duplicate row and the shape count
+
+The witness-shape table listed `63` twice, with byte-identical contents, in
+rows ordered 61, 63, 62, 63 — ten rows under a heading reading "All nine." The
+first `63` row is removed. Verified mechanically after the edit: **9 rows, 6
+distinct shape strings**, counted by cutting the shape column and `sort -u`.
+The six shapes carry the nine witnesses as 56 | 60 | 61 | 62,63 | 64 | 65,66,67.
+
+"All seven known witness shapes" is therefore wrong, and is corrected in every
+place it appears: the summary table, the solver-soundness row, the "taking the
+earliest of the seven" lead-in, the satcheck grouping paragraph, the
+false-negative-control paragraph, and the section 9 bullet. The seven
+*satcheck runs* are real and stay seven; what they decided is six shapes,
+because the n=66 and n=67 runs are the same shape and both return 67.
+
+## Tracking audit: method, result, and its bound
+
+Five files cited by `SOURCES.md` as primary evidence were excluded by
+`.gitignore`'s `search/k6/*.txt` and so unreachable from a clone. Added as
+negations beside the existing ones and staged:
+
+```
+search/k6/climb-60-72.txt          402 bytes
+search/k6/coord-57.txt             199
+search/k6/smart-57-70.txt          488
+search/k6/sweep2-61-34.txt         300
+search/k6/verify-67-gpu-joint.txt  323
+```
+
+`git ls-files` returns all five after the change.
+
+**Audit method and its declared bound.** I extracted every backticked span in
+`papers/draft/SOURCES.md` matching a file-path shape with a known extension
+(`txt|md|py|c|csv|json|log|err|out|lean|ps1|pkl|sh|pdf`) — 93 distinct paths
+after this pass — and resolved each against `git ls-files`, falling back to a
+basename match for the nine paths `SOURCES.md` writes relative to `papers/` or
+`search/` (`n38k5-A7.txt`, `sh-41-BC.txt`, `construction/unrank.out`, and so
+on; all nine resolve to tracked files). **Result: zero untracked, with exactly
+two exceptions** — `papers/Lai-Liu-2014-survey.pdf` and
+`papers/Wallis-2014-IWOCA-open-problems.pdf`, which stay untracked by the
+redistribution decision and remain accounted for by size and SHA-256 in
+`SOURCES.md`. The bound on this audit: it covers paths written inside
+backticks with one of those extensions. A path named in prose without
+backticks, or with an extension outside that list, would not be caught.
+
+## Refusals, and what this pass did not do
+
+- **No code was touched.** `level.py`, `satcheck.py` and `bb.c` are Worker
+  13's lane; I read `level.py`'s docstring as evidence and changed nothing in
+  `search/`.
+- **No level was re-run and no gate was added**, so there is no mutation check
+  in this pass — items 1 and 2 rest entirely on artifacts already on disk. The
+  mutation-checked gate suite behind the shape/CSP method is the one already
+  reported in Section 3.5 and `REPORT-shape-csp.md`.
+- **The n=92 and n=93 levels are UNKNOWN, not clean.** Their files are
+  0 bytes (`level-k6-n92.txt`, `level-k6-n93.txt`, both 2026-09-14 19:26) and
+  `k6-levels-9293.log` records `LEVEL k=6 n=93 NO-OUTPUT` and
+  `LEVEL k=6 n=92 NO-OUTPUT`. They are counted on neither side of the bracket
+  in the draft. I did not start or consult the running descent.
+- **One artifact gap, named rather than merged into "not there":** the
+  aggregate `search/shapecsp/k6-levels.log` has no rows for $n=94$ and $n=95$,
+  although `level-k6-n94.txt` and `level-k6-n95.txt` both exist with complete
+  `sat=0 gaveup=0` lines. The per-level files are the primary artifact and the
+  draft cites them; the missing aggregate rows are noted in the draft's
+  Section 3.5 so a reader checking the log does not read the gap as a gap in
+  the block.
+- **`git add` was path-scoped**, never `-A`.

@@ -12,9 +12,9 @@ Code added under `search/shapecsp/`. Nothing under `search/k6/` was modified.
 |---|---|
 | `t_2, t_3, t_4, t_5` | **8, 14, 24, 40** -- exact, from scratch, no lower bound supplied, zero abandoned searches |
 | `h(41) > 5` | **independently confirmed.** No 5-chord pancyclic graph on 41 vertices exists: 308 eligible shapes, `sat=0 gaveup=0`, by a method sharing no code with the GPU enumeration (section 4a) |
-| `t_6` | **not resolved.** Bracket `67 <= t_6 <= 93` (a-priori upper bound was 129). **All seven** known witness shapes are now closed at their exact maxima, the best being 67 -- any larger k=6 graph needs a shape nobody has looked at |
+| `t_6` | **not resolved.** Bracket `67 <= t_6 <= 93` (a-priori upper bound was 129). **All six** distinct shapes carrying the nine known witnesses are now closed at their exact maxima, the best being 67 -- any larger k=6 graph needs a shape nobody has looked at |
 | k=6 ceiling | independent confirmation of the published `M(6) = 109` (Rautenbach-Stella 2005), hence `n <= 111`; the enumeration reproduces `M(k)` for **all** of k=2..6 by a different route |
-| solver soundness | false-negative control passes on all seven witness shapes; red/green gate mutation pair; 201-graph cross-check of the reformulation against `networkx` ground truth |
+| solver soundness | false-negative control passes on all six distinct witness shapes (seven satcheck runs, one of which repeats the shape shared by the n=66 and n=67 witnesses); red/green gate mutation pair; 201-graph cross-check of the reformulation against `networkx` ground truth |
 | k=3 vs GMW13 | 14 shapes vs 14 published types; the refinement structure matches too, but a type-for-type bijection is **not verified** (section 4b) |
 | shapes | 3 / 14 / 103 / 1236 / 21878 for k = 2..6, of which 1 / 9 / 86 / 1157 / **21324** are the degenerate families |
 | costliest finding | an earlier revision of section 0 claimed `t_6 <= 93` was established by **level n=94 alone**. A two-line k=2 command refutes that reading of a level; the bound is unchanged but rests on the **contiguous block n=94..111**, every level of which is load-bearing (section 0a) |
@@ -317,7 +317,6 @@ exactly 6 chords with none duplicating a cycle edge, cycles enumerated with
 | 56 | 7 | 3,2,2,2,1,1,1 | `((0,1),(0,3),(0,6),(2,4),(4,5),(5,6))` |
 | 60 | 8 | 2,2,2,2,1,1,1,1 | `((0,1),(0,6),(1,2),(2,4),(3,5),(4,7))` |
 | 61 | 9 | 2,2,2,1,1,1,1,1,1 | `((0,1),(0,7),(1,3),(2,6),(3,5),(4,8))` |
-| 63 | 9 | 2,2,2,1,1,1,1,1,1 | `((0,1),(0,7),(1,3),(2,5),(4,6),(4,8))` |
 | 62 | 9 | 2,2,2,1,1,1,1,1,1 | `((0,1),(0,7),(1,3),(2,5),(4,6),(4,8))` |
 | 63 | 9 | 2,2,2,1,1,1,1,1,1 | `((0,1),(0,7),(1,3),(2,5),(4,6),(4,8))` |
 | 64 | 10 | 2,2,1,1,1,1,1,1,1,1 | `((0,1),(0,8),(1,3),(2,6),(4,9),(5,7))` |
@@ -346,7 +345,7 @@ n=65  (0,2)(0,62)(1,12)(3,61)(4,29)(57,62)    missing [32]     <- the near-miss 
 All four verified here. Anything reading chord lists out of these logs must check
 each one rather than pattern-match the filename or the surrounding `n=`.
 
-Taking the earliest of the seven in detail -- the 56-vertex one from
+Taking the earliest of the nine in detail -- the 56-vertex one from
 `search/k6/witnesses.csv`,
 
 ```
@@ -874,8 +873,10 @@ Run over the shape of each verified witness (`satcheck.py`,
 SATCHECK: all witness shapes returned SAT
 ```
 
-Grouping the nine verified witnesses by shape, those seven runs cover all of them,
-because the nine sit on only six distinct shapes:
+Grouping the nine verified witnesses by shape, those seven runs cover all of
+them with one redundancy -- the n=66 and n=67 runs are the same shape, so six
+distinct shapes were decided, not seven -- because the nine witnesses sit on
+only six distinct shapes:
 
 | witnesses | shape's exact maximum |
 |---|---|
@@ -896,8 +897,9 @@ their own shapes' maxima, even though the best one is.
 
 This doubles as the check that matters most for believing any `sat=0`: a solver
 that missed real solutions would report UNSAT on a shape that demonstrably has
-one. All seven returned SAT, and each returned arc vector was materialised and
-re-verified pancyclic by `verify.check` rather than trusted. Had any single line
+one. All seven runs returned SAT, covering all six distinct shapes, and each
+returned arc vector was materialised and re-verified pancyclic by
+`verify.check` rather than trusted. Had any single line
 come back UNSAT, every `sat=0` level in this report would have been void.
 
 #### The SAT at n=67 is a k=6 positive control, and it passed on the nose
@@ -1024,17 +1026,26 @@ So the k=6 status is an **improved bracket, not an exact value**:
     67  <=  t_6  <=  93
 
 with both ends established here: the lower end by re-verifying the existing
-witness against the real graph, the upper end by 17 contiguous exhaustive levels
-(n = 110 down to 94) over all 21878 shapes with nothing abandoned. For comparison, the a-priori bound
-from the brief's `2^(k+1)-1 = 127` cycles is `t_6 <= 129`; the measured maximum of
-109 distinct cycle forms already improves that to 111 with no search at all, and
-the sweep takes it to 95.
+witness against the real graph, the upper end by the 18 contiguous exhaustive
+levels n = 111 down to 94 over all 21878 shapes with nothing abandoned. (An
+earlier revision of this paragraph said "17 contiguous levels (n = 110 down to
+94)" and then "the sweep takes it to 95". Both were wrong and both contradicted
+section 0a of this same report: the block runs to the largest cap 111, which is
+18 levels, and a clean block down to 94 gives `t_6 <= 93`, not 95. Corrected
+2026-09-15; the level artifacts `level-k6-n94.txt` ... `level-k6-n111.txt` are
+the record.) For comparison, the a-priori bound from the brief's
+`2^(k+1)-1 = 127` cycles is `t_6 <= 129`; the measured maximum of 109 distinct
+cycle forms already improves that to 111 with no search at all, and the block
+takes it to 93.
 
 Two further partial results, each with its cap declared:
 
-- **All seven known witness shapes are closed, exactly**: maxima 56, 62, 61, 63,
-  64, 67, 67 for the shapes of the n = 56, 60, 61, 63, 64, 66, 67 witnesses, no
-  abandoned searches. `t_6 > 67` requires a shape nobody has looked at yet.
+- **All six distinct known witness shapes are closed, exactly**: maxima 56, 62,
+  61, 63, 64, 67 for the shapes of the n = 56, 60, 61, 63, 64 and 66/67
+  witnesses, no abandoned searches. (Seven satcheck runs produced these six
+  numbers: the n=66 and n=67 runs are the same shape and both return 67. The
+  nine known witnesses occupy these six shapes.) `t_6 > 67` requires a shape
+  nobody has looked at yet.
 - **Low-cap shapes, partially.** `capscan.py 6 56 62` decides shapes whose cap lies
   in `(56, 62]`, at every n from their cap down to 57. It was stopped for CPU
   before finishing: **the first 750 of those 4059 shapes, in enumeration order,

@@ -33,7 +33,7 @@ from. Paths are relative to `C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\`.
 |---|---|
 | $t_1,\dots,t_5 = 5,8,14,24,40$ | `notes/01-subdivision-reformulation.md`, "Update 2026-09-14 evening" section |
 
-| $67\le t_6\le129$; $h(n)\le6$ for $41\le n\le67$; $h(n)\ge6$ for $n\ge66$ by counting | lower end and $h(n)\le6$: the Section 6.3 witness table below; upper end: $N_0=2^{k+1}+1$ at $k=6$ (`papers/REPORT-cyclecounts.md`); counting step: $2^{5+1}-1=63<n-2$ iff $n\ge66$, recomputed here |
+| $67\le t_6\le93$; $h(n)\le6$ for $41\le n\le67$; $h(n)\ge6$ for $n\ge66$ by counting | lower end and $h(n)\le6$: the Section 6.3 witness table below; upper end: the contiguous exhausted shape/CSP block $94\le n\le111$ — `search/shapecsp/level-k6-n94.txt` … `level-k6-n111.txt`, each `sat=0 gaveup=0`, with $111$ the largest per-shape cap at $k=6$ (`search/shapecsp/shape-census.txt`, row `6 | 21878 | … | 109 (distinct 109)`, cap $=F+2$), analysed in `papers/REPORT-shape-csp.md`. $N_0=2^{k+1}+1=129$ at $k=6$ (`papers/REPORT-cyclecounts.md`) is now only the trivial prior bound. $n=92$ and $n=93$ are undecided ($0$-byte level files) and counted on neither side, so a descent that closes them lowers this end. Counting step: $2^{5+1}-1=63<n-2$ iff $n\ge66$, recomputed here |
 
 ## Section 2.2 — Five extremal 5-chord graphs on 40 vertices
 
@@ -133,7 +133,7 @@ from. Paths are relative to `C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\`.
 | Fibonacci prediction $t_6=66$ (now refuted) | `papers/REPORT-bondy-construction.md`, extrapolated one step; refuted by the $n=67$ witness below |
 | Rival form $t_k=2^{k-2}(10-k)$, exact at $k=2..5$, predicting $t_6=64$ (now refuted) | `papers/PLAN-next-steps.md`, "a rival 2-parameter formula fits equally and disagrees at t_6"; arithmetic re-checked here ($1\cdot8,2\cdot7,4\cdot6,8\cdot5=8,14,24,40$; $16\cdot4=64$); refuted by the $n=65$ witness below |
 | Every integer three-term recurrence fitting $8,14,24,40$: $5a+3b=8$, $(a,b,c)=(1+3t,1-5t,2-2t)$, $t_6=66-2t$; "every even value" is a property of this family only | `papers/NOTE-fit-underdetermination.md`, "Statement" and "Caveat, stated precisely"; the two linear constraints and their difference re-derived here |
-| Bracket $67\le t_6\le129$; $129=2^7+1$ | lower end: the $n=67$ witness of Section 6.3 (`search/k6/witnesses-v2.csv`, `search/k6/verify-67-gpu-joint.txt`, re-run in `papers/draft/verify-rerun-20260914.txt`); upper end: same $N_0=2^{k+1}+1$ formula as `papers/REPORT-cyclecounts.md`'s "Count-to-order comparison" table, evaluated at $k=6$ |
+| Bracket $67\le t_6\le93$ (the prior bound $129=2^7+1$ is superseded) | lower end: the $n=67$ witness of Section 6.3 (`search/k6/witnesses-v2.csv`, `search/k6/verify-67-gpu-joint.txt`, re-run in `papers/draft/verify-rerun-20260914.txt`); upper end: the contiguous shape/CSP levels $n=94$ to $n=111$, all `sat=0 gaveup=0` (`search/shapecsp/level-k6-n94.txt` … `level-k6-n111.txt`; aggregate log `search/shapecsp/k6-levels.log` carries every row except $n=94,95$, which were run separately). The block, not any single level, is what establishes it: eligibility is decided at each cutoff by cap-and-Hall necessary conditions, which are not monotone in $n$, so a shape feasible at $n_0$ is refuted only by the level whose cutoff is exactly $n_0$ (`search/shapecsp/level.py` docstring, "Cite the block, never a single level"; the earlier mis-citation is recorded in `papers/REPORT-shape-csp.md` section 0a). $111$ is the largest cap over all $21878$ shapes, so no level above it is needed. The prior bound was $N_0=2^{k+1}+1$ from `papers/REPORT-cyclecounts.md`'s "Count-to-order comparison" table at $k=6$ |
 | Odd witnesses ($n=65,67$) refute every member of the integer family | `papers/NOTE-fit-underdetermination.md`, "A witness at n=65 would be sharper than either named fit anticipates"; witnesses in `search/k6/witnesses-v2.csv` |
 | Griffin's Conjecture 1 ($m(n)<m(n+1)$), Proposition 2 ($m(n+1)\le m(n)+2$) | `papers/1312.0274.txt`, "Conjecture 1. m(n) < m(n + 1) for all n >= 3" and "Proposition 2. m(n + 1) <= m(n) + 2" |
 | Wallis's Questions 1 and 2, exact wording | `papers/Wallis-2014-IWOCA-open-problems.pdf`, fetched directly from `https://tomasz-radzik.github.io/IWOCA/problems/Wallis2014.pdf` (HTTP 200) and read in full; "1. Is it always true that m(v) <= m(v+1)?... 2. Find a good upper bound for m(v)." |
@@ -175,10 +175,19 @@ from. Paths are relative to `C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\`.
   plus all three independent verifiers listed in Section 3.3 and the Lean
   proofs, cross-referenced in `papers/REVIEW-search.md` and
   `papers/REVIEW-independent.md`. The one *elimination* ($n=41,k=5$, giving
-  $h(41)>5$) is backed by a single complete run of one program and a port of
-  that program; no independently written exhaustive replication has finished
-  (Section 3.4 rows above). This asymmetry is stated in the draft's abstract
-  and Section 3.4 rather than papered over.
+  $h(41)>5$) was backed by a single complete run of one program and a port of
+  that program; it has since been **independently replicated by a structurally
+  different method** — the shape/arc-length CSP, which enumerates subdivision
+  shapes rather than chord sets and shares no code with `gpu_pancyc.py`:
+  `search/shapecsp/level-k5-n41.txt` reads
+  `LEVEL k=5 n=41 shapes=1236 eligible=308 sat=0 gaveup=0`. A single level is
+  sufficient for a statement about one $n$, because Hall is a necessary
+  condition evaluated at that same $n$, so any shape feasible at $41$ is
+  eligible at the $n=41$ level. The earlier asymmetry between witnesses and
+  this elimination is correspondingly reduced, and the draft's abstract and
+  Section 3.4 now state the replication rather than its absence. The
+  from-scratch direct-DFS GPU run (`indep_gpu.py`) is still unfinished and
+  would be a third independent exhaustive path.
 * The Jia (1996) statements are OCR output from a scanned secondary source
   (`papers/Lai-Liu-2014-survey.pdf`), not Jia's original paper, which could not
   be located; `papers/REPORT-oeis-and-jia.md` flags the one place (a coefficient
@@ -205,12 +214,16 @@ for the `git ls-files` proof and per-file sizes):
 * `search/k6/gpu128-41-5.txt` (the 128-bit port's log, 12,871 bytes)
 * `search/sh-41-A0.txt` … `sh-41-A7.txt`, `sh-41-BC.txt` (the aborted CPU shard outputs, 0 bytes each)
 * `search/k6/coord-66.txt`, `search/k6/strict-66.txt`, `search/k6/gkw-K4.txt` (Sections 5–6 raw data)
+* `search/k6/climb-60-72.txt` (402 bytes), `search/k6/coord-57.txt` (199), `search/k6/smart-57-70.txt` (488), `search/k6/sweep2-61-34.txt` (300), `search/k6/verify-67-gpu-joint.txt` (323) — the $k=6$ search and verification logs this index cites for the $n=57..67$ witnesses. Un-ignored and tracked in the 2026-09-15 pass; before it they were cited here but excluded by `search/k6/*.txt` and so unreachable from a clone.
 * `papers/construction/unrank.out`, `papers/construction/gpu41b2s0.out`, `papers/construction/indep-gpu41.log`, `papers/construction/indep-gpu41b2-corrected.log`, `papers/construction/random41-1.out`, `papers/construction/random41-2.out` (the corroboration artifacts behind `papers/REVIEW-gpu-corroboration.md` and `papers/REVIEW-independent-gpu.md`)
 * `Axioms.lean` (the project's axiom-audit file, quoted above)
 
-Two cited files are **not** tracked, deliberately: they are third-party
-published PDFs, and the repository's `papers/*.pdf` exclusion is a
-redistribution decision, not a size one. They are accounted for by size and
+After the 2026-09-15 pass, exactly two cited files are **not** tracked, and
+deliberately so: they are third-party published PDFs, and the repository's
+`papers/*.pdf` exclusion is a redistribution decision, not a size one. Every
+other path this index cites returns a row from `git ls-files` (audit re-run
+2026-09-15 over all 86 file paths named in this document; see
+`papers/CHANGES.md`). They are accounted for by size and
 SHA-256 instead:
 
 | File | Size (bytes) | SHA-256 |

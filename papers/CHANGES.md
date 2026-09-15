@@ -330,3 +330,83 @@ through `search/verify.py` in this revision; the output is
    agent and are not reported by this lane; the range-mode descent below $n=93$
    was not started; and the $n=68$ exact hunt was still running
    (`20/6059, gaveup=0, errors=0`) with **no witness at $n \ge 68$ found**.
+
+# 2026-09-15 — doc-sealing pass (Worker 12, `papers/REPORT-draft-update.md`)
+
+Four changes dispatched by Manager `f4d1e0af`, each re-verified against the
+artifacts here before being written. Files touched: `papers/draft/pancyclic-exact-values.md`,
+`papers/draft/SOURCES.md`, `papers/REPORT-shape-csp.md`, `.gitignore`,
+`papers/CHANGES.md`.
+
+1. **The $t_6$ upper bound is now $93$, and it is an exhaustive result rather
+   than a counting one.** `67 \le t_6 \le 129` is replaced by
+   `67 \le t_6 \le 93` in the draft's abstract, Section 2.1 and Section 5, and
+   in the two `SOURCES.md` rows that stated the bracket. The upper end is
+   sourced to the **contiguous** block of shape/CSP levels $94 \le n \le 111$,
+   every one of them `sat=0 gaveup=0` (`search/shapecsp/level-k6-n94.txt` …
+   `level-k6-n111.txt`, all 18 read here), with $111$ the largest per-shape cap
+   at $k=6$ (`search/shapecsp/shape-census.txt`, row `6 | 21878 | ... | 109
+   (distinct 109)`, cap $= F+2$). The block, not level 94 alone, is what
+   carries it: eligibility is decided at each cutoff by cap-and-Hall necessary
+   conditions and Hall is not monotone in $n$, so a shape feasible at $n_0$ is
+   refuted only by the level whose cutoff is exactly $n_0$
+   (`search/shapecsp/level.py` docstring, "Cite the block, never a single
+   level"). $129 = 2^{k+1}+1$ is demoted throughout to the trivial prior bound.
+   $n=92$ and $n=93$ are preserved as UNKNOWN holes — their level files are
+   0 bytes — and are counted on neither side; the wording states the bound as
+   what the completed levels support and names the running descent from $93$
+   downwards as the thing that would lower it.
+
+2. **$h(41)>5$ is now reported as independently replicated.** Evidence:
+   `search/shapecsp/level-k5-n41.txt`, read here, is
+   `LEVEL k=5 n=41 shapes=1236 eligible=308 sat=0 gaveup=0`. The draft's
+   abstract, its Section 3.4 bullet list and its concluding paragraph, and the
+   corresponding `SOURCES.md` bullet, are changed from "one complete
+   enumeration plus a same-algorithm 128-bit port, no independent replication"
+   to independent replication by a structurally different method, with the
+   independence stated explicitly: chord-set enumeration on the GPU versus
+   shape/arc-length CSP, no shared code, different search. Two qualifications
+   are kept: the 128-bit run is still a port and still counts as one method,
+   and `indep_gpu.py` is still unfinished and would be a third path. Section
+   3.5 gains a paragraph explaining why a **single** level settles $h(41)>5$
+   (Hall is necessary at that same $n$) while the $k=6$ upper bound needs the
+   whole block — the two readings that the earlier revision of
+   `REPORT-shape-csp.md` had confused.
+
+3. **`papers/REPORT-shape-csp.md`: duplicate row removed, shape count
+   corrected.** The witness-shape table listed `63` twice with identical
+   contents (rows ordered 61, 63, 62, 63) under a heading that says nine; the
+   first `63` row is removed, leaving nine rows in order. "All seven known
+   witness shapes" is corrected to **six distinct shapes carrying nine
+   witnesses** in the summary table, the solver-soundness row, the
+   satcheck-grouping paragraph, the false-negative-control paragraph and the
+   section 9 summary: the seven satcheck runs decided six shapes, because the
+   n=66 and n=67 runs are the same shape. Counted mechanically from the
+   corrected table: 9 rows, 6 distinct shape strings.
+
+   **One unrequested correction in the same file, flagged rather than folded
+   in.** Section 9 said the upper end rested on "17 contiguous exhaustive
+   levels (n = 110 down to 94)" and that "the sweep takes it to 95" — both
+   contradict section 0a of the same report and the `67 <= t_6 <= 93` stated
+   two lines above them. Corrected to 18 levels, $n=111$ down to $94$, and to
+   93, with the old text quoted in place so the correction is visible.
+
+4. **Five SOURCES-cited evidence files are now tracked.**
+   `search/k6/climb-60-72.txt` (402 bytes), `coord-57.txt` (199),
+   `smart-57-70.txt` (488), `sweep2-61-34.txt` (300) and
+   `verify-67-gpu-joint.txt` (323) were cited as primary evidence but excluded
+   by `.gitignore`'s `search/k6/*.txt`, so they were unreachable from a clone.
+   Added as `!` negations next to the existing ones and staged; `git ls-files`
+   now returns all five. **Audit re-run:** every file path named in
+   `papers/draft/SOURCES.md` (93 paths after this pass, extracted
+   mechanically from its backticked spans and resolved against `git ls-files`)
+   is tracked, with exactly two exceptions — `papers/Lai-Liu-2014-survey.pdf`
+   and `papers/Wallis-2014-IWOCA-open-problems.pdf`, the third-party PDFs,
+   which stay untracked by the redistribution decision and remain accounted for
+   by size and SHA-256 in `SOURCES.md`. No other file was un-ignored.
+
+**Not done, named rather than left to inference:** no code was touched
+(`level.py`, `satcheck.py`, `bb.c` belong to Worker 13's lane and are
+untouched here); the running descent below $n=93$ was neither started nor
+consulted beyond the 0-byte level files; and no level was re-run — items 1
+and 2 rest on reading artifacts already on disk, not on new computation.

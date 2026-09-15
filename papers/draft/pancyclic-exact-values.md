@@ -14,10 +14,12 @@ $m(38{:}41)=43,44,45,47$. The upper bounds are explicit chord sets found by
 GPU/CPU chord search, each reconfirmed by three from-scratch verifiers and
 by a kernel-checked Lean 4 proof. The lower bounds $h(n)\ge5$ follow from
 Griffin's cycle-counting ceiling alone. The one new negative result,
-$h(41)>5$, rests on a single complete GPU enumeration of all $5$-chord sets
-on $C_{41}$ (a 64-bit kernel and its 128-bit port, which walk the same
-enumeration) plus non-exhaustive corroboration; an independently written
-exhaustive replication has not yet been completed (Section 3.4). We record the
+$h(41)>5$, was first established by a complete GPU enumeration of all $5$-chord
+sets on $C_{41}$ (a 64-bit kernel and its 128-bit port, which walk the same
+enumeration), and has since been independently replicated by a structurally
+different method: the shape/arc-length feasibility search of Section 3.5
+enumerates subdivision shapes rather than chord sets, shares no code with the
+GPU programs, and returns `sat=0 gaveup=0` at $n=41,k=5$ (Section 3.4). We record the
 extremal $5$-chord graphs at the $n=40$ threshold, a subdivision lemma showing why
 counting arguments can improve only the additive constant, never the growing
 correction term the conjecture needs, and two observations on the threshold
@@ -29,9 +31,13 @@ pattern-fit on the known thresholds carries information about the next one.
 Computation has since refuted the two members that had been singled out
 ($2\,\mathrm{Fib}(k+3)-2$, predicting $66$, and $2^{k-2}(10-k)$, predicting
 $64$): explicit 6-chord pancyclic graphs exist on every $n$ from $57$ to $67$
-vertices, each re-checked by an independent verifier, so $67\le t_6\le129$,
-where $129$
-is the trivial counting ceiling. We also describe an exact per-shape
+vertices, each re-checked by an independent verifier, so $67\le t_6\le93$.
+The upper end is an exhaustive result, not a counting one: the shape/CSP
+algorithm below refutes every $n$ from $94$ up to $111$, and $111$ is the
+largest $n$ any $6$-chord shape can reach at all. The counting ceiling $129$ is
+now only a trivial prior bound. The upper end is the best the completed levels
+support and may yet fall: the levels at $n=92$ and $n=93$ are undecided, and a
+non-existence descent from $93$ downwards is in progress. We also describe an exact per-shape
 feasibility algorithm (a $C_n$ plus $k$ chords is a subdivision of one of
 finitely many multigraphs, so pancyclicity becomes a covering problem in the
 arc lengths) that reproduces $t_2,t_3,t_4$ from scratch and is the tool for
@@ -175,9 +181,15 @@ $$t_1=5,\quad t_2=8,\quad t_3=14,\quad t_4=24,\quad t_5=40.$$
 (Source: `notes/01-subdivision-reformulation.md`, "Update 2026-09-14 evening,"
 consistent with Griffin Table 1 for $t_1..t_4$ and with this project's
 exhaustive $n=41,k=5$ elimination for $t_5=40$.) The next threshold is not yet
-known exactly: $67\le t_6\le129$, the lower end from explicit 6-chord witnesses
-on every $n$ from $57$ to $67$ (Section 6.3), the upper end from the counting
-ceiling $2^{k+1}+1$ at $k=6$. In particular $h(n)\le6$ is established by
+known exactly: $67\le t_6\le93$, the lower end from explicit 6-chord witnesses
+on every $n$ from $57$ to $67$ (Section 6.3), the upper end from the exhaustive
+shape/CSP refutation of the contiguous block $94\le n\le111$ (Section 3.5), in
+which $111$ is the largest $n$ attainable by any $6$-chord shape. The counting
+ceiling $2^{k+1}+1=129$ at $k=6$ is superseded by this and is retained only as
+the trivial prior bound. The upper end is stated as what the completed levels
+establish, not as a final value: the levels at $n=92$ and $n=93$ are not yet
+decided — they are counted on neither side — and a non-existence descent
+from $93$ downwards is running, so any level it closes lowers this end by one. In particular $h(n)\le6$ is established by
 witness for every $41\le n\le67$; the matching lower bound $h(n)\ge6$ is
 established for $n=41$ (Section 3.4) and, by counting alone, for $n\ge66$
 ($2^{6}-1=63<n-2$), while for $42\le n\le65$ it would follow from $t_5=40$
@@ -393,13 +405,33 @@ status, read directly from the artifacts, is:
   printing `NONE n=41 k=5 tested=17615450195`, and `17615450195` is exactly
   the candidate count of the three-mode case split (Section 3.3), so the walk
   was complete, not truncated.
-* It is **not** independently replicated. The second `NONE` run,
-  `search/k6/gpu128-41-5.txt` (`NONE n=41 k=5 tested=17615450195`), is
+* The second `NONE` run is **not** an independent replication of it.
+  `search/k6/gpu128-41-5.txt` (`NONE n=41 k=5 tested=17615450195`) is
   `search/k6/gpu_pancyc128.py`, whose own docstring describes it as a
   "128-bit (two-word) port of `search/gpu_pancyc.py` … Nothing else about the
   algorithm changes." The identical `tested=` total shows the two programs
   walk the identical enumeration; this is a check on 64-bit mask overflow,
   not on a logic error that both would share.
+* It **is** independently replicated, by a structurally different method.
+  The shape/CSP algorithm of Section 3.5 decides the same question without
+  enumerating chord sets at all: it enumerates the $1236$ subdivision shapes
+  on $k=5$ chords and asks, per shape, whether integer arc lengths exist whose
+  cycle forms cover $[3,41]$. Its answer is
+  `LEVEL k=5 n=41 shapes=1236 eligible=308 sat=0 gaveup=0`
+  (`search/shapecsp/level-k5-n41.txt`): of the $1236$ shapes, $308$ survive the
+  two necessary conditions applied at the cutoff (the per-shape cap
+  $n\le F+2$, and the interval-Hall test), all $308$ are decided
+  infeasible, and `gaveup=0` means none was abandoned on the node budget, so
+  none is UNKNOWN. A single level suffices here, unlike the $k=6$ upper bound
+  of Section 3.5, precisely because the question is about one value of $n$:
+  Hall is a necessary condition evaluated at that same $n=41$, so any shape
+  feasible at $41$ is eligible at the $n=41$ level and was searched there.
+  The two programs share no code — different enumeration (shapes versus
+  chord sets), different search (arc-length branch-and-bound versus GPU mask
+  walk), different language — and every SAT the method reports is
+  re-materialised as a graph and re-tested by `verify.check_record` rather
+  than trusted, with a false-negative control on known witnesses
+  (`papers/REPORT-shape-csp.md`).
 * The CPU shard run — the one structurally separate exhaustive path that was
   attempted — did not complete: `search/hn_k5.csv` records
   `41,5,ABORTED-no-output-processes-died,,8044,0`, and its shard outputs
@@ -421,12 +453,16 @@ status, read directly from the artifacts, is:
   `Axioms.lean` states that the lower bounds "are NOT formalised here; they
   rest on the exhaustive search programs in `search/`."
 
-So $h(41)=6$ currently rests on one algorithm (plus a port of it) for its
-lower half. We report it as established by that enumeration, and we report
-the enumeration's replication status as above rather than as
-"cross-checked." Completing an independently written exhaustive run
-(`indep_gpu.py` or a CPU direct-DFS enumeration) is the outstanding step
-that would raise this claim to the same footing as the witnesses.
+So $h(41)=6$ rests on two complete and structurally unrelated exhaustive
+arguments for its lower half: the GPU chord-set enumeration, and the
+shape/arc-length CSP. That is the footing the witnesses have — two methods
+that would have to fail in the same direction for the result to be wrong —
+and it is a stronger position than this draft reported before the replication
+landed. Two qualifications are kept. First, the 128-bit run remains a port,
+not a third method, and is still counted as one. Second, the from-scratch
+direct-DFS GPU replication (`indep_gpu.py`) is still unfinished; it would be a
+third independent exhaustive run, and completing it remains worthwhile, but
+$h(41)>5$ no longer depends on it.
 
 **Independent corroboration of the search machinery itself**
 (`papers/REVIEW-gpu-corroboration.md`, `papers/REVIEW-independent.md`, both
@@ -529,18 +565,43 @@ not academic at $k=6$: the $n=56$ witness of Section 6.3 has only 7 branch
 vertices (vertex 39 carries three chords), so a perfect-matching-only
 enumeration would not contain it.
 
+*What a level does and does not establish.* A level at cutoff $n$ hands each
+shape to the solver with $n$ as a lower cutoff, so `sat=0` means no shape it
+searched admits any value $\ge n$. Eligibility, however, is decided *at* the
+cutoff by two necessary conditions — the per-shape cap and the interval-Hall
+test — and Hall at cutoff $n$ is not monotone in $n$: a shape can fail it at
+$n$ and still be feasible at some larger $n_0$, in which case that level never
+searched it. A single clean level therefore does not by itself exclude all
+larger $n$. What does is a *contiguous block* of levels
+$n,n+1,\dots,N_{\max}$, all returning `sat=0` with `gaveup=0`, where
+$N_{\max}$ is the largest cap over all shapes: a shape feasible at any $n_0$
+in that range is eligible at the level whose cutoff is exactly $n_0$, because
+Hall is necessary at that same $n_0$, and that level refuted it. For a
+statement about a single $n$ — such as $h(41)>5$ — the single level at that
+$n$ is enough, for the same reason. This distinction is enforced in
+`search/shapecsp/level.py`'s own docstring ("Cite the block, never a single
+level"), and an earlier misreading of it is recorded and corrected in
+`papers/REPORT-shape-csp.md`.
+
 *Status.* The $k=5$ ladder log (`search/shapecsp/k5-levels.log`) records
 `sat=0 gaveup=0` at every level from $n=58$ (the largest $k=5$ per-shape cap)
-down to $n=41$, with `eligible` shapes at each level from $54$ down; taken
-with the $n=40$ feasibility found by CP-SAT this would be an independent
-derivation of $t_5=40$ by a method sharing no code with Section 3.3's
-programs. That lane had not yet written up or reviewed its $k=5$ ladder when
-this revision was made, so Section 3.4's statement of the replication status
-of $h(41)>5$ is left as it stands pending that report. The $k=6$ ladder was
-running as this revision was written; its log to that point
-(`search/shapecsp/k6-levels.log`) shows every level from $n=110$ down to
-$n=97$ answering `sat=0 gaveup=0`, but the bracket stated in this note uses
-only the counting ceiling $129$ until the lane reports.
+down to $n=41$, with `eligible` shapes at each level from $54$ down. Taken
+with the $n=40$ feasibility found by CP-SAT, that is an independent derivation
+of $t_5=40$ by a method sharing no code with Section 3.3's programs; its
+$n=41$ level is the independent replication of $h(41)>5$ reported in
+Section 3.4. At $k=6$ the ladder is complete over the whole range above the
+witnesses: every level from $N_{\max}=111$ down to $n=94$ answers `sat=0`
+with `gaveup=0` — levels $111$ down to $102$ with `eligible=0`, killed by the
+cap and Hall bounds without any search, and levels $101$ down to $94$ with
+every eligible shape decided (`search/shapecsp/level-k6-n94.txt` …
+`level-k6-n111.txt`; the aggregate `search/shapecsp/k6-levels.log` is missing
+the $n=94$ and $n=95$ rows, which were run separately and are recorded in
+their own per-level files). This contiguous block is what gives
+$t_6\le93$; no single level in it is redundant. The two levels below it,
+$n=93$ and $n=92$, are $0$-byte files — started, not finished — so they are
+UNKNOWN and are counted on neither side of the bracket; a descent from $93$
+downwards is running, and each level it closes with `gaveup=0`, joined onto
+the block, lowers the upper end by one.
 
 ## 4. The subdivision lemma, and what counting can and cannot give
 
@@ -712,17 +773,26 @@ related additive recursion $t_k=t_{k-1}+t_{k-2}+2$ fails at $k=3$
 re-checked with the independent `search/verify.py` (networkx
 `simple_cycles`; full output in `papers/draft/verify-rerun-20260914.txt`),
 exist at every $n$ from $57$ to $67$ (chord sets in Section 6.3), so
-$$67\ \le\ t_6\ \le\ 129,$$
-where $129=2^{6+1}+1$ is the trivial counting ceiling ($N_0$ in
-`papers/REPORT-cyclecounts.md`'s notation). The witnesses at $n=61,62,64$
+$$67\ \le\ t_6\ \le\ 93.$$
+The upper end is the exhaustive shape/CSP block of Section 3.5: every level
+from $n=94$ to $n=111$ answers `sat=0` with zero abandoned searches
+(`search/shapecsp/level-k6-n94.txt` ... `level-k6-n111.txt`), and $111$ is the
+largest $n$ any $6$-chord shape admits, so no $6$-chord pancyclic graph exists
+on $94$ or more vertices. It supersedes the trivial counting ceiling
+$129=2^{6+1}+1$ ($N_0$ in `papers/REPORT-cyclecounts.md`'s notation), which is
+kept here only as the prior bound this computation replaced. Two levels inside
+the gap, $n=92$ and $n=93$, have not been decided and are counted on neither
+side; a non-existence descent from $93$ downwards is running, and each level it
+closes lowers this upper end by one. The witnesses at $n=61,62,64$
 already refuted the family members predicting $58,60,62$; those at $n=66,67$
 refute both named fits; and the odd witnesses at $n=65$ and $n=67$ refute
 *every* member of the integer family above simultaneously, since all of them
 predict an even $t_6$. The family $(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)$
 that supplies the $n=64,\dots,67$ witnesses misses exactly one length
 ($33$) at $n=68$ (Section 6.3), so $t_6=67$ is possible but not established;
-the exact value is the target of the shape/CSP algorithm of Section 3.5,
-whose $k=6$ ladder was still running when this revision was written.
+the exact value is the target of the shape/CSP algorithm of Section 3.5, whose
+$k=6$ ladder has closed the range $94\le n\le111$ and is now descending
+through the $68\le n\le93$ gap that separates the two ends of the bracket.
 
 **Wallis's monotonicity question.** W. D. Wallis's open-problem sheet presented
 at IWOCA 2014 [Wa14] poses exactly two questions about $m(v)$: "1. Is it always
