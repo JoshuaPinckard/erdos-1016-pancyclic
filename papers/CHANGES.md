@@ -384,6 +384,16 @@ artifacts here before being written. Files touched: `papers/draft/pancyclic-exac
    n=66 and n=67 runs are the same shape. Counted mechanically from the
    corrected table: 9 rows, 6 distinct shape strings.
 
+   **Sections 0 and 0a of that report are untouched.** They carry the
+   block-justification correction — `t_6 \le 93` rests on the contiguous block
+   $n=94..111$, not on level 94 alone, because Hall is evaluated at the cutoff
+   and is not monotone in $n$ — and this lane preserved them: the hunks of
+   commit `83508d5` in that file fall at the summary table, the witness table,
+   the satcheck grouping, the false-negative-control paragraph and the section
+   9 summary, and `git show 83508d5 --unified=0 -- papers/REPORT-shape-csp.md`
+   lists no hunk inside either section. The section 9 correction below aligns
+   that summary *with* section 0a rather than against it.
+
    **One unrequested correction in the same file, flagged rather than folded
    in.** Section 9 said the upper end rested on "17 contiguous exhaustive
    levels (n = 110 down to 94)" and that "the sweep takes it to 95" — both
@@ -396,11 +406,16 @@ artifacts here before being written. Files touched: `papers/draft/pancyclic-exac
    `smart-57-70.txt` (488), `sweep2-61-34.txt` (300) and
    `verify-67-gpu-joint.txt` (323) were cited as primary evidence but excluded
    by `.gitignore`'s `search/k6/*.txt`, so they were unreachable from a clone.
-   Added as `!` negations next to the existing ones and staged; `git ls-files`
-   now returns all five. **Audit re-run:** every file path named in
-   `papers/draft/SOURCES.md` (93 paths after this pass, extracted
-   mechanically from its backticked spans and resolved against `git ls-files`)
-   is tracked, with exactly two exceptions — `papers/Lai-Liu-2014-survey.pdf`
+   Added as `!` negations next to the existing ones. **Where the change
+   landed:** the negations and the five files were staged by this lane and then
+   committed in **`6dbe9ee`** ("Close the pickle cache handles; record the
+   solver-binary swap under the running hunt"), the shape/CSP lane's commit,
+   which picked them up from the shared index. They are tracked and correct;
+   only the commit message's provenance sits in the other lane. Nothing was
+   re-added or duplicated afterwards. **Audit re-run** (2026-09-15, after
+   `6dbe9ee`): every file path named in `papers/draft/SOURCES.md` — 93 paths,
+   extracted mechanically from its backticked spans and resolved one at a time
+   against `git ls-files` — resolves, 91 of 93, with exactly two exceptions — `papers/Lai-Liu-2014-survey.pdf`
    and `papers/Wallis-2014-IWOCA-open-problems.pdf`, the third-party PDFs,
    which stay untracked by the redistribution decision and remain accounted for
    by size and SHA-256 in `SOURCES.md`. No other file was un-ignored.

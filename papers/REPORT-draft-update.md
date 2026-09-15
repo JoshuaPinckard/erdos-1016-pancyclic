@@ -440,6 +440,13 @@ search/k6/verify-67-gpu-joint.txt  323
 
 `git ls-files` returns all five after the change.
 
+**Where the change landed.** These were staged by this lane and then committed
+in `6dbe9ee`, the shape/CSP lane's commit, which picked them up from the shared
+index before this lane could commit. They are tracked and correct; only the
+commit-message provenance sits in the other lane, and nothing was re-added or
+duplicated afterwards. This is also why the five documents of this pass were
+committed (`83508d5`) rather than left staged.
+
 **Audit method and its declared bound.** I extracted every backticked span in
 `papers/draft/SOURCES.md` matching a file-path shape with a known extension
 (`txt|md|py|c|csv|json|log|err|out|lean|ps1|pkl|sh|pdf`) — 93 distinct paths
