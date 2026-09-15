@@ -68,8 +68,12 @@ def main():
         else:
             state = {"version": 1, "n": args.n, "min_b": args.min_b,
                      "max_b": args.max_b, "source_sha256": source_sha256,
-                     "units": units, "complete": [], "hits": []}
+                     "complete": [], "hits": []}
             atomic_json(args.state, state)
+        # Older states carried the full deterministic unit plan.  Drop it on
+        # the next checkpoint: regenerating it from the hashed source keeps
+        # each atomic write proportional to completed work, not total work.
+        state.pop("units", None)
         done = {tuple(x) for x in state["complete"]}
         by_shape = {r["shape_index"]: r for r in rows}
         engine = G.Engine(12, 70, 127)
@@ -78,7 +82,7 @@ def main():
             raise RuntimeError("POSITIVE CONTROL FAILED")
         start = time.monotonic()
         tested = 0
-        for unit in state["units"]:
+        for unit in units:
             key = (unit["shape_index"], unit["offset"], unit["count"])
             if key in done:
                 continue
@@ -95,12 +99,12 @@ def main():
             atomic_json(args.state, state)
             tested += unit["count"]
             print(json.dumps({"complete_units": len(state["complete"]),
-                              "total_units": len(state["units"]),
+                              "total_units": len(units),
                               "tested_this_invocation": tested,
                               "gpu_seconds": elapsed}), flush=True)
         print(json.dumps({"complete_units": len(state["complete"]),
-                          "total_units": len(state["units"]),
-                          "exhausted": len(state["complete"]) == len(state["units"]),
+                          "total_units": len(units),
+                          "exhausted": len(state["complete"]) == len(units),
                           "tested_this_invocation": tested}), flush=True)
     finally:
         try:
