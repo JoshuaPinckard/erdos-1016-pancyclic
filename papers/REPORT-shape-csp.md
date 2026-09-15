@@ -356,6 +356,12 @@ refuted without search.
 Levels 110 down to 94 are contiguous, so **no C_n plus 6 chords with n >= 94 is
 pancyclic**, i.e. `t_6 <= 93`.
 
+Levels 93 and 92 were launched and are still running when this report is written;
+they write `search/shapecsp/level-k6-n93.txt` and `-n92.txt` and need no
+supervision. If both land UNSAT the bound becomes `t_6 <= 91`; whatever they say
+is in those files, and an empty file means the level did not finish, not that it
+found nothing.
+
 The cost is the problem, and it is measured rather than guessed: the level time
 goes 18.1 -> 48.1 -> 521.6 -> 1197.9 -> 2727.1 -> 4682.5 -> 9529.9 seconds from
 n=101 to n=95, roughly a factor of **2 per level down**. (These are wall times
