@@ -95,7 +95,10 @@ print(f"shapes={len(data)} eligible={len(elig)} caps {elig[0][0]}..{elig[-1][0]}
 
 with open(BB, "rb") as fh:
     BB_SHA = hashlib.sha256(fh.read()).hexdigest()
+with open(os.path.abspath(__file__), "rb") as fh:
+    DRIVER_SHA = hashlib.sha256(fh.read()).hexdigest()
 print(f"solver {os.path.basename(BB)} sha256={BB_SHA}", flush=True)
+print(f"driver hunt.py sha256={DRIVER_SHA}", flush=True)
 
 DONE = os.path.join(HERE, f"hunt-k{k}-n{cutoff}-{'exact' if exact == '1' else 'range'}.done")
 HDR = "# solver sha256="
@@ -129,7 +132,8 @@ donef = open(DONE, "a", buffering=1)
 if not seen:
     # First write of this ledger: stamp the build, so every row below it is
     # attributable and a later resume can refuse a different one.
-    donef.write(f"{HDR}{BB_SHA} binary={os.path.basename(BB)} k={k} cutoff={cutoff} "
+    donef.write(f"{HDR}{BB_SHA} driver={DRIVER_SHA[:16]} "
+                f"binary={os.path.basename(BB)} k={k} cutoff={cutoff} "
                 f"mode={'exact' if exact == '1' else 'range'} nodecap={nodecap}\n")
 done = [len(seen)]
 gaveup, errors, hit = [], [], []
@@ -144,8 +148,10 @@ def run(item):
     cap, b, ch, forms, lows, iv = d
     payload = "\n".join([" ".join(map(str, [b, len(forms)] + lows))] +
                         [f"{m} {c}" for m, c in forms]) + "\n"
+    t_shape = time.time()
     p = subprocess.run([BB, str(cutoff), nodecap, "2", exact], input=payload,
                        capture_output=True, text=True)
+    t_shape = round(time.time() - t_shape, 1)
     recs = [l for l in p.stdout.splitlines() if l.startswith("SHAPE ")]
     ok_sat, why, claimed_sat = None, None, False
     if p.returncode != 0:
@@ -178,7 +184,12 @@ def run(item):
             gaveup.append((b, ch, cap))
             print(f"GAVEUP b={b} chords={ch} cap={cap}  (UNKNOWN, not UNSAT)", flush=True)
         elif "UNSAT" in recs[0]:
-            donef.write(f"{i} UNSAT\n")
+            # Cost per shape, recorded because a level's total says nothing about
+            # WHERE its hours went, and whether a sharper necessary condition is
+            # worth building turns entirely on whether a few shapes dominate.
+            nodes = next((w.split("=")[1] for w in recs[0].split()
+                          if w.startswith("nodes=")), "?")
+            donef.write(f"{i} UNSAT s={t_shape} nodes={nodes} cap={cap} b={b}\n")
         else:
             errors.append((b, ch, cap, f"unrecognised record {recs[0]!r}"))
             print(f"ERROR b={b} chords={ch} cap={cap}: unrecognised record {recs[0]!r}", flush=True)
