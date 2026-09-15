@@ -1,0 +1,14 @@
+test_fresh_ledger_records_the_solver_sha256 (__main__.LedgerProvenanceContracts.test_fresh_ledger_records_the_solver_sha256) ... ok
+test_resume_refuses_a_ledger_with_no_build_recorded (__main__.LedgerProvenanceContracts.test_resume_refuses_a_ledger_with_no_build_recorded) ... ok
+test_resume_refuses_a_ledger_written_by_another_build (__main__.LedgerProvenanceContracts.test_resume_refuses_a_ledger_written_by_another_build) ... ok
+test_invalid_witness_is_not_reported_as_sat (__main__.ReviewContracts.test_invalid_witness_is_not_reported_as_sat) ... ok
+test_known_native_witness_is_independently_valid (__main__.ReviewContracts.test_known_native_witness_is_independently_valid) ... ok
+test_missing_results_cannot_certify_zero_sat_zero_gaveup (__main__.ReviewContracts.test_missing_results_cannot_certify_zero_sat_zero_gaveup) ... ok
+test_native_solver_propagates_gaveup (__main__.ReviewContracts.test_native_solver_propagates_gaveup) ... ok
+test_nonzero_solver_exit_cannot_certify_zero_sat_zero_gaveup (__main__.ReviewContracts.test_nonzero_solver_exit_cannot_certify_zero_sat_zero_gaveup) ... ok
+test_satcheck_budget_failure_has_nonzero_exit (__main__.ReviewContracts.test_satcheck_budget_failure_has_nonzero_exit) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 51.108s
+
+OK

@@ -1,0 +1,332 @@
+[
+  {
+    "n": 68,
+    "eligible": 6059,
+    "exhausted": [
+      {
+        "shape_index": 361,
+        "b": 6,
+        "chords": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ]
+        ],
+        "lows": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "total": 5949147,
+        "start": 3060444,
+        "step": 3275330,
+        "count": 5949147
+      }
+    ],
+    "by_b": {
+      "6": {
+        "exhausted": 1,
+        "partial": 0,
+        "total_ranks": 5949147,
+        "tested": 5949147,
+        "remaining": 0
+      },
+      "7": {
+        "exhausted": 0,
+        "partial": 17,
+        "total_ranks": 1620406333,
+        "tested": 285212672,
+        "remaining": 1335193661
+      },
+      "8": {
+        "exhausted": 0,
+        "partial": 473,
+        "total_ranks": 387641502225,
+        "tested": 7935623168,
+        "remaining": 379705879057
+      },
+      "9": {
+        "exhausted": 0,
+        "partial": 1711,
+        "total_ranks": 10418519119461,
+        "tested": 28705816576,
+        "remaining": 10389813302885
+      },
+      "10": {
+        "exhausted": 0,
+        "partial": 2302,
+        "total_ranks": 90425326969618,
+        "tested": 38621151232,
+        "remaining": 90386705818386
+      },
+      "11": {
+        "exhausted": 0,
+        "partial": 1257,
+        "total_ranks": 280492308296579,
+        "tested": 21088960512,
+        "remaining": 280471219336067
+      },
+      "12": {
+        "exhausted": 0,
+        "partial": 298,
+        "total_ranks": 337958381285184,
+        "tested": 4999610368,
+        "remaining": 337953381674816
+      }
+    },
+    "remaining": 719582161204872,
+    "estimated_remaining_days_at_observed_rate": 7.2773540353571455,
+    "max_per_shape_total": 1285063345176,
+    "manifest_sha256": "b57e9d74759392222faddee44afb2063dcf3e0117686ca082d2719f497b1e93e",
+    "gpu_samples": 88,
+    "gpu_util_mean": 96.54545454545455,
+    "gpu_util_median": 100.0,
+    "gpu_util_min": 53.0,
+    "gpu_util_max": 100.0,
+    "child_cpu_mean": 0.19204545454545455,
+    "child_cpu_max": 3.975
+  },
+  {
+    "n": 69,
+    "eligible": 5648,
+    "exhausted": [
+      {
+        "shape_index": 361,
+        "b": 6,
+        "chords": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ]
+        ],
+        "lows": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "total": 6471002,
+        "start": 885857,
+        "step": 911695,
+        "count": 6471002
+      }
+    ],
+    "by_b": {
+      "6": {
+        "exhausted": 1,
+        "partial": 0,
+        "total_ranks": 6471002,
+        "tested": 6471002,
+        "remaining": 0
+      },
+      "7": {
+        "exhausted": 0,
+        "partial": 6,
+        "total_ranks": 574262263,
+        "tested": 100663296,
+        "remaining": 473598967
+      },
+      "8": {
+        "exhausted": 0,
+        "partial": 381,
+        "total_ranks": 349337446776,
+        "tested": 6392119296,
+        "remaining": 342945327480
+      },
+      "9": {
+        "exhausted": 0,
+        "partial": 1542,
+        "total_ranks": 10698677586699,
+        "tested": 25870467072,
+        "remaining": 10672807119627
+      },
+      "10": {
+        "exhausted": 0,
+        "partial": 2188,
+        "total_ranks": 99523794187552,
+        "tested": 36708548608,
+        "remaining": 99487085638944
+      },
+      "11": {
+        "exhausted": 0,
+        "partial": 1234,
+        "total_ranks": 324209520095256,
+        "tested": 20703084544,
+        "remaining": 324188817010712
+      },
+      "12": {
+        "exhausted": 0,
+        "partial": 296,
+        "total_ranks": 401973803930504,
+        "tested": 4966055936,
+        "remaining": 401968837874568
+      }
+    },
+    "remaining": 836660966570298,
+    "estimated_remaining_days_at_observed_rate": 9.888850884037982,
+    "max_per_shape_total": 1533058025824,
+    "manifest_sha256": "bceb4eee4bd6bd23e43cc83b7128a4230f9d542397f2bb1763ec5fb64a2fe828",
+    "gpu_samples": 105,
+    "gpu_util_mean": 69.80952380952381,
+    "gpu_util_median": 96.0,
+    "gpu_util_min": 0.0,
+    "gpu_util_max": 100.0,
+    "child_cpu_mean": 0.14333333333333334,
+    "child_cpu_max": 0.55
+  },
+  {
+    "n": 70,
+    "eligible": 4981,
+    "exhausted": [
+      {
+        "shape_index": 361,
+        "b": 6,
+        "chords": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ]
+        ],
+        "lows": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "total": 7028847,
+        "start": 5445111,
+        "step": 78109,
+        "count": 7028847
+      }
+    ],
+    "by_b": {
+      "6": {
+        "exhausted": 1,
+        "partial": 0,
+        "total_ranks": 7028847,
+        "tested": 7028847,
+        "remaining": 0
+      },
+      "7": {
+        "exhausted": 0,
+        "partial": 6,
+        "total_ranks": 630054289,
+        "tested": 100663296,
+        "remaining": 529390993
+      },
+      "8": {
+        "exhausted": 0,
+        "partial": 272,
+        "total_ranks": 278069214477,
+        "tested": 4563402752,
+        "remaining": 273505811725
+      },
+      "9": {
+        "exhausted": 0,
+        "partial": 1312,
+        "total_ranks": 10382946734499,
+        "tested": 22011707392,
+        "remaining": 10360935027107
+      },
+      "10": {
+        "exhausted": 0,
+        "partial": 1971,
+        "total_ranks": 104015764237632,
+        "tested": 33067892736,
+        "remaining": 103982696344896
+      },
+      "11": {
+        "exhausted": 0,
+        "partial": 1138,
+        "total_ranks": 352784932890624,
+        "tested": 19092471808,
+        "remaining": 352765840418816
+      },
+      "12": {
+        "exhausted": 0,
+        "partial": 281,
+        "total_ranks": 457321800482352,
+        "tested": 4714397696,
+        "remaining": 457317086084656
+      }
+    },
+    "remaining": 924700593078193,
+    "estimated_remaining_days_at_observed_rate": 11.526326030082226,
+    "max_per_shape_total": 1823810410032,
+    "manifest_sha256": "a7c0142578974aea83b2ced21f763290e8c186e2b701774d7a1b2659366af86e",
+    "gpu_samples": 99,
+    "gpu_util_mean": 72.8989898989899,
+    "gpu_util_median": 95.0,
+    "gpu_util_min": 0.0,
+    "gpu_util_max": 100.0,
+    "child_cpu_mean": 0.13535353535353534,
+    "child_cpu_max": 0.55
+  }
+]

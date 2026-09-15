@@ -1,0 +1,17 @@
+C:\Python313\Lib\site-packages\cupy\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.
+  warnings.warn(
+test_rejects_false_gpu_sat (__main__.GpuTests.test_rejects_false_gpu_sat) ... FAIL
+
+======================================================================
+FAIL: test_rejects_false_gpu_sat (__main__.GpuTests.test_rejects_false_gpu_sat)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\search\shapecsp\test_gpu_search.py", line 72, in test_rejects_false_gpu_sat
+    with self.assertRaisesRegex(RuntimeError,'independent verifier rejected GPU SAT'):
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: RuntimeError not raised
+
+----------------------------------------------------------------------
+Ran 1 test in 5.356s
+
+FAILED (failures=1)

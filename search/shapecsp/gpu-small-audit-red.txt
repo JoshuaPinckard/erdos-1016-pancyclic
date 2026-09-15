@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\search\shapecsp\gpu_audit_small.py", line 44, in <module>
+    if __name__=='__main__': main()
+                             ~~~~^^
+  File "C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\search\shapecsp\gpu_audit_small.py", line 28, in main
+    if actual!=expected or len(rows)!=len(actual): raise ValueError('small-shape census incomplete')
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: small-shape census incomplete

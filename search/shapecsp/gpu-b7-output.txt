@@ -1,0 +1,6 @@
+C:\Python313\Lib\site-packages\cupy\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.
+  warnings.warn(
+POSITIVE CONTROL PASS
+{"n": 68, "eligible": 17, "tested": 1620406333, "gpu_seconds": 0.9944497999968007, "wall_seconds": 1.0599565505981445, "start_time": 1789475950.309027, "end_time": 1789475951.3689854, "hits": [], "source_sha256": "b57e9d74759392222faddee44afb2063dcf3e0117686ca082d2719f497b1e93e"}
+{"n": 69, "eligible": 6, "tested": 574262263, "gpu_seconds": 0.3636722000082955, "wall_seconds": 0.38534069061279297, "start_time": 1789475951.5048895, "end_time": 1789475951.8902314, "hits": [], "source_sha256": "bceb4eee4bd6bd23e43cc83b7128a4230f9d542397f2bb1763ec5fb64a2fe828"}
+{"n": 70, "eligible": 6, "tested": 630054289, "gpu_seconds": 0.40143119991989806, "wall_seconds": 0.422534704208374, "start_time": 1789475951.9493804, "end_time": 1789475952.3719156, "hits": [], "source_sha256": "a7c0142578974aea83b2ced21f763290e8c186e2b701774d7a1b2659366af86e"}

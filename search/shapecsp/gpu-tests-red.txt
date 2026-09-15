@@ -1,0 +1,32 @@
+C:\Python313\Lib\site-packages\cupy\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.
+  warnings.warn(
+test_all_small_compositions (__main__.GpuTests.test_all_small_compositions) ... ok
+test_entire_known_family (__main__.GpuTests.test_entire_known_family) ... FAIL
+test_gpu_exhaustive_small_and_batched (__main__.GpuTests.test_gpu_exhaustive_small_and_batched) ... ok
+test_known_controls (__main__.GpuTests.test_known_controls) ... ERROR
+test_largest_branch_count_and_word_boundaries (__main__.GpuTests.test_largest_branch_count_and_word_boundaries) ... ok
+
+======================================================================
+ERROR: test_known_controls (__main__.GpuTests.test_known_controls)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\search\shapecsp\test_gpu_search.py", line 50, in test_known_controls
+    evidence=G.controls(self.engine)
+  File "C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\search\shapecsp\gpu_search.py", line 174, in controls
+    if not hits or list(debug[0][0,:d['b']])!=a: raise RuntimeError('POSITIVE CONTROL FAILED')
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: POSITIVE CONTROL FAILED
+
+======================================================================
+FAIL: test_entire_known_family (__main__.GpuTests.test_entire_known_family)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\search\shapecsp\test_gpu_search.py", line 60, in test_entire_known_family
+    self.assertEqual(len(hits),1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+----------------------------------------------------------------------
+Ran 5 tests in 24.356s
+
+FAILED (failures=1, errors=1)

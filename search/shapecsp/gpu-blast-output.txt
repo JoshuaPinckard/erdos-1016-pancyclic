@@ -1,0 +1,79 @@
+C:\Python313\Lib\site-packages\cupy\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.
+  warnings.warn(
+{"positive_control": "PASS", "witnesses": [{"n": 67, "shape": [[0, 2], [0, 8], [1, 5], [3, 9], [4, 6], [7, 10]], "arcs": [1, 1, 1, 1, 9, 18, 28, 1, 1, 1, 5], "rank": 107479052940, "result": "SAT", "verified": [{"shape": 0, "rank": 107479052940, "arcs": [1, 1, 1, 1, 9, 18, 28, 1, 1, 1, 5], "chords": [[0, 2], [0, 60], [1, 13], [3, 61], [4, 31], [59, 62]], "n": 67, "verification": "search/verify.py pancyclic=True"}]}, {"n": 56, "shape": [[0, 1], [0, 3], [0, 6], [2, 4], [4, 5], [5, 6]], "arcs": [19, 18, 1, 1, 3, 5, 9], "rank": 6746008, "result": "SAT", "verified": [{"shape": 0, "rank": 6746008, "arcs": [19, 18, 1, 1, 3, 5, 9], "chords": [[0, 19], [0, 38], [0, 47], [37, 39], [39, 42], [42, 47]], "n": 56, "verification": "search/verify.py pancyclic=True"}]}], "sample": 44, "mismatches": 0}
+replay prepared 68 6059
+replay prepared 69 5648
+replay prepared 70 4981
+eligible 68 6059
+progress 68 0 tested 257607387 GPU seconds 0.17383230000268668
+progress 68 256 tested 4552574683 GPU seconds 3.0927193000679836
+progress 68 512 tested 8847541979 GPU seconds 6.091072000155691
+progress 68 768 tested 13142509275 GPU seconds 9.327311000146437
+progress 68 1024 tested 17437476571 GPU seconds 12.785300400108099
+progress 68 1280 tested 21732443867 GPU seconds 16.10116040002322
+progress 68 1536 tested 26027411163 GPU seconds 19.348684600088745
+progress 68 1792 tested 30322378459 GPU seconds 22.62843710015295
+progress 68 2048 tested 34617345755 GPU seconds 26.024857500044163
+progress 68 2304 tested 38912313051 GPU seconds 29.497656200139318
+progress 68 2560 tested 43207280347 GPU seconds 33.14496300026076
+progress 68 2816 tested 47502247643 GPU seconds 36.82658550021006
+progress 68 3072 tested 51797214939 GPU seconds 40.64304510009242
+progress 68 3328 tested 56092182235 GPU seconds 44.25206500006607
+progress 68 3584 tested 60387149531 GPU seconds 48.011859400197864
+progress 68 3840 tested 64682116827 GPU seconds 51.8353303000913
+progress 68 4096 tested 68977084123 GPU seconds 55.67775420023827
+progress 68 4352 tested 73272051419 GPU seconds 59.532509800454136
+progress 68 4608 tested 77567018715 GPU seconds 64.12886480044108
+progress 68 4864 tested 81861986011 GPU seconds 68.35318060050486
+progress 68 5120 tested 86156953307 GPU seconds 72.3969099004753
+progress 68 5376 tested 90451920603 GPU seconds 76.61242200050037
+progress 68 5632 tested 94746887899 GPU seconds 81.0783133005607
+progress 68 5888 tested 99041855195 GPU seconds 85.84087150054984
+{"n": 68, "eligible": 6059, "tested": 101642323675, "gpu_seconds": 88.81400250061415, "assignments_per_second": 1144440300.1012948, "hits": [], "wall_seconds": 93.21139240264893, "start_time": 1789475508.0564895, "end_time": 1789475601.267883}
+eligible 69 5648
+progress 69 0 tested 258129242 GPU seconds 0.1719677000073716
+progress 69 256 tested 4553096538 GPU seconds 3.0866827000281774
+progress 69 512 tested 8848063834 GPU seconds 6.174414100009017
+progress 69 768 tested 13143031130 GPU seconds 9.460439799935557
+progress 69 1024 tested 17437998426 GPU seconds 12.777926800015848
+progress 69 1280 tested 21732965722 GPU seconds 16.026888899912592
+progress 69 1536 tested 26027933018 GPU seconds 19.488525499822572
+progress 69 1792 tested 30322900314 GPU seconds 22.870533499866724
+progress 69 2048 tested 34617867610 GPU seconds 26.432870099961292
+progress 69 2304 tested 38912834906 GPU seconds 30.16040819999762
+progress 69 2560 tested 43207802202 GPU seconds 33.85421640006825
+progress 69 2816 tested 47502769498 GPU seconds 37.58465000014985
+progress 69 3072 tested 51797736794 GPU seconds 41.615556800039485
+progress 69 3328 tested 56092704090 GPU seconds 50.78037509985734
+progress 69 3584 tested 60387671386 GPU seconds 56.158159799757414
+progress 69 3840 tested 64682638682 GPU seconds 62.34539459989173
+progress 69 4096 tested 68977605978 GPU seconds 66.79465259989956
+progress 69 4352 tested 73272573274 GPU seconds 71.49419720005244
+progress 69 4608 tested 77567540570 GPU seconds 75.91693920019316
+progress 69 4864 tested 81862507866 GPU seconds 80.13032250007382
+progress 69 5120 tested 86157475162 GPU seconds 85.33980469999369
+progress 69 5376 tested 90452442458 GPU seconds 91.4698717999272
+progress 69 5632 tested 94747409754 GPU seconds 96.75588919996517
+{"n": 69, "eligible": 5648, "tested": 94747409754, "gpu_seconds": 96.75588919996517, "assignments_per_second": 979241786.0806979, "hits": [], "wall_seconds": 113.8592631816864, "start_time": 1789475601.2714355, "end_time": 1789475715.1306999}
+eligible 70 4981
+progress 70 0 tested 258687087 GPU seconds 0.3051941999583505
+progress 70 256 tested 4553654383 GPU seconds 3.827487499860581
+progress 70 512 tested 8848621679 GPU seconds 8.62968119996367
+progress 70 768 tested 13143588975 GPU seconds 12.152612400008366
+progress 70 1024 tested 17438556271 GPU seconds 16.448241100180894
+progress 70 1280 tested 21733523567 GPU seconds 20.333797500119545
+progress 70 1536 tested 26028490863 GPU seconds 25.41298430005554
+progress 70 1792 tested 30323458159 GPU seconds 29.837212699931115
+progress 70 2048 tested 34618425455 GPU seconds 33.97778929991182
+progress 70 2304 tested 38913392751 GPU seconds 37.84720339992782
+progress 70 2560 tested 43208360047 GPU seconds 41.847110100032296
+progress 70 2816 tested 47503327343 GPU seconds 46.67908540018834
+progress 70 3072 tested 51798294639 GPU seconds 50.95351910026511
+progress 70 3328 tested 56093261935 GPU seconds 55.407377200201154
+progress 70 3584 tested 60388229231 GPU seconds 61.47291700023925
+progress 70 3840 tested 64683196527 GPU seconds 65.95615980034927
+progress 70 4096 tested 68978163823 GPU seconds 70.11849900032394
+progress 70 4352 tested 73273131119 GPU seconds 75.20646920026047
+progress 70 4608 tested 77568098415 GPU seconds 80.10782080027275
+progress 70 4864 tested 81863065711 GPU seconds 85.18810480035609
+{"n": 70, "eligible": 4981, "tested": 83557564527, "gpu_seconds": 89.988969600352, "assignments_per_second": 928531184.4116633, "hits": [], "wall_seconds": 107.57133507728577, "start_time": 1789475715.1388865, "end_time": 1789475822.7102222}

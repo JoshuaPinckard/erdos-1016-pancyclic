@@ -1,0 +1,10 @@
+{"time": 1789476106.3734334, "child_cpu_percent": 6.925, "host_cpu_percent": 100.0, "gpu": "1, 7.74, 1034", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789476107.9039714, "child_cpu_percent": 5.3, "host_cpu_percent": 100.0, "gpu": "5, 7.02, 1028", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789476109.2148545, "child_cpu_percent": 6.7, "host_cpu_percent": 100.0, "gpu": "0, 6.52, 1026", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789476110.8673682, "child_cpu_percent": 4.1375, "host_cpu_percent": 100.0, "gpu": "0, 6.98, 1020", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789476112.2616837, "child_cpu_percent": 5.3, "host_cpu_percent": 100.0, "gpu": "0, 6.63, 1020", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789476113.516997, "child_cpu_percent": 6.725, "host_cpu_percent": 96.4, "gpu": "3, 6.96, 962", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789476114.8231413, "child_cpu_percent": 8.1, "host_cpu_percent": 100.0, "gpu": "0, 6.66, 955", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789476116.1269562, "child_cpu_percent": 3.65, "host_cpu_percent": 99.0, "gpu": "2, 7.11, 956", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789476117.3701217, "child_cpu_percent": 6.225, "host_cpu_percent": 100.0, "gpu": "1, 6.89, 956", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789476118.6494818, "child_cpu_percent": 7.5125, "host_cpu_percent": 99.4, "gpu": "5, 6.97, 956", "gpu_exit": 0, "job_cpu_cap_percent": 7}

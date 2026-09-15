@@ -1,0 +1,31 @@
+{
+  "shapes": 21878,
+  "max_b": 12,
+  "levels": [
+    {
+      "n": 68,
+      "eligible": 6059,
+      "tested": 1588330496,
+      "gpu_seconds": 1.761241099506151,
+      "assignments_per_second": 901824569.3025022,
+      "hits": []
+    },
+    {
+      "n": 69,
+      "eligible": 5648,
+      "tested": 1480589312,
+      "gpu_seconds": 2.321493499679491,
+      "assignments_per_second": 637774481.0418003,
+      "hits": []
+    },
+    {
+      "n": 70,
+      "eligible": 4981,
+      "tested": 1305739264,
+      "gpu_seconds": 1.5970469993189909,
+      "assignments_per_second": 817596015.9950148,
+      "hits": []
+    }
+  ],
+  "count": 262144
+}

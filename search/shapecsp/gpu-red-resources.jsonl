@@ -1,0 +1,4 @@
+{"time": 1789475078.0363953, "child_cpu_percent": 8.775, "host_cpu_percent": 86.2, "gpu": "2, 6.64, 1135", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789475079.099761, "child_cpu_percent": 3.7625, "host_cpu_percent": 73.8, "gpu": "0, 6.41, 1135", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789475080.1592581, "child_cpu_percent": 4.4, "host_cpu_percent": 86.6, "gpu": "6, 6.28, 1149", "gpu_exit": 0, "job_cpu_cap_percent": 7}
+{"time": 1789475081.2213585, "child_cpu_percent": 5.9, "host_cpu_percent": 79.1, "gpu": "0, 15.49, 1253", "gpu_exit": 0, "job_cpu_cap_percent": 7}

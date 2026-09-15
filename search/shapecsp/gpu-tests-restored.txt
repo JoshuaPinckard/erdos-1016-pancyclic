@@ -1,0 +1,12 @@
+C:\Python313\Lib\site-packages\cupy\_environment.py:286: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.
+  warnings.warn(
+test_all_small_compositions (__main__.GpuTests.test_all_small_compositions) ... ok
+test_entire_known_family (__main__.GpuTests.test_entire_known_family) ... ok
+test_gpu_exhaustive_small_and_batched (__main__.GpuTests.test_gpu_exhaustive_small_and_batched) ... ok
+test_known_controls (__main__.GpuTests.test_known_controls) ... ok
+test_largest_branch_count_and_word_boundaries (__main__.GpuTests.test_largest_branch_count_and_word_boundaries) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 27.936s
+
+OK

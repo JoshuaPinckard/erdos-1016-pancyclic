@@ -1,0 +1,15 @@
+{"time": 1789475845.7898831, "child_cpu_percent": 1.3625, "host_cpu_percent": 77.3, "gpu": "1, 7.52, 1017", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475846.8478673, "child_cpu_percent": 2.5625, "host_cpu_percent": 71.8, "gpu": "0, 7.43, 1017", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475847.912004, "child_cpu_percent": 1.1125, "host_cpu_percent": 72.8, "gpu": "2, 7.42, 1018", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475848.9718747, "child_cpu_percent": 1.2875, "host_cpu_percent": 47.1, "gpu": "0, 7.17, 1018", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475850.0275118, "child_cpu_percent": 1.6625, "host_cpu_percent": 38.8, "gpu": "0, 7.36, 1018", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475851.1389701, "child_cpu_percent": 0.3625, "host_cpu_percent": 70.8, "gpu": "0, 7.39, 1017", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475852.201076, "child_cpu_percent": 1.9375, "host_cpu_percent": 57.8, "gpu": "0, 7.36, 1026", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475853.2466354, "child_cpu_percent": 2.2125, "host_cpu_percent": 53.1, "gpu": "0, 7.29, 1026", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475854.3080854, "child_cpu_percent": 1.5, "host_cpu_percent": 63.9, "gpu": "0, 7.30, 1025", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475855.3994079, "child_cpu_percent": 1.2875, "host_cpu_percent": 92.0, "gpu": "4, 7.54, 1037", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475856.4706776, "child_cpu_percent": 0.9, "host_cpu_percent": 76.2, "gpu": "0, 7.61, 1037", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475857.5366175, "child_cpu_percent": 1.825, "host_cpu_percent": 47.1, "gpu": "0, 16.92, 1141", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475858.592068, "child_cpu_percent": 1.2875, "host_cpu_percent": 49.0, "gpu": "1, 19.21, 1135", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475859.640059, "child_cpu_percent": 1.1125, "host_cpu_percent": 36.9, "gpu": "0, 19.23, 1135", "gpu_exit": 0, "job_cpu_cap_percent": 2}
+{"time": 1789475860.7146616, "child_cpu_percent": 1.675, "host_cpu_percent": 71.7, "gpu": "2, 19.17, 1017", "gpu_exit": 0, "job_cpu_cap_percent": 2}

@@ -1,0 +1,43 @@
+{
+  "census_by_b": {
+    "4": 1,
+    "5": 25,
+    "6": 347,
+    "7": 1736
+  },
+  "levels": [
+    {
+      "n": 68,
+      "exhausted_shapes": 18,
+      "ranks": 1626355480,
+      "exhausted_by_b": {
+        "6": 1,
+        "7": 17
+      },
+      "ineligible_small_shapes": 2091,
+      "result": "EXHAUSTED; no SAT"
+    },
+    {
+      "n": 69,
+      "exhausted_shapes": 7,
+      "ranks": 580733265,
+      "exhausted_by_b": {
+        "6": 1,
+        "7": 6
+      },
+      "ineligible_small_shapes": 2102,
+      "result": "EXHAUSTED; no SAT"
+    },
+    {
+      "n": 70,
+      "exhausted_shapes": 7,
+      "ranks": 637083136,
+      "exhausted_by_b": {
+        "6": 1,
+        "7": 6
+      },
+      "ineligible_small_shapes": 2102,
+      "result": "EXHAUSTED; no SAT"
+    }
+  ]
+}

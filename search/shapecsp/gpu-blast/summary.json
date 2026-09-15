@@ -1,0 +1,54 @@
+{
+  "shapes": 21878,
+  "max_b": 12,
+  "levels": [
+    {
+      "n": 68,
+      "eligible": 6059,
+      "tested": 101642323675,
+      "gpu_seconds": 88.81400250061415,
+      "assignments_per_second": 1144440300.1012948,
+      "hits": [],
+      "wall_seconds": 93.21139240264893,
+      "start_time": 1789475508.0564895,
+      "end_time": 1789475601.267883
+    },
+    {
+      "n": 69,
+      "eligible": 5648,
+      "tested": 94747409754,
+      "gpu_seconds": 96.75588919996517,
+      "assignments_per_second": 979241786.0806979,
+      "hits": [],
+      "wall_seconds": 113.8592631816864,
+      "start_time": 1789475601.2714355,
+      "end_time": 1789475715.1306999
+    },
+    {
+      "n": 70,
+      "eligible": 4981,
+      "tested": 83557564527,
+      "gpu_seconds": 89.988969600352,
+      "assignments_per_second": 928531184.4116633,
+      "hits": [],
+      "wall_seconds": 107.57133507728577,
+      "start_time": 1789475715.1388865,
+      "end_time": 1789475822.7102222
+    }
+  ],
+  "count": 16777216,
+  "replay_sources": {
+    "68": {
+      "path": "search\\shapecsp\\gpu-run\\n68.jsonl",
+      "sha256": "aee3df383877749ee537350d01215d760998dfa022967fcd5ccd01cb153e0838"
+    },
+    "69": {
+      "path": "search\\shapecsp\\gpu-run\\n69.jsonl",
+      "sha256": "3a8bd96a2819ded4cee624ca13d8e36ac503ed80158e1f29813fc7068e4fc603"
+    },
+    "70": {
+      "path": "search\\shapecsp\\gpu-run\\n70.jsonl",
+      "sha256": "8f70547b12b0f02446c7382c3c7b9744fa7e52bdafd57234bbb9a03cb66d5d97"
+    }
+  }
+}
