@@ -55,11 +55,27 @@ GATES = [
     ("satcheck.py's exit status carries its verdict", "satcheck.py",
      [("sys.exit(0 if not fails else 1)", "sys.exit(0)  # MUTANT: gate disabled")],
      "test_satcheck_budget_failure_has_nonzero_exit"),
+
+    # Added after a solver binary was swapped under a running hunt, leaving UNSAT
+    # rows that no longer said which build decided them.
+    ("hunt.py stamps the solver build into a fresh ledger", "hunt.py",
+     # Single-line anchor deliberately: hunt.py is CRLF and level.py is LF, so a
+     # multi-line anchor matches in one file and silently misses in the other.
+     # The count assertion caught that rather than reporting a dead gate as live.
+     [("if not seen:", "if False:  # MUTANT: gate disabled")],
+     "LedgerProvenanceContracts.test_fresh_ledger_records_the_solver_sha256"),
+
+    ("hunt.py refuses to resume a ledger from another build", "hunt.py",
+     [("    if recorded != BB_SHA:", "    if False:  # MUTANT: gate disabled")],
+     "LedgerProvenanceContracts.test_resume_refuses_a_ledger_written_by_another_build"),
 ]
 
 
 def run(test):
-    p = subprocess.run([sys.executable, "-B", str(SUITE), f"ReviewContracts.{test}"],
+    # A bare name is one of the reviewer's original contracts; a dotted one names
+    # its class, for the contracts added since.
+    test = test if "." in test else f"ReviewContracts.{test}"
+    p = subprocess.run([sys.executable, "-B", str(SUITE), test],
                        cwd=HERE, text=True, capture_output=True, timeout=300)
     return p.returncode, (p.stderr.strip().splitlines() or [""])[-1]
 

@@ -10,6 +10,7 @@ child output counted as sat=0; a SAT accepted although the independent graph
 checker rejects it; and the SAT control printing FAILED while exiting 0.
 """
 import contextlib
+import hashlib
 import io
 import os
 from pathlib import Path
@@ -106,6 +107,52 @@ class ReviewContracts(unittest.TestCase):
         ok, verified_n, _, why = V.check(b, ch, arcs)
         self.assertTrue(ok, why)
         self.assertEqual(n, verified_n)
+
+
+class LedgerProvenanceContracts(unittest.TestCase):
+    """The resume ledger must name the build that wrote it, and refuse any other.
+
+    Added after a solver binary was swapped under a running hunt: the ledger's
+    UNSAT rows then span two builds with no boundary, and a non-existence claim is
+    exactly a pile of UNSAT rows.  These call hunt.py for real, with k=2 at a
+    cutoff above t_2 = 8, so the level is decided instantly and the assertions are
+    about the ledger rather than about the search.
+    """
+
+    LEDGER = HERE / "hunt-k2-n9-range.done"
+
+    def setUp(self):
+        self.LEDGER.unlink(missing_ok=True)
+
+    tearDown = setUp
+
+    def hunt(self):
+        return subprocess.run([sys.executable, "-B", str(HERE / "hunt.py"),
+                               "2", "9", "1", "1000000", "0"],
+                              cwd=HERE, text=True, capture_output=True, timeout=120)
+
+    def test_fresh_ledger_records_the_solver_sha256(self):
+        self.assertEqual(self.hunt().returncode, 0)
+        head = self.LEDGER.read_text().splitlines()[0]
+        digest = hashlib.sha256(BB.read_bytes()).hexdigest()
+        self.assertIn(digest, head, head)
+        self.assertTrue(any(l.split()[1:2] == ["UNSAT"]
+                            for l in self.LEDGER.read_text().splitlines()[1:]))
+
+    def test_resume_refuses_a_ledger_written_by_another_build(self):
+        self.assertEqual(self.hunt().returncode, 0)
+        rows = self.LEDGER.read_text().splitlines()
+        self.LEDGER.write_text("\n".join(["# solver sha256=" + "0" * 64] + rows[1:]) + "\n")
+        before = self.LEDGER.read_text()
+        r = self.hunt()
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertEqual(self.LEDGER.read_text(), before, "refused run still wrote rows")
+
+    def test_resume_refuses_a_ledger_with_no_build_recorded(self):
+        self.LEDGER.write_text("0 UNSAT\n")
+        r = self.hunt()
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertEqual(self.LEDGER.read_text(), "0 UNSAT\n", "refused run still wrote rows")
 
 
 if __name__ == "__main__":

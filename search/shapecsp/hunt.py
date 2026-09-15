@@ -38,12 +38,26 @@ and the exit status is non-zero for anything that is not a clean decision.
 
 Each DECIDED shape is also written to a per-run .done file keyed by its index in
 the eligible order, which makes the run resumable: on restart the decided shapes
-are skipped, so changing the worker count or the binary does not throw away
-completed work.  GAVEUP and ERROR are deliberately not recorded there, so a rerun
-retries exactly the shapes that are still unknown.
+are skipped, so changing the WORKER COUNT does not throw away completed work.
+GAVEUP and ERROR are deliberately not recorded there, so a rerun retries exactly
+the shapes that are still unknown.
+
+CHANGING THE BINARY IS A DIFFERENT MATTER AND IS REFUSED.  An earlier revision of
+this docstring said a binary change also costs nothing.  That is true of resume
+progress and false of provenance, which is worse than useless: `BB` is resolved to
+a PATH and re-spawned per shape, so replacing the executable mid-run silently
+splits the ledger between two builds with no boundary marker, and a row saying
+UNSAT no longer says which program decided it.  A SAT survives this -- it is
+re-derived from the graph -- but a non-existence claim is exactly a pile of UNSAT
+rows, so the rows have to be attributable.
+
+The ledger therefore carries the solver's sha256 in its header, and a resume that
+sees a different sha, or a headerless ledger from before this rule, ABORTS instead
+of appending.  The operator then either restores the recorded build or starts a
+fresh ledger; what cannot happen is a mixed one that looks clean.
 """
 from __future__ import annotations
-import os, pickle, subprocess, sys, threading, time
+import hashlib, os, pickle, subprocess, sys, threading, time
 from concurrent.futures import ThreadPoolExecutor
 
 import shapes as S
@@ -79,18 +93,44 @@ print(f"hunt k={k} cutoff={cutoff} jobs={jobs} nodecap={nodecap}/shape "
 print(f"shapes={len(data)} eligible={len(elig)} caps {elig[0][0]}..{elig[-1][0]} "
       f"setup={round(time.time()-t0,1)}s", flush=True)
 
+with open(BB, "rb") as fh:
+    BB_SHA = hashlib.sha256(fh.read()).hexdigest()
+print(f"solver {os.path.basename(BB)} sha256={BB_SHA}", flush=True)
+
 DONE = os.path.join(HERE, f"hunt-k{k}-n{cutoff}-{'exact' if exact == '1' else 'range'}.done")
+HDR = "# solver sha256="
 seen = set()
-if os.path.exists(DONE):
-    for line in open(DONE):
-        parts = line.split()
-        if len(parts) >= 2 and parts[0].isdigit():
-            seen.add(int(parts[0]))
-    print(f"resume: {len(seen)} shape(s) already decided in {os.path.basename(DONE)}", flush=True)
+if os.path.exists(DONE) and os.path.getsize(DONE) > 0:
+    recorded = None
+    with open(DONE) as fh:
+        for line in fh:
+            if line.startswith(HDR):
+                recorded = line[len(HDR):].split()[0]
+            parts = line.split()
+            if len(parts) >= 2 and parts[0].isdigit():
+                seen.add(int(parts[0]))
+    # A mixed-build ledger is refused rather than repaired: the rows already in it
+    # cannot be re-attributed after the fact, so appending would launder them.
+    if recorded is None:
+        sys.exit(f"REFUSING to resume {os.path.basename(DONE)}: it has {len(seen)} row(s) "
+                 f"and no solver sha256 header, so the build that decided them is "
+                 f"unknown.  Move it aside to start a clean ledger.")
+    if recorded != BB_SHA:
+        sys.exit(f"REFUSING to resume {os.path.basename(DONE)}: it was written by solver "
+                 f"sha256={recorded}, this run's solver is sha256={BB_SHA}.  Restore that "
+                 f"build or move the ledger aside; a ledger spanning two builds cannot "
+                 f"attribute its UNSAT rows.")
+    print(f"resume: {len(seen)} shape(s) already decided in {os.path.basename(DONE)}, "
+          f"same solver build", flush=True)
 todo = [(i, d) for i, d in enumerate(elig) if i not in seen]
 
 lock = threading.Lock()
 donef = open(DONE, "a", buffering=1)
+if not seen:
+    # First write of this ledger: stamp the build, so every row below it is
+    # attributable and a later resume can refuse a different one.
+    donef.write(f"{HDR}{BB_SHA} binary={os.path.basename(BB)} k={k} cutoff={cutoff} "
+                f"mode={'exact' if exact == '1' else 'range'} nodecap={nodecap}\n")
 done = [len(seen)]
 gaveup, errors, hit = [], [], []
 stop = threading.Event()

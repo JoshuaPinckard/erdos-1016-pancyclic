@@ -37,7 +37,8 @@ t0 = time.time()
 cache = os.path.join(HERE, f"forms-k{k}.pkl")
 if os.path.exists(cache):
     import pickle
-    data = pickle.load(open(cache, "rb"))
+    with open(cache, "rb") as fh:
+        data = pickle.load(fh)
 else:
     data = []
     for b, ch in S.shapes(k):
@@ -45,7 +46,8 @@ else:
         iv, lows = B.intervals(b, ch, forms=forms)
         data.append((len(forms) + 2, b, ch, forms, lows, iv))
     import pickle
-    pickle.dump(data, open(cache, "wb"))
+    with open(cache, "wb") as fh:
+        pickle.dump(data, fh)
 print(f"k={k} shapes={len(data)} max_cap={max(d[0] for d in data)} "
       f"forms_built_in={round(time.time()-t0,1)}s", flush=True)
 
