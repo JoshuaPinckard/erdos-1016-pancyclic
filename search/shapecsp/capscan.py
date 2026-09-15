@@ -23,7 +23,8 @@ BB = os.path.join(HERE, "bb")           # Linux build
 if not os.path.exists(BB):
     BB = os.path.join(HERE, "bb.exe")   # Windows build
 
-data = pickle.load(open(os.path.join(HERE, f"forms-k{k}.pkl"), "rb"))
+with open(os.path.join(HERE, f"forms-k{k}.pkl"), "rb") as fh:
+    data = pickle.load(fh)
 todo = [d for d in data if floor_n < d[0] <= capmax]
 print(f"k={k} floor={floor_n} capmax={capmax} shapes_in_range={len(todo)} "
       f"(of {len(data)}; {sum(1 for d in data if d[0] > capmax)} have cap > capmax "

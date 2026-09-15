@@ -52,14 +52,16 @@ def fail(msg):
 cache = os.path.join(HERE, f"forms-k{k}.pkl")
 t0 = time.time()
 if os.path.exists(cache):
-    data = pickle.load(open(cache, "rb"))
+    with open(cache, "rb") as fh:
+        data = pickle.load(fh)
 else:
     data = []
     for b, ch in S.shapes(k):
         forms = sorted(set(S.cycle_forms(b, ch)))
         iv, lows = B.intervals(b, ch, forms=forms)
         data.append((len(forms) + 2, b, ch, forms, lows, iv))
-    pickle.dump(data, open(cache, "wb"))
+    with open(cache, "wb") as fh:
+        pickle.dump(data, fh)
 
 elig = [d for d in data if d[0] >= n and sum(d[4]) <= n and B.hall_ok(d[5], n)]
 lines = []

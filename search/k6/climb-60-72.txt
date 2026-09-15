@@ -1,0 +1,7 @@
+START n=60 missing=0 chords=(0,2)(0,57)(1,43)(19,44)(43,52)(52,57)
+n=61 insertion seeds: best missing=1 worst missing=25
+BEST n=61 missing=1 chords=(0,2)(0,58)(1,44)(20,45)(44,53)(53,58)
+n=61 restarts=1 evals=20909628 best_missing=1
+STALL n=61 missing=1 chords=(0,2)(0,58)(1,44)(20,45)(44,53)(53,58)
+FINAL largest n reached: 60
+FINAL n=60 missing=0 chords=(0,2)(0,57)(1,43)(19,44)(43,52)(52,57)

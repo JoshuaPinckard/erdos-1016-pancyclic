@@ -1,0 +1,4 @@
+START n=61 missing=1 chords=(0,2)(0,58)(1,44)(20,45)(44,53)(53,58)
+IMPROVE n=61 missing=0 chords=(0,2)(0,58)(1,44)(3,57)(28,53)(53,58)
+sweep2 COMPLETE n=61 slot_pairs=1 evaluations=3111696 seconds=31 start_missing=1 best_missing=0
+BEST n=61 missing=0 chords=(0,2)(0,58)(1,44)(3,57)(28,53)(53,58)

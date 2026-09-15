@@ -1,0 +1,3 @@
+start n=57 k=6 missing_count=1
+  round 0 slot 3: missing_count -> 0  chords=[(0, 2), (0, 54), (1, 40), (14, 48), (40, 49), (49, 54)]
+WITNESS n=57 k=6 : (0,2) (0,54) (1,40) (14,48) (40,49) (49,54)

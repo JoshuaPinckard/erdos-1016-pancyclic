@@ -44,6 +44,11 @@ papers/draft/*.pdf
 !search/k6/coord-66.txt
 !search/k6/strict-66.txt
 !search/k6/gkw-K4.txt
+!search/k6/climb-60-72.txt
+!search/k6/coord-57.txt
+!search/k6/smart-57-70.txt
+!search/k6/sweep2-61-34.txt
+!search/k6/verify-67-gpu-joint.txt
 !papers/construction/unrank.out
 !papers/construction/gpu41b2s0.out
 !papers/construction/indep-gpu41.log
