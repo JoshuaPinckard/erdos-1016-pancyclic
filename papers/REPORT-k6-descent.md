@@ -173,3 +173,112 @@ n=68 exact hunt, observed 00:35:30 local:
 Descent below n=93: not started. n=93 and n=92 remain 0-byte holes, so there is no
 coverage below 93 at all, and a single UNSAT level at 93 would not tighten the
 bound on its own — it has to join the contiguous 94..111 block.
+
+---
+
+# Continued by Worker 7, sole owner of this lane from 00:50
+
+The ownership blocker above is resolved: the manager assigned `search/shapecsp/`
+and the laptop to one agent. Everything below is mine. The section above is
+Worker 13's and is not edited, including the parts I can now answer — those are
+answered here instead.
+
+## The provenance gap is closed by an enforced invariant, not by an intention
+
+Worker 13's finding is correct and its remedy is implemented. The ledger now
+carries the solver's sha256 and a resume refuses any other build:
+
+```
+# solver sha256=93af338d0c161b897602b3a1d61113e802a7d4faca5184f8e346a2d70271a171 binary=bb.exe k=2 cutoff=9 mode=range nodecap=1000000
+0 UNSAT
+```
+
+Hand-checked with two genuinely different builds rather than a doctored file —
+`bb-orig.exe` put in place of `bb.exe` between two runs of the same command:
+
+```
+same build      resume: 1 shape(s) already decided in hunt-k2-n9-range.done, same solver build
+different build REFUSING to resume ...: it was written by solver sha256=93af338d..., this run's
+                solver is sha256=edff4b13...  Restore that build or move the ledger aside; a
+                ledger spanning two builds cannot attribute its UNSAT rows.        exit=1
+no header       REFUSING to resume ...: it has 2 row(s) and no solver sha256 header, so the
+                build that decided them is unknown.                                exit=1
+```
+
+Neither refusal appends a row — asserted, not assumed. Both refusals exit
+non-zero, which matters because a gate that exits 0 is the defect the review
+already found once in `satcheck.py`.
+
+`hunt.py`'s docstring said a binary change costs nothing. True of resume progress,
+false of provenance, and that sentence is precisely what kept the gap invisible;
+it now states the opposite and the reason.
+
+Three contracts hold this (`LedgerProvenanceContracts`) and two gates were added
+to the mutation check, now **6/6 RED when disabled, GREEN when restored**. The
+first attempt at the stamp gate was *REFUSED by the anchor count* rather than
+reported as live — `hunt.py` is CRLF and `level.py` is LF, so the multi-line
+anchor matched one file and silently missed the other. That is the second time
+this pass that the anchor discipline caught a no-op mutation; Worker 13's
+`pathlib.write_text` CRLF incident above was the first.
+
+## The pinned build for the descent
+
+The whole 93-downward descent runs on one binary, rebuilt clean from HEAD:
+
+| | |
+|---|---|
+| source | `bb.c` at HEAD, sha256 `eb59b4f641cadaf3bad2e2d4fb68ba1d7dbc34606b6092ccc84ab3287791a1ac` |
+| compiler | gcc 13.3.0 (Ubuntu 13.3.0-6ubuntu2~24.04.1), exit 0, two known `scanf` `-Wunused-result` warnings |
+| flags | `-O3 -std=c11 -Wall -Wextra -Wpedantic` |
+| **binary sha256** | **`e2fde07b69d7a0d84b67d7954304da50feebd84a3cbd0e192faf706a8a7f562c`** (29432 bytes) |
+| reproducible | a second build from the same source gives the identical digest |
+
+Kept as `bb-pinned` alongside `bb`, so the pin can be re-checked at any time, and
+every level's ledger header now names it.
+
+A pinned build is a *third* artifact, so it does not inherit the earlier
+differential — by the same standard applied to `bb-prev-lastarc`, it gets its own:
+
+| comparison | record comparisons | disagreements | witnesses re-checked |
+|---|---|---|---|
+| `bb-new` (previously validated) vs **pinned**, k=3, cutoffs 8..20 | 78 | **0** | 63 |
+
+The pre-descent artefacts written by the unpinned binary were archived rather
+than appended to: `hunt-k6-n93-range.done.unpinned-archived` (2 rows),
+`descend.log.unpinned-archived`, `descend-k6.csv.unpinned-archived`. Two shapes of
+work discarded; the alternative was a ledger the new rule exists to forbid.
+
+## Answering the two "could not look" items above
+
+**The 17088-vs-29424 size gap is the optimisation level, not a source
+difference.** Compiling the current source at `-O2` gives **17096** bytes against
+`bb-prev`'s 17088, while `-O3` gives 29432. So the small build is an `-O2` build.
+The residual 8 bytes is a source-revision difference I did not chase further —
+that part remains "did not look", and it does not matter now, because nothing
+below depends on either of those two builds.
+
+**The `bb-prev-lastarc` vs `bb-new` pair still has no differential, and now never
+needs one.** Every result that depended on it — the 39-row n=68 exact ledger — is
+discarded with the hunt, and the descent starts from an empty ledger under the
+pinned build. The gap is closed by not retaining the results, which is what the
+manager directed.
+
+**`sweep.py` is patched.** Worker 13 left it alone because another agent was
+executing it; that agent was me. Both leaks are closed, both paths measured with
+`-X dev`: read path 2 ResourceWarning lines → 0, cache-rebuild path 0, stderr
+empty, `t_2 = 8` unchanged. No `pickle.load(open(...))` remains in the directory.
+
+## HEAD is known-good before the descent starts
+
+Two agents committed to `search/shapecsp/` (`30080d6`, `4886eef`, `6dbe9ee`), so
+the tree was re-validated end-to-end at `05176de` rather than trusting either
+agent's earlier pass. Desktop:
+
+```
+test_shapecsp.py            ALL GATES PASS                                   exit=0
+test_review_contracts.py    Ran 9 tests / OK                                 exit=0
+mutation-check.py           6/6 gates RED when disabled, GREEN when restored exit=0
+sweep.py 2 3                RESULT t_2 = 8   gaveup_records=0                exit=0
+sweep.py 3 3                RESULT t_3 = 14  gaveup_records=0                exit=0
+sweep.py 4 3                RESULT t_4 = 24  gaveup_records=0                exit=0
+```
