@@ -282,3 +282,78 @@ sweep.py 2 3                RESULT t_2 = 8   gaveup_records=0                exi
 sweep.py 3 3                RESULT t_3 = 14  gaveup_records=0                exit=0
 sweep.py 4 3                RESULT t_4 = 24  gaveup_records=0                exit=0
 ```
+
+## The cost curve, computed before paying for it -- and there is no knee
+
+The stop-and-report gate was set at "when the eligible count climbs toward the low
+thousands". That trigger can be evaluated **now** rather than discovered level by
+level, because eligibility is three cheap tests (cap, lower-bound sum, Hall) while
+the levels themselves are hours. `costcurve.py` computes the whole curve in a
+second.
+
+The shape count alone understates the wall: a level hands each eligible shape the
+whole range `[n, cap]` and every rung has to be refuted, so `rungs`, the sum of
+`cap - n + 1` over eligible shapes, is the better proxy.
+
+| n | eligible | rungs | x prev | | n | eligible | rungs | x prev |
+|---|---|---|---|---|---|---|---|---|
+| 93 | 114 | 373 | | | 83 | 955 | 4976 | 1.24x |
+| 92 | 152 | 525 | 1.41x | | 82 | 1090 | 6066 | 1.22x |
+| 91 | 181 | 706 | 1.34x | | 81 | 1290 | 7356 | 1.21x |
+| 90 | 214 | 920 | 1.30x | | 80 | 1434 | 8790 | 1.19x |
+| 89 | 279 | 1199 | 1.30x | | 79 | 1739 | 10529 | 1.20x |
+| 88 | 330 | 1529 | 1.28x | | 78 | 1969 | 12498 | 1.19x |
+| 87 | 452 | 1981 | 1.30x | | 77 | 2332 | 14830 | 1.19x |
+| 86 | 539 | 2520 | 1.27x | | 76 | 2567 | 17397 | 1.17x |
+| 85 | 692 | 3212 | 1.27x | | 75 | 3002 | 20399 | 1.17x |
+| 84 | 809 | 4021 | 1.25x | | 68 | 6059 | 52629 | |
+
+**There is no knee.** Growth is a smooth 1.13-1.41x per level with no cliff to
+stop at, which means the gate cannot be triggered by spotting a discontinuity --
+there isn't one. Each further unit of upper bound costs about 20% more than the
+one before it, all the way down.
+
+### Calibrating the proxy instead of trusting it
+
+Eight levels have both a rung count and a measured single-core time, so the proxy
+can be checked rather than assumed:
+
+| n | rungs | measured s | s/rung |
+|---|---:|---:|---:|
+| 101 | 5 | 18.1 | 3.6 |
+| 100 | 13 | 48.1 | 3.7 |
+| 99 | 37 | 521.6 | 14.1 |
+| 98 | 65 | 1197.9 | 18.4 |
+| 97 | 93 | 2727.1 | 29.3 |
+| 96 | 125 | 4682.5 | 37.5 |
+| 95 | 178 | 9529.9 | 53.5 |
+| 94 | 259 | 4070.6 | **15.7** |
+
+**The proxy is weak and the table says so.** Cost per rung is not constant: it
+rises 15-fold across the block and then *falls* by more than half from n=95 to
+n=94, so rung count predicts the curve's shape but not its height. n=95 taking
+2.3x the wall-clock of n=94 on 31% fewer rungs is the clearest warning: a single
+stubborn shape dominates a level, and which level gets one is not predictable
+from this table.
+
+### What it projects, stated as the lower bound it is
+
+At the measured mean of 29.4 s/rung over 775 rungs of calibration, five workers,
+assuming perfect packing:
+
+| target | block | projected |
+|---|---|---|
+| `t_6 <= 87` | 93..88 | **~9 h** |
+| `t_6 <= 84` | 93..85 | **~21 h** |
+| `t_6 <= 74` | 93..75 | **~196 h (8 days)** |
+
+These are **lower bounds**, twice over: the rate rose steadily through the
+calibration block, so the deep levels are likely worse per rung, and the five
+workers will not pack perfectly against levels that contain one dominant shape.
+
+The operational conclusion is worth stating plainly, because it changes where the
+gate should sit. The gate as specified -- eligible counts in the low thousands --
+is not reached until n = 82..75, by which point 46 to 196 hours are already spent.
+The cheap, decision-relevant stopping points are **n=88 at about 9 hours** and
+**n=85 at about 21 hours**. Below 85 the descent stops being an incremental buy
+and becomes the weeks-long commitment, on an allocation of five cores.
