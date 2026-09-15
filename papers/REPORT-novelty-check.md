@@ -493,3 +493,46 @@ literature, its internal redundancy coming from multiple independently-written
 verifiers within this project rather than from an external second publication. This
 is the honest version of "independently confirmed," broken out exactly as requested,
 and it does not change the novelty verdict: no source anywhere reaches `n=38`.
+
+---
+
+## Provenance correction (Manager, 2026-09-14): GMW13 was read as IMAGES, not native text
+
+This report states above that GMW13 was read with a "native PDF reader — not OCR,
+not a snippet". **That is incorrect, and the label matters.**
+
+`papers/GMW13-George-Marr-Wallis-2013.pdf` has **no text layer at all**: PyMuPDF
+returns 0 characters on every one of its 9 pages. This was checked with a positive
+control over all 18 PDFs in `papers/` — 16 of them return thousands of characters
+(e.g. `1312.0274.pdf` 7,426 chars in 3 pages), and **exactly two return zero:
+GMW13 and `Lai-Liu-2014-survey.pdf`**. Lai–Liu is the same scan whose OCR this
+project already flags as its weakest evidence, so GMW13 belongs to that same
+evidentiary class and was described as belonging to a stronger one.
+
+Any reading of GMW13's body was therefore necessarily a transcription from page
+images, which carries the same risk class as OCR — above all on digits, which are
+exactly what the load-bearing claims here consist of.
+
+**The content, however, is verified.** The pages were rendered
+(`fitz`, 170 dpi) and read directly. The quotations above are confirmed verbatim,
+including every numeral:
+
+- p. 132: "It will be observed that all lengths from 3 to `v` inclusive are
+  represented at least once, provided `1 <= x <= 10`. So a minimal pancyclic graph
+  has `v + 4` edges (that is, `m(v) = v + 4`) when `15 <= v <= 22`."
+- p. 132: "There are cycles of at most 20 different lengths ... so this
+  construction does not generalize beyond `v = 22`. Therefore the cases `v >= 23`
+  remain open."
+- p. 132: "The sequence `(m(v))` starts `0, 0, 3, 5, 6, 8, 9, 10, 12, 13, 14, 15,
+  16, 17, 19, 20, 21, 22, 23, 24, 25, 26 ...`" — which agrees term for term with
+  the draft's Section 2 table through `v = 22`, including `m(13)=16`, `m(21)=25`
+  and `m(22)=26`.
+- p. 132: "The obvious question is whether `m(23) = 27` or `28`."
+- p. 130 independently confirms that GMW13 labels the pairwise chord relations
+  with the letters A, B, C ("only types BCC, ACC and CCC need be discussed"),
+  which bears on the k=3 shape-count comparison in `papers/REPORT-shape-csp.md`.
+
+So the novelty verdict stands on primary evidence that has now been read twice, by
+two agents, from the page images. What changes is only the description of HOW it
+was read — and that description should not have said "not OCR" for a file with no
+text layer.
