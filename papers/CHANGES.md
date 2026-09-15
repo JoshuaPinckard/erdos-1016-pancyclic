@@ -425,3 +425,119 @@ artifacts here before being written. Files touched: `papers/draft/pancyclic-exac
 untouched here); the running descent below $n=93$ was neither started nor
 consulted beyond the 0-byte level files; and no level was re-run — items 1
 and 2 rest on reading artifacts already on disk, not on new computation.
+
+# 2026-09-15 — h(n)=6 on 41..67 as the headline, plus four corrections (Worker 12, `papers/REPORT-draft-update.md`)
+
+Dispatched by Manager `f4d1e0af` from Builder's review; every claim re-derived
+here before it was written. Files touched:
+`papers/draft/pancyclic-exact-values.md`, `papers/draft/SOURCES.md`,
+`search/k6/witnesses.csv`, `papers/CHANGES.md`,
+`papers/REPORT-draft-update.md`. New artifact:
+`papers/draft/verify-family-41-68-20260915.txt`. No code touched.
+
+1. **New headline: $h(n)=6$ exactly for every $41\le n\le67$, hence $m(n)=n+6$
+   there, with no monotonicity assumption.** Stated in the abstract, Section
+   2.1 and Section 6.3, and sourced in `SOURCES.md`. It replaces a position in
+   which $h(n)\ge6$ was known by search only at $n=41$, by counting only for
+   $n\ge66$, and for $42\le n\le65$ only through the monotonicity of $h$ —
+   which is Wallis's open Question 1 and is now not needed.
+
+   *Lower half*, $h(n)\ge6$ for all $n\ge41$: all 18 files
+   `search/shapecsp/level-k5-n41.txt` … `level-k5-n58.txt` read here, every one
+   `sat=0 gaveup=0`; the $k=5$ ceiling is $n\le58$ from
+   `search/shapecsp/shape-census.txt` row `5 | 1236 | … | 56 (distinct 56)`
+   (cap $=F+2$); a contiguous clean block running to the ceiling excludes every
+   $n$ at or above its foot. The $n=40$ level, `sat=4`, is the positive control
+   in the same series.
+
+   *Upper half*, $h(n)\le6$ for all $41\le n\le67$: the single family
+   $F_n=(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)$, pancyclic at all 27 values
+   $n=41..67$ and failing at $n=68$ by the one length $33$. All 28 checks
+   re-run here with `search/verify.py`, each member first asserted to be six
+   distinct in-range non-edge pairs:
+   `papers/draft/verify-family-41-68-20260915.txt`.
+
+   *Why 67*: the spectrum of $F_n$ is $[3,32]\cup[n-34,n]$ (symbolic cycle
+   certificate `family-certificate.md` / `family-cycle-certificate.json`,
+   Builder findings review 2026-09-15), which is $[3,n]$ iff $n-34\le33$ iff
+   $n\le67$. Checked against computed length sets at
+   $n=41,45,50,55,60,65,66,67,68,69,70$ — exact equality at all eleven, missing
+   sets $[33]$, $[33,34]$, $[33,34,35]$ at $68,69,70$. **Cap declared:** the
+   spectrum formula was machine-checked at 11 values of $n$, not all 27; the 27
+   pancyclicity checks are complete.
+
+   *Correction folded in:* the draft said the family "carries the
+   $n=64,65,66,67$ witnesses" and is "pancyclic for exactly $n=64,\dots,67$."
+   It carries the tabulated witnesses at 65, 66, 67 only — the tabulated $n=64$
+   witness $(0,2)(0,61)(1,12)(3,60)(4,29)(56,61)$ is a different graph from
+   $F_{64}=(0,2)(0,57)(1,13)(3,58)(4,31)(56,59)$ — and it does not start at 64.
+
+2. **Section 5 sharpened: an odd witness does not refute the even-maxima
+   family.** The claim that the $n=65$ and $n=67$ witnesses "refute *every*
+   member … since all of them predict an even $t_6$" is a non-sequitur and is
+   replaced. Recomputed over the draft's own parametrisation
+   $(a,b,c)=(1+3t,1-5t,2-2t)$ with prediction $66-2t$: members are refuted from
+   below iff $t\ge0$ (killing 66, 64, … and **both named fits**, which stands)
+   and from above iff $t\le-14$, leaving **13 members, $-13\le t\le-1$,
+   predicting 68, 70, …, 92**. The member $t=-1$ is $(a,b,c)=(-2,6,4)$ —
+   verified: $-2\cdot14+6\cdot8+4=24$, $-2\cdot24+6\cdot14+4=40$ — predicting
+   $t_6=68$, consistent with $67\le t_6\le93$ and refuted by nothing computed
+   here. Only an odd $t_6$ would fell the family; $t_6$ is unknown. The
+   existing parity caveat is kept.
+
+3. **Sections 2.2 and 6.1: five presentations, four graphs.** Checked with
+   `networkx.is_isomorphic` over all ten pairs of the tabulated
+   representatives: exactly one pair is isomorphic, rows 4 and 5
+   ($(0,4)(0,5)(1,34)(2,35)(3,15)$ and $(0,7)(1,8)(2,10)(2,11)(9,21)$); the
+   other nine are not. The isomorphism does not preserve the Hamilton cycle —
+   two of row 4's chords land on cycle edges of row 5's presentation — so the
+   count is **ten labelled graphs, five dihedral classes, four isomorphism
+   types**, each answering a different question. Both section titles now say
+   "presentations." Consistency check recorded: the cycle count is an
+   invariant, and rows 4 and 5 both show 48.
+
+4. **Section 1: Jia's conjecture and the Erdős belief stated as incompatible.**
+   The draft called Jia's Conjecture 1.16 ($g(n)=n+\log_2n+O(1)$) "in
+   substance, Erdős Problem #1016 itself." It is one of two incompatible
+   answers to it, and the one Erdős doubted: Jia asserts $h(n)-\log_2n$ is
+   bounded, the Erdős belief recorded earlier in the same section is that it
+   tends to infinity. The only claimed upper bound carries a growing $\log_* n$
+   correction and sits on the Erdős side. The note now states the tension and
+   says nothing here bears on which is right. Wallis's non-strict Question 1
+   and Griffin's strict Conjecture 1 remain distinguished; that passage was
+   already correct and was not touched.
+
+5. **The obsolete $n=36$ row, and the same defect found live in the draft.**
+   All 86 data rows of `search/k6/witnesses.csv` were validated; exactly one
+   failed, and the other 85 are the positive control. Removed verbatim:
+
+   ```
+   36,"(0,2) (2,5) (5,10) (10,19) (19,36) (0,11)",GKW-shortcut base + scanned 6th chord (scan_join_range.py)
+   ```
+
+   Vertex 36 does not exist on $C_{36}$. The file now validates at 85 rows with
+   zero out-of-range vertices.
+
+   **Beyond the dispatch:** the same instantiation is the first data line of
+   `search/k6/gkw-K4.txt` (`n=36: PANCYCLIC`), and the draft repeated it as
+   "pancyclic at **exactly $n=36$ and $n=40$**." Both readings were recomputed:
+   literally the chord adds a 37th vertex and the result does *not* cover
+   $[3,36]$ (missing 5); modulo $n$ the six chords collapse to the **five**
+   chords $C_{36}+(0,2)(2,5)(5,10)(10,19)(0,19)$, which is pancyclic and agrees
+   with $h(36)=5$ in Griffin's Table 1 as reproduced in Section 2. Either way
+   the row is not a six-chord statement, so the draft now claims $n=40$ only
+   and records both readings. `gkw-K4.txt` itself was **not** edited: it is raw
+   search output and evidence, so the correction belongs in the prose citing
+   it. Nothing in $41\le n\le67$ depends on either instance.
+
+**Repaired in the same pass:** the editing scripts wrote `\text` and `\to`
+through non-raw Python strings, so `\t` became a literal TAB in three display
+formulas and two inline ones. Found by grepping for tab characters, repaired
+with an explicit `chr(9)` replacement; both edited documents now contain zero
+tabs.
+
+**Not done, named rather than left to inference:** no code was touched
+(`search/shapecsp/` and the laptop are Worker 7's and Worker 13's); the
+symbolic spectrum of $F_n$ for general $n$ is Builder's certificate, read but
+not re-derived here; and the upper end of the $t_6$ bracket is unchanged at 93,
+since the descent below 93 had not reported when this pass was written.

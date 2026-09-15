@@ -10,7 +10,17 @@ $n$ vertices, and write $m(n)=n+h(n)$, where $h(n)$ counts the chords added to a
 Hamilton cycle (Erdős Problem #1016, after Bondy 1971). Griffin (2013) determined
 $m(n)$ exactly for $n\le 37$ by exhaustive and constructive search. We report
 $m(n)$ for $38\le n\le 41$: $h(38)=h(39)=h(40)=5$ and $h(41)=6$, so
-$m(38{:}41)=43,44,45,47$. The upper bounds are explicit chord sets found by
+$m(38{:}41)=43,44,45,47$, and we then determine $h$ **exactly on a whole
+range**: $h(n)=6$ for every $n$ with $41\le n\le67$, so $m(n)=n+6$ there.
+Neither half assumes monotonicity of $h$. The lower half, $h(n)\ge6$ for all
+$n\ge41$, is exhaustive: the shape/arc-length feasibility search of Section 3.5
+refutes $k=5$ at every level from $n=41$ to $n=58$ with nothing abandoned, and
+$58$ is the largest $n$ any $5$-chord configuration can reach, so no $n\ge41$
+admits five chords. The upper half, $h(n)\le6$ for all $41\le n\le67$, is a
+single explicit one-parameter family, $(0,2)(0,n{-}7)(1,13)(3,n{-}6)(4,31)(n{-}8,n{-}5)$,
+whose cycle-length spectrum is $[3,32]\cup[n{-}34,n]$ — equal to $[3,n]$ exactly
+when $n\le67$, which is why the family works to $67$ and fails at $68$ by the
+single missing length $33$. The upper bounds are explicit chord sets found by
 GPU/CPU chord search, each reconfirmed by three from-scratch verifiers and
 by a kernel-checked Lean 4 proof. The lower bounds $h(n)\ge5$ follow from
 Griffin's cycle-counting ceiling alone. The one new negative result,
@@ -30,8 +40,9 @@ predicts a different $t_6$ (the whole family $66-2t$, $t\in\mathbb Z$), so no
 pattern-fit on the known thresholds carries information about the next one.
 Computation has since refuted the two members that had been singled out
 ($2\,\mathrm{Fib}(k+3)-2$, predicting $66$, and $2^{k-2}(10-k)$, predicting
-$64$): explicit 6-chord pancyclic graphs exist on every $n$ from $57$ to $67$
-vertices, each re-checked by an independent verifier, so $67\le t_6\le93$.
+$64$): the family above is pancyclic at every $n$ from $41$ to $67$, and
+eleven separately found 6-chord graphs cover $n=57,\dots,67$, each re-checked
+by an independent verifier, so $67\le t_6\le93$.
 The upper end is an exhaustive result, not a counting one: the shape/CSP
 algorithm below refutes every $n$ from $94$ up to $111$, and $111$ is the
 largest $n$ any $6$-chord shape can reach at all. The counting ceiling $129$ is
@@ -61,7 +72,16 @@ and, as a corollary of a further theorem,
 $$g(n)=n+\log_2 n+O(\log_2\log_2 n) \qquad\text{(Cor. 1.15)}.$$
 Jia also *conjectured*
 $$g(n)=n+\log_2 n+O(1),\quad n\to\infty \qquad\text{(Conj. 1.16)},$$
-which is, in substance, Erdős Problem #1016 itself. (These statements were
+which is **not** Erdős Problem #1016 restated but one of the two
+incompatible answers to it, and the one Erdős doubted. Jia's Conjecture 1.16
+asserts that the error term $h(n)-\log_2 n$ is *bounded*; the belief recorded
+for Erdős above — and the reason the problem is open — is that
+$h(n)-\log_2 n\to\infty$, which is exactly the negation. The only upper bound
+anyone claims to have proved, $\log_2 n+\log_* n+O(1)$, carries a correction
+that grows, however slowly, and is consistent with the Erdős side but not with
+Jia's $O(1)$. The two therefore cannot both hold, and this note states them as
+a tension to be resolved, not as a pair of known facts: nothing here bears on
+which side is right. (These statements were
 recovered by OCR of a scanned secondary survey, since Jia's original paper could
 not be located; see `papers/REPORT-oeis-and-jia.md` for the full transcription and
 its caveats, and Section 3 below on why they do not affect the exact values
@@ -189,14 +209,39 @@ ceiling $2^{k+1}+1=129$ at $k=6$ is superseded by this and is retained only as
 the trivial prior bound. The upper end is stated as what the completed levels
 establish, not as a final value: the levels at $n=92$ and $n=93$ are not yet
 decided — they are counted on neither side — and a non-existence descent
-from $93$ downwards is running, so any level it closes lowers this end by one. In particular $h(n)\le6$ is established by
-witness for every $41\le n\le67$; the matching lower bound $h(n)\ge6$ is
-established for $n=41$ (Section 3.4) and, by counting alone, for $n\ge66$
-($2^{6}-1=63<n-2$), while for $42\le n\le65$ it would follow from $t_5=40$
-only via the monotonicity of $h$, which is Wallis's open Question 1
-(Section 5).
+from $93$ downwards is running, so any level it closes lowers this end by one.
 
-### 2.2 The five extremal 5-chord graphs on 40 vertices
+**Between the two ends, $h$ is known exactly and unconditionally.**
+
+$$h(n)=6\quad\text{for every }41\le n\le67,\qquad\text{so } m(n)=n+6
+\text{ there.}$$
+
+Both halves are established without any appeal to the monotonicity of $h$,
+which remains open (Wallis's Question 1, Section 5).
+
+* $h(n)\ge6$ for **all** $n\ge41$. The shape/CSP search of Section 3.5 answers
+  `sat=0 gaveup=0` at $k=5$ for every level from $n=41$ to $n=58$
+  (`search/shapecsp/level-k5-n41.txt` … `level-k5-n58.txt`, 18 levels,
+  nothing abandoned), and $58$ is the largest $n$ any $k=5$ configuration can
+  reach — the maximum number of distinct cycle forms over all $1236$ shapes is
+  $56$, and a shape with $F$ forms is pancyclic only for $n\le F+2$
+  (`search/shapecsp/shape-census.txt`). A contiguous clean block running to
+  that ceiling excludes every $n$ at or above its foot, so no $n\ge41$ admits
+  five chords. This supersedes the earlier position, in which $h(n)\ge6$ was
+  known by exhaustive search only at $n=41$ and by counting only for $n\ge66$
+  ($2^6-1=63<n-2$), with $42\le n\le65$ resting on monotonicity.
+* $h(n)\le6$ for **all** $41\le n\le67$, from one family rather than from
+  scattered witnesses: $(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)$ is a valid
+  $6$-chord graph and is pancyclic at every one of the $27$ values
+  $n=41,\dots,67$ (Section 6.3; all $27$ re-checked here with
+  `search/verify.py`, `papers/draft/verify-family-41-68-20260915.txt`).
+
+The two halves meet exactly, so $h(n)=6$ on the whole range. The individual
+witnesses of Section 6.3 remain the record of how the range was found, and
+several of them are different graphs from the family member at the same $n$,
+but they are no longer what carries the upper half.
+
+### 2.2 The five extremal 5-chord presentations on 40 vertices (four graphs)
 
 An exhaustive GPU run at $n=40,k=5$ (`search/gpu_pancyc.py`, full enumeration mode
 `--all`, `search/gpu-40-5-all.txt`, `tested=14373209608`) finds exactly ten
@@ -212,6 +257,22 @@ Hamilton cycle and its cycle/length counts:
 | $(0,2)(0,33)(1,13)(3,34)(32,35)$ | 9 | 1,1,5,1,1,1,19,10,1 | 48 | 38 |
 | $(0,4)(0,5)(1,34)(2,35)(3,15)$ | 9 | 1,1,1,1,1,5,1,19,10 | 48 | 38 |
 | $(0,7)(1,8)(2,10)(2,11)(9,21)$ | 9 | 1,1,1,1,5,1,1,19,10 | 48 | 38 |
+
+**Five presentations, four graphs.** The five rows are genuinely distinct as
+*presentations* — no rotation or reflection of $C_{40}$ carries one to another,
+which is what the search enumerates — but two of them are the same abstract
+graph. Rows 4 and 5, $(0,4)(0,5)(1,34)(2,35)(3,15)$ and
+$(0,7)(1,8)(2,10)(2,11)(9,21)$, are isomorphic; all other nine pairs are not
+(checked here with `networkx.is_isomorphic` on all ten pairs). The isomorphism
+does **not** carry row 4's Hamilton cycle to row 5's: under it two of row 4's
+chords land on cycle edges of row 5's presentation, and two of row 5's cycle
+edges become chords. That is the whole content of the coincidence — the graph
+has more than one Hamilton cycle, and a different choice of Hamilton cycle
+gives a different chord presentation of the same graph. So the count is
+**ten labelled graphs, five dihedral classes, four isomorphism types**, and
+the three numbers answer three different questions. Rows 1 and 2 realise $45$
+cycles and rows 3–5 realise $48$, which is consistent: the cycle count is an
+invariant, so rows 4 and 5 necessarily agree.
 
 Every extremal graph has exactly one shared endpoint among its five chords (nine
 distinct endpoints in total), three "geometric" gaps of size approximately
@@ -772,7 +833,8 @@ related additive recursion $t_k=t_{k-1}+t_{k-2}+2$ fails at $k=3$
 **What the computation has established.** Confirmed 6-chord witnesses, each
 re-checked with the independent `search/verify.py` (networkx
 `simple_cycles`; full output in `papers/draft/verify-rerun-20260914.txt`),
-exist at every $n$ from $57$ to $67$ (chord sets in Section 6.3), so
+exist at every $n$ from $57$ to $67$ (chord sets in Section 6.3), and the
+family $F_n$ of Section 6.3 is pancyclic at every $n$ from $41$ to $67$, so
 $$67\ \le\ t_6\ \le\ 93.$$
 The upper end is the exhaustive shape/CSP block of Section 3.5: every level
 from $n=94$ to $n=111$ answers `sat=0` with zero abandoned searches
@@ -783,13 +845,25 @@ $129=2^{6+1}+1$ ($N_0$ in `papers/REPORT-cyclecounts.md`'s notation), which is
 kept here only as the prior bound this computation replaced. Two levels inside
 the gap, $n=92$ and $n=93$, have not been decided and are counted on neither
 side; a non-existence descent from $93$ downwards is running, and each level it
-closes lowers this upper end by one. The witnesses at $n=61,62,64$
-already refuted the family members predicting $58,60,62$; those at $n=66,67$
-refute both named fits; and the odd witnesses at $n=65$ and $n=67$ refute
-*every* member of the integer family above simultaneously, since all of them
-predict an even $t_6$. The family $(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)$
-that supplies the $n=64,\dots,67$ witnesses misses exactly one length
-($33$) at $n=68$ (Section 6.3), so $t_6=67$ is possible but not established;
+closes lowers this upper end by one. What the computation does to the family is sharper
+than "refutes it," and an earlier revision of this note over-claimed here. The
+bracket $67\le t_6\le93$ removes the members at both ends and leaves a middle
+band. A member predicting $66-2t$ is refuted from below whenever $66-2t<67$,
+i.e. for every $t\ge0$: that kills the predictions $66,64,62,\dots$, and with
+them **both named fits** (Fibonacci at $66$, the rival at $64$). It is refuted
+from above whenever $66-2t>93$, i.e. for every $t\le-14$. What survives is the
+thirteen members with $-13\le t\le-1$, predicting
+$t_6\in\{68,70,72,\dots,92\}$. In particular the member $t=-1$,
+$(a,b,c)=(-2,6,4)$ — check: $-2\cdot14+6\cdot8+4=24$ and
+$-2\cdot24+6\cdot14+4=40$ — predicts $t_6=68$ and is **not** refuted by
+anything computed here. An odd witness does not by itself refute the family:
+a witness at $n=67$ shows $t_6\ge67$, which is consistent with a prediction of
+$68$. It is only if $t_6$ turns out to be *odd* that every member falls at
+once, and $t_6$ is not known. The family $(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)$
+that establishes $h(n)\le6$ on all of $41\le n\le67$ has spectrum
+$[3,32]\cup[n-34,n]$, so it covers $[3,n]$ exactly while $n\le67$ and misses
+exactly the single length $33$ at $n=68$ (Section 6.3). $t_6=67$ is therefore
+possible but not established;
 the exact value is the target of the shape/CSP algorithm of Section 3.5, whose
 $k=6$ ladder has closed the range $94\le n\le111$ and is now descending
 through the $68\le n\le93$ gap that separates the two ends of the bracket.
@@ -821,7 +895,7 @@ gathered about how *fragile* pancyclicity is at every threshold examined so
 far: known extremal/near-extremal graphs, and exactly how small a change
 breaks them.
 
-### 6.1 The five extremal 5-chord graphs at $n=40$ (recap)
+### 6.1 The five extremal 5-chord presentations at $n=40$ (recap)
 
 Restating Section 2.2's data here for completeness: the exhaustive $n=40,k=5$
 run (`search/gpu-40-5-all.txt`) finds exactly five classes of extremal graph
@@ -865,7 +939,7 @@ structures are balanced, and of the kind of "arithmetic of gaps" obstruction
 `papers/PROOF-n25-k4.md` and `notes/01` both identify as the open crux of a
 general proof.
 
-### 6.3 A 6-chord upper bound: $t_6\ge67$, and both closed forms refuted
+### 6.3 One family gives $h(n)\le6$ on all of $41\le n\le67$; $t_6\ge67$
 
 A dedicated search for 6-chord pancyclic graphs (`papers/REPORT-k6-upper.md`
 for the first phase, `papers/REPORT-k6-gpu-joint.md` for the GPU
@@ -899,19 +973,51 @@ joint-neighbourhood sweeps, raw data in `search/k6/`) established:
   | 66 | $(0,2)(0,59)(1,13)(3,60)(4,31)(58,61)$ | GPU 3-of-6 sweep around the near-miss $(0,2)(0,63)(1,13)(3,62)(4,31)(58,63)$, `search/k6/witnesses-v2.csv` |
   | 67 | $(0,2)(0,60)(1,13)(3,61)(4,31)(59,62)$ | lift of the $n=66$ structure by one vertex, `search/k6/witnesses-v2.csv` |
 
-  Together with the earlier witnesses at $n\le56$ (`search/k6/witnesses.csv`,
-  including the $n=56$ graph $(0,2)(0,53)(1,39)(20,39)(39,48)(48,53)$ that is
-  also kernel-checked in Lean, Section 3.3), this gives $h(n)\le6$ for every
-  $41\le n\le67$.
-* **A one-parameter family that carries the last four witnesses.** The
-  $n=64,65,66,67$ witnesses all have the form
-  $$(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5),$$
-  with the two "inner" chords $(1,13)$ and $(4,31)$ fixed. Evaluated with
-  `search/k6/cyclespace.py check` (`papers/REPORT-k6-gpu-joint.md`, "The
-  structure and how far it lifts"), the family is pancyclic for exactly
-  $n=64,65,66,67$ and then loses one length per added vertex, starting at
-  $33$: missing $[33]$ at $n=68$, $[33,34]$ at $69$, $[33,34,35]$ at $70$, and
-  so on. The $n=68$ member $(0,2)(0,61)(1,13)(3,62)(4,31)(60,63)$ was
+  These eleven are the record of how the range was found, one $n$ at a time,
+  and the earlier witnesses at $n\le56$ (`search/k6/witnesses.csv`, including
+  the $n=56$ graph $(0,2)(0,53)(1,39)(20,39)(39,48)(48,53)$ that is also
+  kernel-checked in Lean, Section 3.3) fill the rest. They are no longer what
+  carries $h(n)\le6$: the single family in the next bullet does that for the
+  whole range at once.
+* **One family covers the entire range $41\le n\le67$.** Write
+  $$F_n=(0,2)\,(0,n-7)\,(1,13)\,(3,n-6)\,(4,31)\,(n-8,n-5),$$
+  with the two "inner" chords $(1,13)$ and $(4,31)$ fixed and the other four
+  sliding with $n$. $F_n$ is a legitimate $C_n$ plus six chords for every
+  $n\ge41$ (six distinct pairs, none of them a cycle edge), and it is
+  **pancyclic at every one of the $27$ values $n=41,\dots,67$**. All 27 were
+  re-checked here with `search/verify.py`, together with $F_{68}$ as a
+  negative control, in a single run recorded at
+  `papers/draft/verify-family-41-68-20260915.txt` (27 rows "pancyclic",
+  missing $[\,]$; the $n=68$ row "NOT pancyclic", missing exactly $[33]$).
+  This one construction therefore establishes $h(n)\le6$ for all
+  $41\le n\le67$ on its own, with no monotonicity assumption and no appeal to
+  the eleven individual witnesses above.
+
+  *Why it stops at $67$, exactly.* The cycle-length spectrum of $F_n$ is
+  $$\{\,\ell:\ell\text{ is a cycle length of }F_n\,\}=[3,32]\ \cup\ [n-34,\,n],$$
+  a symbolic statement in $n$: a fixed core of short cycles realises
+  $3,\dots,32$ and never more, and a second family realises $n-34,\dots,n$,
+  only the arc from $31$ to $n-8$ changing length between them. Explicit cycles
+  for every length in both intervals, written in terms of $n$, are listed in
+  the review certificate `family-certificate.md` /
+  `family-cycle-certificate.json` (Builder's findings review,
+  2026-09-15). The union is all of $[3,n]$ precisely when the intervals
+  meet, $n-34\le33$, i.e. **iff $n\le67$**. So $F_{67}$ is pancyclic and
+  $F_{68}$ misses exactly $33$ — not an accident of the search, but the first
+  value the two intervals fail to cover. Checked against ground truth here:
+  the computed length set equals $[3,32]\cup[n-34,n]$ exactly at
+  $n=41,45,50,55,60,65,66,67,68,69,70$, and the missing set grows as
+  predicted, $[33]$ at $68$, $[33,34]$ at $69$, $[33,34,35]$ at $70$.
+
+  *One correction to an earlier revision of this note.* It said the family
+  "carries the $n=64,65,66,67$ witnesses" and is "pancyclic for exactly
+  $n=64,\dots,67$". Both are wrong. It carries the witnesses tabulated above
+  at $n=65,66,67$ only — the tabulated $n=64$ witness is
+  $(0,2)(0,61)(1,12)(3,60)(4,29)(56,61)$, a different graph from
+  $F_{64}=(0,2)(0,57)(1,13)(3,58)(4,31)(56,59)$, though both are pancyclic —
+  and the family does not start at $64$: it reaches down to $41$ and below.
+  The earlier claim recorded where the search had looked, not where the family
+  works. The $n=68$ member $(0,2)(0,61)(1,13)(3,62)(4,31)(60,63)$ was
   re-checked with `search/verify.py` in this revision: "NOT pancyclic",
   missing exactly $[33]$ (`papers/draft/verify-rerun-20260914.txt`). Varying
   the two inner chords over $(1,a)(4,b)$, $a\in[5,44]$, $b\in[a+1,\min(n-9,59)]$,
@@ -934,11 +1040,27 @@ joint-neighbourhood sweeps, raw data in `search/k6/`) established:
   directly), instantiated with 5 shortcut chords
   $e_0{=}(0,2),e_1{=}(2,5),e_2{=}(5,10),e_3{=}(10,19),e_4{=}(19,36)$ plus one
   joining edge $(0,36)$ (6 chords total), was verified computationally to be
-  pancyclic at **exactly $n=36$ and $n=40$**, and to be missing *only and
+  pancyclic at **$n=40$**, and to be missing *only and
   exactly* length $5$ for every other $n$ in $[37,69]$ tested — a direct,
   computed confirmation of AK's paraphrased claim that this stage needs to
   patch a small subset of short lengths (`papers/REPORT-k6-upper.md`,
-  `search/k6/gkw-K4.txt`). Note also that `papers/REPORT-bondy-construction.md`
+  `search/k6/gkw-K4.txt`).
+
+  *The $n=36$ row of that log is not a six-chord result.* The log also
+  carries a row "n=36: PANCYCLIC", and an earlier revision of this note
+  repeated it as "pancyclic at exactly $n=36$ and $n=40$." The
+  instantiation uses vertex $36$, which does not exist on $C_{36}$. Read
+  literally it adds a $37$th vertex, and the resulting graph does *not*
+  cover $[3,36]$ — it misses $5$, like its neighbours. Read modulo $n$ it
+  collapses $(19,36)$ to $(19,0)$ and $(0,36)$ to a self-loop, leaving the
+  **five**-chord graph $C_{36}+(0,2)(2,5)(5,10)(10,19)(0,19)$, which is
+  pancyclic and agrees with $h(36)=5$ in Section 2's table, but says
+  nothing about six chords. Both readings were recomputed here. Only the
+  $n=40$ row is a six-chord statement. The same out-of-range vertex
+  invalidated one row of `search/k6/witnesses.csv`, removed in this
+  revision; nothing in $41\le n\le67$ depends on either.
+
+  Note also that `papers/REPORT-bondy-construction.md`
   finds this general recipe *undershoots* the actual best-known thresholds
   $t_k$ substantially for $k\le5$ (by 50% at $k=2$, still 12.5% at $k=5$); it
   is an asymptotically-motivated construction, not the source of this

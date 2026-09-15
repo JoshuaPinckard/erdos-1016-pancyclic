@@ -1,6 +1,5 @@
 n,chords,source
 41,"(4,13) (28,30) (12,26) (17,31) (12,29) (24,27)",given by Manager (prior localsearch run)
-36,"(0,2) (2,5) (5,10) (10,19) (19,36) (0,11)",GKW-shortcut base + scanned 6th chord (scan_join_range.py)
 37,"(0,2) (2,5) (5,10) (10,19) (19,36) (0,3)",GKW-shortcut base + scanned 6th chord
 38,"(0,2) (2,5) (5,10) (10,19) (19,36) (0,3)",GKW-shortcut base + scanned 6th chord
 39,"(0,2) (2,5) (5,10) (10,19) (19,36) (0,5)",GKW-shortcut base + scanned 6th chord
