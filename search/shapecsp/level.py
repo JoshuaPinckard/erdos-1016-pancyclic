@@ -1,9 +1,15 @@
 """One level of the sweep: `python level.py k n [nodecap]`
 
-Decides, for a single n, whether ANY shape admits arc lengths summing to n whose
-cycle lengths cover [3,n].  Levels are independent, so they can be run in
-parallel; t_k is the largest n whose level answers SAT, and every level above it
-answering UNSAT with zero GAVEUP is the exhaustive refutation.
+`n` is a LOWER CUTOFF handed to bb.exe, which per shape searches down from that
+shape's own cap and stops at the first feasible value.  So `sat=0` for a level
+means no eligible shape admits ANY value >= n, not merely that none admits
+exactly n -- a stronger statement, and the one the sweep's conclusions rest on.
+A SAT line reports the n actually found, which can exceed the cutoff.
+
+Eligibility is by two rigorous necessary conditions at the cutoff (cap, then
+Hall), so a shape feasible at some n0 is always eligible at the level whose
+cutoff is n0.  gaveup counts shapes abandoned on the node budget: they are
+UNKNOWN and a level with gaveup > 0 supports no non-existence claim.
 """
 from __future__ import annotations
 import os, pickle, subprocess, sys, time
@@ -42,9 +48,13 @@ sat = [l for l in out if " SAT " in l]
 gu = [l for l in out if "GAVEUP" in l]
 for l in sat + gu:
     i = int(l.split()[1]) - 1
-    tag = "SAT" if " SAT " in l else "GAVEUP"
-    extra = (" arcs=" + l.split()[4].split("=")[1]) if tag == "SAT" else ""
-    print(f"   {tag} n={n} b={elig[i][1]} chords={elig[i][2]}{extra}", flush=True)
+    if " SAT " in l:
+        # bb.exe reports the largest feasible n >= the cutoff, which may exceed it
+        got, arcs = l.split()[3].split("=")[1], l.split()[4].split("=")[1]
+        print(f"   SAT n={got} (cutoff {n}) b={elig[i][1]} chords={elig[i][2]} arcs={arcs}",
+              flush=True)
+    else:
+        print(f"   GAVEUP cutoff={n} b={elig[i][1]} chords={elig[i][2]}", flush=True)
 print(f"LEVEL k={k} n={n} shapes={len(data)} eligible={len(elig)} sat={len(sat)} "
       f"gaveup={len(gu)} search_seconds={round(time.time()-t1,1)} "
       f"total_seconds={round(time.time()-t0,1)}", flush=True)

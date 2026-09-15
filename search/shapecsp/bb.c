@@ -2,10 +2,19 @@
  *
  * Input (stdin), one shape per record:
  *     b m lo_0..lo_{b-1}  (arcmask chordcount) x m
- * argv[1] is the single n under test, argv[2] an optional node budget.
+ * argv[1] is a LOWER CUTOFF, not a single n.  argv[2] is an optional node budget,
+ * argv[3] the arc order.
  *
- * For each shape, decide whether arc lengths a_i >= lo_i with sum a_i = n exist
- * whose cycle lengths cover [3,n].  The driver loops n downward over shapes.
+ * For each shape this walks n from that shape's own cap (#forms + 2) DOWN to the
+ * cutoff and stops at the first n that is feasible, so:
+ *     "SAT n=N"  -> N is the largest n >= cutoff this shape admits, and N can be
+ *                   strictly greater than the cutoff.  Read the N from the line;
+ *                   do not assume it equals the cutoff.
+ *     "UNSAT"    -> NO n in [cutoff, cap] is feasible for this shape.  This is a
+ *                   stronger statement than "n = cutoff is infeasible".
+ *     "GAVEUP"   -> node budget hit.  UNKNOWN, never to be read as UNSAT.
+ * Feasible means: arc lengths a_i >= lo_i with sum a_i = n whose cycle lengths
+ * cover [3,n].
  *
  * Search: DFS over the arcs.  At every node each cycle form f is confined to an
  * interval [lo_f, hi_f] of lengths, from the still-unassigned arcs' lower bounds

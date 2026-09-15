@@ -62,3 +62,4 @@ search/shapecsp/*.pkl
 !search/shapecsp/k6-capscan-62.log
 !search/shapecsp/witness-shape-max.log
 !search/shapecsp/witness-shape-6872.log
+!search/shapecsp/satcheck.log
