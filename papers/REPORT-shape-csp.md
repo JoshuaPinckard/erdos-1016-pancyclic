@@ -13,7 +13,7 @@ Code added under `search/shapecsp/`. Nothing under `search/k6/` was modified.
 | `t_2, t_3, t_4, t_5` | **8, 14, 24, 40** -- exact, from scratch, no lower bound supplied, zero abandoned searches |
 | `h(41) > 5` | **independently confirmed.** No 5-chord pancyclic graph on 41 vertices exists: 308 eligible shapes, `sat=0 gaveup=0`, by a method sharing no code with the GPU enumeration (section 4a) |
 | `t_6` | **not resolved.** Bracket `67 <= t_6 <= 93` (a-priori upper bound was 129). **All seven** known witness shapes are now closed at their exact maxima, the best being 67 -- any larger k=6 graph needs a shape nobody has looked at |
-| k=6 ceiling | `n <= 111` **unconditionally and without search**, against the counting bound's 129: 109 distinct cycle forms is the exhaustive maximum over all 21878 shapes |
+| k=6 ceiling | independent confirmation of the published `M(6) = 109` (Rautenbach-Stella 2005), hence `n <= 111`; the enumeration reproduces `M(k)` for **all** of k=2..6 by a different route |
 | solver soundness | false-negative control passes on all seven witness shapes; red/green gate mutation pair; 201-graph cross-check of the reformulation against `networkx` ground truth |
 | k=3 vs GMW13 | 14 shapes vs 14 published types; the refinement structure matches too, but a type-for-type bijection is **not verified** (section 4b) |
 | shapes | 3 / 14 / 103 / 1236 / 21878 for k = 2..6, of which 1 / 9 / 86 / 1157 / **21324** are the degenerate families |
@@ -89,7 +89,7 @@ The k=4 optimum lives at `b = 7`: shape `((0,2),(1,4),(1,5),(3,6))` -- branch po
 This is not an edge case for k=6 either. Of the 21878 k=6 shapes, **21324 (97.5%)
 are degenerate** -- only 554 are perfect matchings on 12 points.
 
-### Every 6-chord witness this project has found is degenerate. All seven.
+### Every 6-chord witness this project has found is degenerate. All nine.
 
 Each of these was re-verified in this lane -- rebuilt as a graph, checked to have
 exactly 6 chords with none duplicating a cycle edge, cycles enumerated with
@@ -101,21 +101,33 @@ exactly 6 chords with none duplicating a cycle edge, cycles enumerated with
 | 60 | 8 | 2,2,2,2,1,1,1,1 | `((0,1),(0,6),(1,2),(2,4),(3,5),(4,7))` |
 | 61 | 9 | 2,2,2,1,1,1,1,1,1 | `((0,1),(0,7),(1,3),(2,6),(3,5),(4,8))` |
 | 63 | 9 | 2,2,2,1,1,1,1,1,1 | `((0,1),(0,7),(1,3),(2,5),(4,6),(4,8))` |
+| 62 | 9 | 2,2,2,1,1,1,1,1,1 | `((0,1),(0,7),(1,3),(2,5),(4,6),(4,8))` |
+| 63 | 9 | 2,2,2,1,1,1,1,1,1 | `((0,1),(0,7),(1,3),(2,5),(4,6),(4,8))` |
 | 64 | 10 | 2,2,1,1,1,1,1,1,1,1 | `((0,1),(0,8),(1,3),(2,6),(4,9),(5,7))` |
+| 65 | 11 | 2,1,1,1,1,1,1,1,1,1,1 | `((0,2),(0,8),(1,5),(3,9),(4,6),(7,10))` |
 | 66 | 11 | 2,1,1,1,1,1,1,1,1,1,1 | `((0,2),(0,8),(1,5),(3,9),(4,6),(7,10))` |
 | 67 | 11 | 2,1,1,1,1,1,1,1,1,1,1 | `((0,2),(0,8),(1,5),(3,9),(4,6),(7,10))` |
 
-**Not one has b = 12.** A search over the 554 perfect-matching shapes would have
-enumerated a space containing none of them. The degenerate families are not an
+**Not one of the nine has b = 12.** A search over the 554 perfect-matching shapes
+would have enumerated a space containing none of them. Note also how few distinct
+shapes there are: the nine witnesses sit on only **six** shapes -- n=62 and 63
+share one, and n=65, 66 and 67 all share the b=11 shape. The degenerate families are not an
 extra tail of smaller cases to be added for completeness; at k=6 they are 97.5% of
 the space and they contain 100% of the known solutions.
 
-Two of the candidate witnesses circulating in the repository do *not* survive this
-check and are excluded from the table: `n=62` with
-`(0,2)(0,59)(1,45)(3,58)(29,54)(54,59)` is missing length 29, and `n=65` with
-`(0,2)(0,62)(1,12)(3,61)(4,29)(57,62)` is missing 32. That is a failure to
-confirm those two particular chord lists, not a claim that no witness exists at
-62 or 65.
+A trap worth recording, because it cost me a wrong entry. The repository stores
+near-misses and witnesses **in the same files and the same format**, and I first
+picked the wrong rows for n=62 and n=65:
+
+```
+n=62  (0,2)(0,59)(1,11)(3,58)(3,28)(54,59)    PANCYCLIC        <- the witness
+n=62  (0,2)(0,59)(1,45)(3,58)(29,54)(54,59)   missing [29]     <- a "BEST ... missing=1" sweep line
+n=65  (0,2)(0,58)(1,13)(3,59)(4,31)(57,60)    PANCYCLIC        <- the witness
+n=65  (0,2)(0,62)(1,12)(3,61)(4,29)(57,62)    missing [32]     <- the near-miss seed a sweep was built around
+```
+
+All four verified here. Anything reading chord lists out of these logs must check
+each one rather than pattern-match the filename or the surrounding `n=`.
 
 Taking the earliest of the seven in detail -- the 56-vertex one from
 `search/k6/witnesses.csv`,
@@ -161,19 +173,31 @@ For k=6 the largest such cap over all 21878 shapes is **111**, not the a-priori
 129. This per-shape cap is also the pruning rule that makes the sweep finite:
 a shape with 60 forms is simply irrelevant to any `n > 62`.
 
-> **An unconditional, search-free improvement to the counting bound.**
-> The literature's ceiling for k=6 is `n <= 2^(k+1)+1 = 129`, from
-> `2^(k+1)-1 >= n-2`. The 109 above is **exhaustive, not a maximum over a sample**:
-> `cycle_forms` is computed for every one of the 21878 shapes and the maximum
-> taken, with no sampling anywhere in the calculation. Since every cycle of `G` is
-> a cycle of its shape's `H`, and covering `[3,n]` needs `n-2` distinct lengths
-> from at most that many forms,
+> **This is not a new bound -- it is an independent confirmation of a published
+> one, and that is worth more here.** `M(k)`, the maximum number of cycles in a
+> Hamiltonian graph with `k` chords, is known exactly for `k <= 10`:
+> Rautenbach and Stella (2005) give it, and `papers/REPORT-cyclecounts.md` already
+> records `6 | 109 | Rautenbach-Stella 2005, Section 3, Fig. 3` with
+> `N = M+2 = 111`. The `n <= 111` ceiling was on file before this work. What the
+> shape enumeration adds is an **independent computational confirmation by a
+> different route**: Rautenbach-Stella enumerate Hamiltonian 3-regular graphs of
+> order `2k`; this enumerates all shapes up to `D_b` including the degenerate
+> ones, then computes cycle spaces. Both agree on every value:
 >
->     any pancyclic C_n plus 6 chords has n <= 111.
+> | k | 2 | 3 | 4 | 5 | 6 |
+> |---|---|---|---|---|---|
+> | published `M(k)` | 7 | 15 | 29 | 56 | 109 |
+> | computed here | 7 | 15 | 29 | 56 | 109 |
+> | attained at b = | 4 | 6 | 8 | 10 | 12 |
 >
-> That holds with no search at all, and the same computation gives 9, 17, 31, 58
-> and 111 as the ceilings for k = 2..6 against the counting bound's
-> 9, 17, 33, 65, 129.
+> This is the check on the machinery every other number in this report depends on.
+> If the enumeration were missing shapes, the maximum could only come out **too
+> low**; it does not, at any k. And the last row is a small result in its own
+> right: the cycle-count maximum is always attained at `b = 2k`, the
+> *non-degenerate* shapes -- matching Rautenbach-Stella's 3-regular extremal
+> graphs exactly -- even though, as section 1 shows, every *pancyclicity* optimum
+> lives in the degenerate families. The two extremal problems pull in opposite
+> directions, which is precisely why a "most cycles" intuition misleads here.
 
 ---
 
@@ -534,7 +558,7 @@ from 87 down is in the two logs and every one is UNSAT.)
 
 Because `bb.exe` takes a lower cutoff and walks down from each shape's own cap
 (section 0), asking it for a witness's `n` returns that shape's **exact maximum**.
-Run over the shape of all seven verified witnesses (`satcheck.py`,
+Run over the shape of each verified witness (`satcheck.py`,
 `satcheck.log`, one process pinned to core 0 at BelowNormal):
 
 | witness n | b | shape cap | shape's exact maximum | seconds |
@@ -550,6 +574,18 @@ Run over the shape of all seven verified witnesses (`satcheck.py`,
 ```
 SATCHECK: all witness shapes returned SAT
 ```
+
+Grouping the nine verified witnesses by shape, those seven runs cover all of them,
+because the nine sit on only six distinct shapes:
+
+| witnesses | shape's exact maximum |
+|---|---|
+| 56 | 56 |
+| 60 | **62** |
+| 61 | 61 |
+| 62, 63 | 63 |
+| 64 | 64 |
+| 65, 66, 67 | **67** |
 
 So **every 6-chord shape this project has found is exhausted, and the best of them
 tops out at 67.** Improving on `t_6 >= 67` cannot be done by perturbing any known
@@ -710,6 +746,68 @@ Two further partial results, each with its cap declared:
   finish**; its processes were stopped and produced no output, so it contributes
   nothing -- neither a witness nor evidence of absence. It is listed here because a
   silent skip would be indistinguishable from a negative result.
+
+---
+
+## 6a. The n=68 question, a second machine, and two more of my own bugs
+
+With every known shape exhausted at 67 (section 6), the live question is whether
+*any* shape reaches 68. The work moved to a second machine for this.
+
+### Deployment and its controls
+
+Sources were copied to an Ubuntu 24.04 laptop (16 logical CPUs) and `bb` built
+there with the laptop's own `gcc 13.3` -- the Windows binary was deliberately not
+shipped, because a fresh toolchain is exactly where a silent difference would
+appear. `pip --user` is blocked on that distribution by PEP 668; rather than
+`--break-system-packages` on someone else's machine, the dependencies went into a
+venv under the project directory.
+
+**The controls were re-run there before any k=6 number was taken from it**, and
+both passed on the new toolchain:
+
+```
+ALL GATES PASS                       (test_shapecsp.py, incl. the 201-graph
+                                      cross-check against networkx)
+RESULT t_2 = 8    gaveup_records=0
+RESULT t_3 = 14   gaveup_records=0
+RESULT t_4 = 24   gaveup_records=0
+```
+
+### Two bugs in my own harness, found by the deployment
+
+1. **The node budget was per rung, not per shape.** `bb` reset its node counter
+   for each `n` in the range, so a "120M node budget" on a shape with cap 101 and
+   cutoff 68 was really 120M x 34. Budgets are now cumulative per shape.
+2. **A hit is not cheap after all.** I had reasoned that SAT shapes are answered
+   quickly because `bb` stops at the first feasible `n`. That is only true when
+   the cap is near the cutoff: a shape with cap 101 must *refute* 101, 100, ... 69
+   before it ever tests 68. So the hunt needed a mode that tests one value.
+   `bb` now takes `exact=1`, testing only `n = cutoff` -- one search per shape
+   instead of `cap - cutoff + 1`.
+
+Both changes touch the search, so the k=2/3/4 control was re-run on **both**
+machines afterwards; all three still exact with `gaveup_records=0`.
+
+### What the n=68 run can and cannot deliver
+
+Measured on the laptop, 7 workers at `nice 10`:
+
+```
+23/6059 shapes, 592s elapsed, 0.039 shapes/s, gaveup=0
+-> ~40 hours wall-clock for all 6059
+```
+
+(Likely an over-estimate: shapes are ordered cap-descending and cost rises with
+`cap - cutoff`, so the early ones are the worst.)
+
+**That 40 hours buys a hunt, not a proof.** Exact mode answers "is any shape
+feasible at exactly 68". A hit is conclusive -- `t_6 >= 68` with arc lengths that
+materialise into a chord set. A miss is *not*: it says nothing about a shape
+reaching 69..93. The non-existence proof needs range mode over `[68, 93]`, which
+is of order 26x the hunt, i.e. weeks. **`t_6 = 67` is not deliverable by this
+lane.** As in section 6, that is a statement about the available allocation, not
+about the method.
 
 ---
 

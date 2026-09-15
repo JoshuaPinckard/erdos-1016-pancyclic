@@ -19,7 +19,9 @@ k, floor_n, capmax = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3])
 nodecap = sys.argv[4] if len(sys.argv) > 4 else "2000000000"
 jobs = int(sys.argv[5]) if len(sys.argv) > 5 else 4
 HERE = os.path.dirname(os.path.abspath(__file__))
-BB = os.path.join(HERE, "bb.exe")
+BB = os.path.join(HERE, "bb")           # Linux build
+if not os.path.exists(BB):
+    BB = os.path.join(HERE, "bb.exe")   # Windows build
 
 data = pickle.load(open(os.path.join(HERE, f"forms-k{k}.pkl"), "rb"))
 todo = [d for d in data if floor_n < d[0] <= capmax]

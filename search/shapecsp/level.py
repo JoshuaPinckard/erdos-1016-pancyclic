@@ -18,7 +18,9 @@ import bound as B
 
 ARCORDER = "2"
 HERE = os.path.dirname(os.path.abspath(__file__))
-BB = os.path.join(HERE, "bb.exe")
+BB = os.path.join(HERE, "bb")           # Linux build
+if not os.path.exists(BB):
+    BB = os.path.join(HERE, "bb.exe")   # Windows build
 
 k, n = int(sys.argv[1]), int(sys.argv[2])
 nodecap = sys.argv[3] if len(sys.argv) > 3 else "4000000000"

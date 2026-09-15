@@ -19,7 +19,9 @@ except Exception as e:                      # never let the cap plumbing kill th
     print(f"WARNING could not pin: {e!r}", flush=True)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BB = os.path.join(HERE, "bb.exe")
+BB = os.path.join(HERE, "bb")           # Linux build
+if not os.path.exists(BB):
+    BB = os.path.join(HERE, "bb.exe")   # Windows build
 
 b = int(sys.argv[1])
 ch = ast.literal_eval(sys.argv[2])

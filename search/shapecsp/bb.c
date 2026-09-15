@@ -2,10 +2,11 @@
  *
  * Input (stdin), one shape per record:
  *     b m lo_0..lo_{b-1}  (arcmask chordcount) x m
- * argv[1] is a LOWER CUTOFF, not a single n.  argv[2] is an optional node budget,
- * argv[3] the arc order.
+ * argv[1] is a LOWER CUTOFF, not a single n.  argv[2] is a node budget PER SHAPE
+ * (across the whole range, not per rung), argv[3] the arc order, argv[4] = 1 to
+ * test ONLY n = argv[1] instead of the range.
  *
- * For each shape this walks n from that shape's own cap (#forms + 2) DOWN to the
+ * In range mode this walks n from that shape's own cap (#forms + 2) DOWN to the
  * cutoff and stops at the first n that is feasible, so:
  *     "SAT n=N"  -> N is the largest n >= cutoff this shape admits, and N can be
  *                   strictly greater than the cutoff.  Read the N from the line;
@@ -13,6 +14,9 @@
  *     "UNSAT"    -> NO n in [cutoff, cap] is feasible for this shape.  This is a
  *                   stronger statement than "n = cutoff is infeasible".
  *     "GAVEUP"   -> node budget hit.  UNKNOWN, never to be read as UNSAT.
+ * In exact mode (argv[4]=1) only n = cutoff is tested, so UNSAT means just that
+ * one value is infeasible -- it says nothing about larger n.  Exact mode is for
+ * hunting: one search per shape instead of (cap - cutoff + 1) of them.
  * Feasible means: arc lengths a_i >= lo_i with sum a_i = n whose cycle lengths
  * cover [3,n].
  *
@@ -43,7 +47,7 @@ static int hasA[MAXM][MAXB + 1];     /* f still has an unassigned arc at depth d
 static int sumA[MAXM], sumB[MAXM];
 static int sufLo[MAXB + 1];          /* sum of lo over arcs at depth >= d */
 static long long nodes, nodecap;
-static int arcorder;
+static int arcorder, exact;
 
 /* --- can every value in [3,n] get its own form? -----------------------------
  * Form f may realise any length in [lo_f, hi_f]; one form realises one length,
@@ -140,6 +144,7 @@ int main(int argc, char **argv)
     int target = atoi(argv[1]);
     nodecap = argc > 2 ? atoll(argv[2]) : 200000000LL;
     arcorder = argc > 3 ? atoi(argv[3]) : 0;
+    exact = argc > 4 ? atoi(argv[4]) : 0;
     int shape = 0;
     while (scanf("%d %d", &b, &m) == 2) {
         for (int i = 0; i < b; i++) scanf("%d", &lo[i]);
@@ -170,16 +175,16 @@ int main(int argc, char **argv)
             }
         }
         int cap = m + 2, best = 0, gaveup = 0;
-        long long tot = 0;
-        for (int n = cap; n >= target; n--) {
+        int hi = exact ? target : cap;          /* exact mode tests only n=target */
+        nodes = 0;                              /* budget is PER SHAPE, not per rung */
+        for (int n = hi; n >= target; n--) {
             nn = n;
             for (int f = 0; f < m; f++) sumA[f] = sumB[f] = 0;
-            nodes = 0;
             int r = dfs(0, 0);
-            tot += nodes;
             if (r < 0) { gaveup = 1; break; }
             if (r) { best = n; break; }
         }
+        long long tot = nodes;
         if (gaveup) printf("SHAPE %d GAVEUP nodes=%lld\n", shape, tot);
         else if (best) {
             printf("SHAPE %d SAT n=%d arcs=", shape, best);

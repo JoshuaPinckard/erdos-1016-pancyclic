@@ -21,7 +21,9 @@ except Exception as e:
     print(f"WARNING could not pin: {e!r}", flush=True)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BB = os.path.join(HERE, "bb.exe")
+BB = os.path.join(HERE, "bb")           # Linux build
+if not os.path.exists(BB):
+    BB = os.path.join(HERE, "bb.exe")   # Windows build
 nodecap = sys.argv[1] if len(sys.argv) > 1 else "8000000000"
 
 CASES = [   # (n, b, canonical chords) -- shape of a witness verified in this lane

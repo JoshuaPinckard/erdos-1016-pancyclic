@@ -18,7 +18,9 @@ k = int(sys.argv[1])
 floor_n = int(sys.argv[2]) if len(sys.argv) > 2 else 3
 nodecap = sys.argv[3] if len(sys.argv) > 3 else "400000000"
 HERE = os.path.dirname(os.path.abspath(__file__))
-BB = os.path.join(HERE, "bb.exe")
+BB = os.path.join(HERE, "bb")           # Linux build
+if not os.path.exists(BB):
+    BB = os.path.join(HERE, "bb.exe")   # Windows build
 
 t0 = time.time()
 cache = os.path.join(HERE, f"forms-k{k}.pkl")
