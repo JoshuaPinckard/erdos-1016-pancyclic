@@ -1,0 +1,1 @@
+LEVEL k=5 n=47 shapes=1236 eligible=74 sat=0 gaveup=0 search_seconds=119.7 total_seconds=119.8

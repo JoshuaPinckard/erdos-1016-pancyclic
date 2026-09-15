@@ -1,0 +1,4 @@
+k=6 floor=56 capmax=62 shapes_in_range=4059 (of 21878; 9200 have cap > capmax and are NOT covered here)
+# 250/4059 elapsed=329s sat=0 gaveup=0
+# 500/4059 elapsed=1671s sat=0 gaveup=0
+# 750/4059 elapsed=4265s sat=0 gaveup=0
