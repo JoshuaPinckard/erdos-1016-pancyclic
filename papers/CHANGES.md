@@ -229,3 +229,63 @@ claimed and what the repository actually contained.
 Not changed: the values themselves ($h(38..41)=5,5,5,6$), every witness
 claim, the $n=40$ exhaustive `--all` run (tracked, complete), and every
 Lean statement. Nothing was weakened that the artifacts support.
+
+# 2026-09-14 — t_6 update (Worker 12, `papers/REPORT-draft-update.md`)
+
+Five changes to `papers/draft/pancyclic-exact-values.md`, with
+`papers/draft/SOURCES.md` updated to match. Every witness cited was re-run
+through `search/verify.py` in this revision; the output is
+`papers/draft/verify-rerun-20260914.txt`. No file under `search/`,
+`Erdos1016/` or any `REPORT-*.md` other than the new
+`papers/REPORT-draft-update.md` was touched.
+
+1. **Bracket $56\le t_6\le129$ replaced by $67\le t_6\le129$** in the
+   abstract, Section 2.1, Section 5 and Section 6.3. Section 6.3 now tabulates
+   a confirmed 6-chord witness at every $n$ from $57$ to $67$ with its chord
+   set and provenance ($61$: `search/k6/sweep2-61-34.txt`; $62$–$67$:
+   `search/k6/witnesses-v2.csv`; $57$–$60$: `search/k6/coord-57.txt`,
+   `search/k6/smart-57-70.txt`), so $h(n)\le6$ is stated for all
+   $41\le n\le67$. Section 2.1 also states which lower bounds $h(n)\ge6$ are
+   established ($n=41$; $n\ge66$ by counting) and which would need
+   monotonicity.
+
+2. **Section 5 rewritten.** The Fibonacci form $2\,\mathrm{Fib}(k+3)-2$
+   ($t_6=66$) and the rival $2^{k-2}(10-k)$ ($t_6=64$) are both reported as
+   refuted by the $n=65,66,67$ witnesses, and the numerology is replaced by
+   the result of `papers/NOTE-fit-underdetermination.md`: every three-term
+   integer linear recurrence fitting $t_2..t_5$ has $(a,b,c)=(1+3t,1-5t,2-2t)$
+   and predicts $t_6=66-2t$, so the known values determine $t_6$ not at all.
+   The note's caveat is kept verbatim in substance: "every even value" is a
+   property of that family, not a theorem that $t_6$ is even. The abstract's
+   "falsifiable prediction" sentence is gone.
+
+3. **New Section 3.5, "The shape/CSP exact algorithm."** Describes the
+   subdivision-of-a-fixed-multigraph reformulation (cycle lengths as $0/1$
+   linear forms in the arc lengths; $h(n)$ as a finite per-shape feasibility
+   problem), the two independent solvers, the per-shape cap, the controls
+   ($t_2=8$, $t_3=14$, $t_4=24$ with `gaveup_records=0`; $k=3$ shape count
+   $14$ matching GMW13's "14 types of graph"; 201-graph ground-truth check
+   with 0 mismatches), and the mutation-tested gate suite
+   (`search/shapecsp/gates-red.txt` / `gates-green.txt`, re-run green here).
+   The $k=5$ and $k=6$ ladder logs are reported as logged and flagged as not
+   yet written up; Section 3.4's replication statement for $h(41)>5$ is
+   deliberately left unchanged pending that lane's report.
+
+4. **Family statement added** (Sections 5 and 6.3): the $n=64,65,66,67$
+   witnesses are $(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)$, pancyclic for
+   exactly $n=64..67$ and missing exactly one length ($33$) at $n=68$
+   (`papers/REPORT-k6-gpu-joint.md`; the $n=68$ member re-run here with
+   `search/verify.py`: NOT pancyclic, missing `[33]`).
+
+5. **Every other number the above invalidates reconciled.** Section 6.3's
+   title, "largest confirmed witness $n=56$", "previously only up to 41", and
+   the "stalls 3 lengths short at $n=66$" narrative are rewritten: the
+   $\{5,7,8\}$ optimum is now described as a single-chord local optimum of
+   one seed family, superseded by the $n=66$ witness found by a joint 3-of-6
+   sweep around a different seed. The abstract's "two numerical
+   observations" sentence, Section 5's "Update: partially tested, not
+   settled" paragraph, and `SOURCES.md`'s Section 5/6 rows and its
+   "sourcing discipline" bullet on the Fibonacci fit are replaced
+   accordingly. Not changed: every $n\le41$ value, every Lean statement,
+   Section 3.4, and the $M(k)$ table (which Section 3.5 now notes the shape
+   census reproduces).

@@ -33,6 +33,8 @@ from. Paths are relative to `C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\`.
 |---|---|
 | $t_1,\dots,t_5 = 5,8,14,24,40$ | `notes/01-subdivision-reformulation.md`, "Update 2026-09-14 evening" section |
 
+| $67\le t_6\le129$; $h(n)\le6$ for $41\le n\le67$; $h(n)\ge6$ for $n\ge66$ by counting | lower end and $h(n)\le6$: the Section 6.3 witness table below; upper end: $N_0=2^{k+1}+1$ at $k=6$ (`papers/REPORT-cyclecounts.md`); counting step: $2^{5+1}-1=63<n-2$ iff $n\ge66$, recomputed here |
+
 ## Section 2.2 — Five extremal 5-chord graphs on 40 vertices
 
 | Number / claim | Source |
@@ -87,6 +89,23 @@ from. Paths are relative to `C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\`.
 | $n=25$: $35{,}303{,}774$ tested, $0$ witnesses | `papers/REVIEW-independent.md`, same section |
 | Random sampling: $2{,}000{,}000$ samples at $n=41,k=5$, $0$ hits; positive control $n=24,k=4$, $1$ hit in $2{,}000{,}000$ | `papers/REVIEW-gpu-corroboration.md`, "2. Random direct-DFS corroboration" section |
 
+## Section 3.5 — Shape/CSP exact algorithm
+
+| Number / claim | Source |
+|---|---|
+| Shape = cycle on the $b\le2k$ chord endpoints plus the $k$ chords, enumerated up to $D_b$ over all $b$ including degenerate families | `search/shapecsp/shapes.py`, `shapes(k)`; `papers/REPORT-shape-csp.md`, "The algorithm" |
+| Cycle lengths are $0/1$ linear forms $L_f(a)=\sum_{i\in A_f}a_i+\lvert X_f\rvert$; cycle space of $H$ has dimension $k+1$ | `search/shapecsp/shapes.py`, `cycle_forms(b, chords)`; `papers/REPORT-shape-csp.md`, "The algorithm" |
+| Shape counts $3,14,103,1236,21878$ for $k=2..6$; $k=3$ split $5$ non-degenerate $+$ $9$ degenerate; $k=6$ $97.5\%$ degenerate | `search/shapecsp/shape-census.txt`, rows "2 \| 3 \| 2 \| 1", "3 \| 14 \| 5 \| 9", "4 \| 103", "5 \| 1236", "6 \| 21878 \| 554 \| 21324" |
+| GMW13's "14 types of graph" at three chords, matching the $k=3$ shape count | `papers/REPORT-griffin-method.md`, quoting GMW13: "There are 14 types of graph: AAAi, AAAii, AABi, AABii, AAC, ABBi, ABBii, ABC, ACC, BBBi, BBBii, BBC, BCC, CCC"; GMW13 arc-length forms "a+b+1, c+d+1" quoted in the same file |
+| Max cycles per shape $7,15,29,56,109$ for $k=2..6$ (equal to $M(k)$); largest $k=6$ per-shape cap $111$ | `search/shapecsp/shape-census.txt`, "max cycles" column; `papers/REPORT-shape-csp.md`, "Second finding" ($111$) |
+| Two solvers: CP-SAT and C branch-and-bound with exact greedy matching; interval-Hall counterexample at $n=8$ | `search/shapecsp/solve.py`, `search/shapecsp/bb.c`, `search/shapecsp/bound.py:hall_ok`; `papers/REPORT-shape-csp.md`, "A correction worth recording" |
+| $t_2=8,t_3=14,t_4=24$ reproduced with `gaveup_records=0`; witnessing shapes and arcs | `papers/REPORT-shape-csp.md`, "Positive control", lines `RESULT t_2 = 8 gaveup_records=0`, `RESULT t_3 = 14 ...`, `RESULT t_4 = 24 ...`; CP-SAT cross-run `search/shapecsp/control-k2-k5.log` (also "new best n=40" at $k=5$) |
+| 201 random (shape, arcs) pairs vs `networkx.simple_cycles`, 0 mismatches | `search/shapecsp/gates-green.txt`, "PASS cycle forms reproduce the true cycle-length multiset :: 201 graphs, 0 mismatches" |
+| Gate suite mutation: RED with `rng = [2*k]` (`FAIL t_4 == 24 :: got 22`, exit 1), GREEN restored (`ALL GATES PASS`, exit 0) | `search/shapecsp/gates-red.txt`, `search/shapecsp/gates-green.txt`; `papers/REPORT-shape-csp.md`, "Gates and their mutation check"; re-run in this revision: `python search/shapecsp/test_shapecsp.py` → `ALL GATES PASS`, 41 s |
+| $n=56$ witness has 7 branch vertices, vertex 39 carries three chords | `papers/REPORT-shape-csp.md`, "Costliest finding" |
+| $k=5$ ladder: `sat=0 gaveup=0` at every level $n=58..41$ | `search/shapecsp/k5-levels.log`, all 18 `LEVEL k=5` lines; not yet written up in `papers/REPORT-shape-csp.md`, so Section 3.4's replication status is left unchanged |
+| $k=6$ ladder in progress: levels $n=110..97$ `sat=0 gaveup=0` at time of writing | `search/shapecsp/k6-levels.log` as of 2026-09-14 17:26 (last completed level file `search/shapecsp/level-k6-n97.txt`); provisional, not used for the stated bracket |
+
 ## Section 4 — Subdivision lemma and cycle-count context
 
 | Claim / quote | Source |
@@ -111,9 +130,11 @@ from. Paths are relative to `C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\`.
 | $t_k=2\,\mathrm{Fib}(k+3)-2$ for $k=2..5$, values $8,14,24,40$ | **origin corrected in this revision**: `papers/REPORT-bondy-construction.md`, "An unsourced numerical observation" section — not, as an earlier draft stated, newly derived in this note. Arithmetic independently re-checked here against the $t_k$ values above |
 | "Two-parameter family," only $k=4,5$ independent of the fit's own construction | `papers/REPORT-bondy-construction.md`, same section, quoted "four data points fitting a two-parameter family" |
 | Additive recursion $t_k=t_{k-1}+t_{k-2}+2$ fails at $k=3$ ($15\ne14$) | `papers/REPORT-bondy-construction.md`, same section, quoted "this does not hold at k=3, t_2+t_1+2=8+5+2=15 != 14, off by one" |
-| Predicted $t_6=2\,\mathrm{Fib}(9)-2=66$ | same source, extrapolated one step; explicitly labelled a prediction, not a verified value |
-| Bracket $56\le t_6\le129$; $129=2^7+1$ | lower end: `papers/REPORT-k6-upper.md`'s $n=56$ witness (Section 6.3); upper end: same $N_0=2^{k+1}+1$ formula as `papers/REPORT-cyclecounts.md`'s "Count-to-order comparison" table, evaluated at $k=6$ |
-| $n=66$ attempt stalls at missing $=3$, lengths $\{5,7,8\}$, confirmed local optimum over $12{,}000+$ single-chord-replacement evaluations | `papers/REPORT-k6-upper.md`, "Additional... direct attack on n=66" section, `search/k6/coord-66.txt` |
+| Fibonacci prediction $t_6=66$ (now refuted) | `papers/REPORT-bondy-construction.md`, extrapolated one step; refuted by the $n=67$ witness below |
+| Rival form $t_k=2^{k-2}(10-k)$, exact at $k=2..5$, predicting $t_6=64$ (now refuted) | `papers/PLAN-next-steps.md`, "a rival 2-parameter formula fits equally and disagrees at t_6"; arithmetic re-checked here ($1\cdot8,2\cdot7,4\cdot6,8\cdot5=8,14,24,40$; $16\cdot4=64$); refuted by the $n=65$ witness below |
+| Every integer three-term recurrence fitting $8,14,24,40$: $5a+3b=8$, $(a,b,c)=(1+3t,1-5t,2-2t)$, $t_6=66-2t$; "every even value" is a property of this family only | `papers/NOTE-fit-underdetermination.md`, "Statement" and "Caveat, stated precisely"; the two linear constraints and their difference re-derived here |
+| Bracket $67\le t_6\le129$; $129=2^7+1$ | lower end: the $n=67$ witness of Section 6.3 (`search/k6/witnesses-v2.csv`, `search/k6/verify-67-gpu-joint.txt`, re-run in `papers/draft/verify-rerun-20260914.txt`); upper end: same $N_0=2^{k+1}+1$ formula as `papers/REPORT-cyclecounts.md`'s "Count-to-order comparison" table, evaluated at $k=6$ |
+| Odd witnesses ($n=65,67$) refute every member of the integer family | `papers/NOTE-fit-underdetermination.md`, "A witness at n=65 would be sharper than either named fit anticipates"; witnesses in `search/k6/witnesses-v2.csv` |
 | Griffin's Conjecture 1 ($m(n)<m(n+1)$), Proposition 2 ($m(n+1)\le m(n)+2$) | `papers/1312.0274.txt`, "Conjecture 1. m(n) < m(n + 1) for all n >= 3" and "Proposition 2. m(n + 1) <= m(n) + 2" |
 | Wallis's Questions 1 and 2, exact wording | `papers/Wallis-2014-IWOCA-open-problems.pdf`, fetched directly from `https://tomasz-radzik.github.io/IWOCA/problems/Wallis2014.pdf` (HTTP 200) and read in full; "1. Is it always true that m(v) <= m(v+1)?... 2. Find a good upper bound for m(v)." |
 | Sridharan (1978) claimed exact $m(v)$ for all $v$, shown wrong ($m(13)=17$ claimed vs. $m(13)=16$ actual) | `papers/Wallis-2014-IWOCA-open-problems.pdf`, "The paper [3] claims to give exact values of m(v) for all v, but they have been proven wrong; for example, it is claimed that m(13) = 17, but an example with m(13) = 16 is given in [1]"; cross-checked against this draft's own Section 2 table, which gives $m(13)=16$ from Griffin's Table 1 |
@@ -125,10 +146,15 @@ from. Paths are relative to `C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\`.
 | 6.1 recap of the five $n=40$ extremal graphs | same sources as "Section 2.2" above; not re-derived |
 | $n{=}24\to25$ insertion table, all 8 rows (chords, missing lengths) | `papers/PROOF-n25-k4.md`, Section 5's two per-graph tables, computed directly with `search/verify.py`'s `networkx.simple_cycles` method during that task; largest-arc values ($m{=}10$ for both $G_1,G_2$) independently recomputed and corrected in this session (an earlier draft of `PROOF-n25-k4.md` mis-stated one as $m{=}11$; fixed there before this citation) |
 | Mirrored missing-length sets $\{4,7,11,23\},\{5,13,21\},\{15\},\{9,19\}$ | same table; cross-checked by direct comparison across the two graphs' rows |
-| $n=56$ witness $(0,2)(0,53)(1,39)(20,39)(39,48)(48,53)$, so $t_6\ge56$ | `papers/REPORT-k6-upper.md`, "Costliest finding first"; raw data `search/k6/witnesses.csv` row `56,...` |
+| $n=56$ witness $(0,2)(0,53)(1,39)(20,39)(39,48)(48,53)$ | `papers/REPORT-k6-upper.md`, "Costliest finding first"; raw data `search/k6/witnesses.csv` row `56,...` |
+| $n=67$ witness $(0,2)(0,60)(1,13)(3,61)(4,31)(59,62)$, so $t_6\ge67$; its four confirmations | `search/k6/witnesses-v2.csv` row `67,...`; `search/k6/verify-67-gpu-joint.txt` ("pancyclic [3, 4, ..., 67]"); `papers/REPORT-k6-gpu-joint.md`, "Result in one paragraph" (cyclespace.py, GPU r=0 with the near-miss control, manager's separate evaluator); re-run here in `papers/draft/verify-rerun-20260914.txt` |
+| Witness table $n=57..67$ (chords and provenance) | $57$: `search/k6/coord-57.txt` ("WITNESS n=57 k=6"); $58,59,60$: `search/k6/smart-57-70.txt` ("n=58: WITNESS", "n=59: WITNESS", "n=60: WITNESS"), $60$ also `search/k6/climb-60-72.txt` ("FINAL n=60 missing=0"); $61$: `search/k6/sweep2-61-34.txt` ("IMPROVE n=61 missing=0 chords=(0,2)(0,58)(1,44)(3,57)(28,53)(53,58)"); $62..67$: `search/k6/witnesses-v2.csv`, all rows; every one re-run with `search/verify.py` in `papers/draft/verify-rerun-20260914.txt` ("pancyclic", missing `[]`) |
+| Family $(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)$ pancyclic for $n=64..67$, missing $[33]$ at $68$, $[33,34]$ at $69$, ... | `papers/REPORT-k6-gpu-joint.md`, "The structure and how far it lifts" table; $n=68$ member re-run here: `papers/draft/verify-rerun-20260914.txt`, "68 ... NOT pancyclic", missing `[33]` |
+| Inner-chord sweep $(1,a)(4,b)$ does not repair $n=68$; 2-of-6 sweep at $n=68$ complete, $36{,}481{,}725$ candidates, no witness; 3-of-6 in flight | `papers/REPORT-k6-gpu-joint.md`, same section and "Neighbourhoods swept" table (row "68 ... 2 ... 36,481,725 ... 0") |
+| $n=66$ witness found after $22{,}335{,}424{,}500$ candidates, 15 of 20 slot subsets, seed $(0,2)(0,63)(1,13)(3,62)(4,31)(58,63)$ missing $[57]$ | `papers/REPORT-k6-gpu-joint.md`, "How they were found" and "Seeds" table |
 | Binary-shortcut recipe pancyclic at exactly $n=36,40$, missing only length 5 on $[37,69]$; recipe's exact chord formulas | `papers/REPORT-k6-upper.md`, "(a) Structured enumeration with geometric gaps" section; raw data `search/k6/gkw-K4.txt`; **attribution corrected in this revision** to Alon–Krivelevich's paraphrase of GKW (`papers/REPORT-bondy-construction.md`, "The explicit recipe" section, quoting AK's Definition 3 and Section 3 verbatim), not to GKW16 directly |
 | Recipe undershoots $t_k$ by 50%–12.5% for $k=2..5$ | `papers/REPORT-bondy-construction.md`, "Verdict on the comparison" section, the `u(k)` vs. `t_k` table |
-| $n=66$ direct attempt: missing count driven from 20 to 3 ($\{5,7,8\}$), confirmed local optimum | `papers/REPORT-k6-upper.md`, "Additional... direct attack on n=66" section; `search/k6/strict-66.txt`, `search/k6/coord-66.txt` |
+| Earlier $n=66$ direct attempt: missing count driven from 20 to 3 ($\{5,7,8\}$), single-chord local optimum $(0,2)(0,48)(1,40)(11,41)(44,47)(47,52)$ — historical, superseded by the $n=66$ witness | `papers/REPORT-k6-upper.md`, "Additional... direct attack on n=66" section; `search/k6/strict-66.txt`, `search/k6/coord-66.txt` |
 
 ## Notes on sourcing discipline
 
@@ -158,9 +184,12 @@ from. Paths are relative to `C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\`.
   be located; `papers/REPORT-oeis-and-jia.md` flags the one place (a coefficient
   in a discarded intermediate theorem, not used in this draft) where the OCR
   itself was ambiguous.
-* The Fibonacci fit and its $t_6$ prediction are this draft's own arithmetic
-  observation over already-sourced $t_k$ values, explicitly labelled as such and
-  not attributed to any prior file.
+* The Fibonacci fit, the rival fit and the recurrence-family underdetermination
+  argument are cited to `papers/REPORT-bondy-construction.md`,
+  `papers/PLAN-next-steps.md` and `papers/NOTE-fit-underdetermination.md`
+  respectively; the draft's own contribution is only the arithmetic re-check.
+  Both named fits are reported as refuted, not as live predictions, since the
+  2026-09-14 revision.
 
 ## Evidence reachability (2026-09-14 record-integrity pass)
 

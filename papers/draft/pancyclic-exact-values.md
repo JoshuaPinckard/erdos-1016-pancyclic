@@ -20,13 +20,22 @@ enumeration) plus non-exhaustive corroboration; an independently written
 exhaustive replication has not yet been completed (Section 3.4). We record the
 extremal $5$-chord graphs at the $n=40$ threshold, a subdivision lemma showing why
 counting arguments can improve only the additive constant, never the growing
-correction term the conjecture needs, and two numerical observations on the
-threshold sequence $t_k$ (largest $n$ with $h(n)=k$): its ratio to $2^{k+1}$ is
-strictly decreasing, and a previously-noted 2-parameter closed form,
-$t_k=2\,\mathrm{Fib}(k+3)-2$, exact at $k=2,3$ by construction, is also exact
-at $k=4,5$. A dedicated 6-chord search brackets the next threshold as
-$56\le t_6\le129$ and stalls 3 lengths short of a witness at the
-closed form's predicted value, $n=66$, neither confirming nor refuting it.
+correction term the conjecture needs, and two observations on the threshold
+sequence $t_k$ (largest $n$ with $h(n)=k$): its ratio to $2^{k+1}$ is strictly
+decreasing over $k\le5$, and the four known values $t_2,\dots,t_5$ determine
+$t_6$ not at all — every three-term integer linear recurrence fitting them
+predicts a different $t_6$ (the whole family $66-2t$, $t\in\mathbb Z$), so no
+pattern-fit on the known thresholds carries information about the next one.
+Computation has since refuted the two members that had been singled out
+($2\,\mathrm{Fib}(k+3)-2$, predicting $66$, and $2^{k-2}(10-k)$, predicting
+$64$): explicit 6-chord pancyclic graphs exist on every $n$ from $57$ to $67$
+vertices, each re-checked by an independent verifier, so $67\le t_6\le129$,
+where $129$
+is the trivial counting ceiling. We also describe an exact per-shape
+feasibility algorithm (a $C_n$ plus $k$ chords is a subdivision of one of
+finitely many multigraphs, so pancyclicity becomes a covering problem in the
+arc lengths) that reproduces $t_2,t_3,t_4$ from scratch and is the tool for
+deciding $t_6$ exactly.
 
 ## 1. Introduction
 
@@ -165,7 +174,15 @@ Table 1:
 $$t_1=5,\quad t_2=8,\quad t_3=14,\quad t_4=24,\quad t_5=40.$$
 (Source: `notes/01-subdivision-reformulation.md`, "Update 2026-09-14 evening,"
 consistent with Griffin Table 1 for $t_1..t_4$ and with this project's
-exhaustive $n=41,k=5$ elimination for $t_5=40$.)
+exhaustive $n=41,k=5$ elimination for $t_5=40$.) The next threshold is not yet
+known exactly: $67\le t_6\le129$, the lower end from explicit 6-chord witnesses
+on every $n$ from $57$ to $67$ (Section 6.3), the upper end from the counting
+ceiling $2^{k+1}+1$ at $k=6$. In particular $h(n)\le6$ is established by
+witness for every $41\le n\le67$; the matching lower bound $h(n)\ge6$ is
+established for $n=41$ (Section 3.4) and, by counting alone, for $n\ge66$
+($2^{6}-1=63<n-2$), while for $42\le n\le65$ it would follow from $t_5=40$
+only via the monotonicity of $h$, which is Wallis's open Question 1
+(Section 5).
 
 ### 2.2 The five extremal 5-chord graphs on 40 vertices
 
@@ -433,6 +450,98 @@ demonstrating the random-sampling method can detect a true positive when one
 exists, which is why its zero-hit result at $n=41$ is meaningful corroboration
 (not proof) rather than a null result from a broken detector.
 
+### 3.5 The shape/CSP exact algorithm (`search/shapecsp/`)
+
+The searches above enumerate chord *sets* on a fixed $C_n$, one $n$ at a
+time, which is why they stop being exhaustive near $n=41$ for $k=5$. A
+second, structurally different exact method decides $t_k$ directly and is
+the tool intended to settle $t_6$ (`papers/REPORT-shape-csp.md`; code in
+`search/shapecsp/`, untouched by the $k=6$ witness searches of Section 6.3).
+
+*Reformulation.* A $C_n$ plus $k$ chords is a subdivision of a fixed
+multigraph $H$: a cycle on the $b$ distinct chord endpoints in their cyclic
+order, plus the $k$ chords as edges on those $b$ points, with $b\le2k$ and
+every point carrying at least one chord (`search/shapecsp/shapes.py`,
+`shapes(k)`, enumerated up to the dihedral group $D_b$ over *all* $b$,
+including the degenerate families in which chords share endpoints). Call
+$H$ the *shape*. Suppressing the degree-2 vertices makes the $b$ arc lengths
+$a_1,\dots,a_b\ge1$ free integer variables with $\sum a_i=n$, and every cycle
+$f$ of $H$ (there are at most $2^{k+1}-1$; the cycle space of $H$ has
+dimension $k+1$) has length that is a $0/1$ linear form
+$L_f(a)=\sum_{i\in A_f}a_i+|X_f|$ in the arcs, where $A_f$ is the set of arcs
+$f$ uses and $X_f$ its chords (`cycle_forms(b, chords)`). Pancyclicity of the
+subdivided graph is then exactly the statement that the forms
+$\{L_f\}$ cover every value in $[3,n]$, so $h(n)\le k$ becomes a finite
+per-shape feasibility problem in $b$ integer unknowns, and $t_k$ is the
+largest $n$ at which any shape is feasible. This is the same reduction
+George–Marr–Wallis carry out by hand for $k\le3$ (Section 1; GMW13 write
+cycle lengths as linear functions of arc lengths such as "$a+b+1$, $c+d+1$"
+and, for three chords, "There are 14 types of graph: AAAi, AAAii, AABi,
+AABii, AAC, ABBi, ABBii, ABC, ACC, BBBi, BBBii, BBC, BCC, CCC" — quoted in
+`papers/REPORT-griffin-method.md`). The enumeration here reproduces that
+count: `shapes(3)` yields exactly **14** shapes (`search/shapecsp/shape-census.txt`,
+row "3 | 14 | 5 | 9 | 3..6"), of which 5 are perfect matchings on $2k=6$
+points and 9 are degenerate; the counts for $k=2,4,5,6$ are $3,103,1236,21878$
+(the $k=6$ shapes being 97.5% degenerate). A per-shape cap falls out of the
+reformulation at once: each cycle realises one length, so a shape with $F$
+distinct cycle forms can be pancyclic only for $n\le F+2$. The largest cap at
+$k=6$ is $111$, already below the counting ceiling $129$, and the largest
+number of cycles over all shapes is $7,15,29,56,109$ for $k=2,\dots,6$ —
+exactly the Rautenbach–Stella values $M(k)$ of Section 4, recovered here
+independently.
+
+*Solvers.* Two deliberately independent decision procedures are used per
+shape: a CP-SAT model (`search/shapecsp/solve.py`, ortools) and a C
+branch-and-bound over the arcs (`search/shapecsp/bb.c`) whose prune confines
+every form to an interval and then decides, by an exact greedy matching,
+whether the intervals can still saturate $[3,n]$ (an earlier interval-Hall
+prune was found *not* equivalent to the exact test — a counterexample at
+$n=8$ is recorded in `papers/REPORT-shape-csp.md` — and is retained only as a
+necessary-condition pre-filter). `sweep.py`/`level.py` drive the search with
+$n$ descending from the largest per-shape cap; the first $n$ with a feasible
+shape is $t_k$, and every level above it that answers infeasible with zero
+`gaveup` (no node-cap abandonment) is the exhaustive refutation.
+
+*Controls.* Run with no lower bound supplied, the method reproduces
+$t_2=8$, $t_3=14$ and $t_4=24$ from scratch with `gaveup_records=0` at every
+level (`papers/REPORT-shape-csp.md`, "Positive control"; witnessing shapes
+and arc vectors are listed there, e.g. $t_4=24$ from the degenerate $b=7$
+shape $((0,2),(0,5),(1,4),(3,6))$ with arcs $1,2,2,11,6,1,1$, i.e.
+$C_{24}+(0,2)(1,5)(1,7)(3,18)$). $t_2,t_3,t_4$ are reproduced by *both*
+solvers, and CP-SAT independently finds the $k=5$ lower bound $n=40$. The
+reformulation itself is checked against ground truth rather than trusted:
+for 201 random (shape, arc-length) pairs across $k=2..5$ the multiset of
+lengths predicted by the forms is compared with `networkx.simple_cycles` on
+the materialised graph, with 0 mismatches, and every reported optimum is
+re-checked the same way (`verify.check`).
+
+*Gate suite.* `search/shapecsp/test_shapecsp.py` asserts behaviour by calling
+`shapes()`, `t_k()`, `cycle_forms()` and `verify.check()` with values and
+comparing answers, and it is mutation-tested. Restricting the enumeration to
+the non-degenerate $b=2k$ shapes (in `shapes.py`, `rng = [2*k]` in place of
+`range(lo, 2*k+1)`) turns the suite **red** — `FAIL t_4 == 24 :: got 22`
+plus three further failures, exit 1 (`search/shapecsp/gates-red.txt`) —
+because the $k=4$ optimum lives at $b=7$ and the perfect-matching-only model
+returns the wrong maximum ($22$, not $24$); restoring the file turns it
+**green** — `ALL GATES PASS`, exit 0 (`search/shapecsp/gates-green.txt`; the
+suite was re-run during this revision and passed, 41 s). The same defect is
+not academic at $k=6$: the $n=56$ witness of Section 6.3 has only 7 branch
+vertices (vertex 39 carries three chords), so a perfect-matching-only
+enumeration would not contain it.
+
+*Status.* The $k=5$ ladder log (`search/shapecsp/k5-levels.log`) records
+`sat=0 gaveup=0` at every level from $n=58$ (the largest $k=5$ per-shape cap)
+down to $n=41$, with `eligible` shapes at each level from $54$ down; taken
+with the $n=40$ feasibility found by CP-SAT this would be an independent
+derivation of $t_5=40$ by a method sharing no code with Section 3.3's
+programs. That lane had not yet written up or reviewed its $k=5$ ladder when
+this revision was made, so Section 3.4's statement of the replication status
+of $h(41)>5$ is left as it stands pending that report. The $k=6$ ladder was
+running as this revision was written; its log to that point
+(`search/shapecsp/k6-levels.log`) shows every level from $n=110$ down to
+$n=97$ answering `sat=0 gaveup=0`, but the bracket stated in this note uses
+only the counting ceiling $129$ until the lane reports.
+
 ## 4. The subdivision lemma, and what counting can and cannot give
 
 The elementary argument behind every lower bound in this area (Bondy, Griffin,
@@ -569,45 +678,51 @@ accounts for that; see `papers/REPORT-cyclecounts.md`'s $N_0$ column, which give
 $5,9,17,33,65$ for $k=1..5$, matching $t_k$ only up to the counting bound's own
 slack.)
 
-**A Fibonacci fit, and exactly how much it is worth.** This observation
-originates in `papers/REPORT-bondy-construction.md`, not in this note; we
-cite it rather than re-present it as freshly found. Writing
-$\mathrm{Fib}(1)=\mathrm{Fib}(2)=1$,
-$$t_k = 2\,\mathrm{Fib}(k+3)-2\qquad\text{for } k=2,3,4,5:$$
-$$t_2=2\cdot5-2=8,\quad t_3=2\cdot8-2=14,\quad t_4=2\cdot13-2=24,\quad t_5=2\cdot21-2=40.$$
-This is an **observation, not a theorem**, and its source explicitly flags
-the closed form as "four data points fitting a **two-parameter family**" (a
-free multiplicative constant, $2$, and a free additive constant, $-2$). A
-2-parameter family fit exactly to two of its four cited points is guaranteed,
-not informative — those two matches carry no information. Fixing the two
-parameters at $k=2,3$, the genuinely nontrivial content is that the *same*
-formula is *also* exact at $k=4,5$: two real coincidences, not four. It
-visibly fails at $k=1$ ($2\,\mathrm{Fib}(4)-2=4\ne5$), and the same source
-notes that a naturally related *additive* recursion,
-$t_k=t_{k-1}+t_{k-2}+2$, also fails at $k=3$ ($8+5+2=15\ne14$) even though
-the closed form holds there — i.e. at least one nearby way of framing "the"
-Fibonacci pattern already breaks inside the range this note calls clean.
-No structural reason for either form is known. If the closed form continued
-it would predict
-$$t_6 = 2\,\mathrm{Fib}(9)-2 = 2\cdot34-2 = 66,$$
-i.e. $h(n)=6$ for $41\le n\le66$ and $h(67)\ge7$ — a falsifiable prediction
-that the present search programs (`search/gpu_pancyc.py`, valid for
-$n\le60$; extending to $n=66$ needs either a 128-bit port of the GPU kernel
-or the CPU program's $n\le60,k\le6$ safe range pushed to $k=6$ at $n$ up to
-66) could test directly.
+**Pattern-fitting the thresholds: the known values do not determine $t_6$.**
+Earlier revisions of this note presented a closed form,
+$t_k=2\,\mathrm{Fib}(k+3)-2$ (from `papers/REPORT-bondy-construction.md`,
+exact at $k=2,\dots,5$: $8,14,24,40$, predicting $t_6=66$), as a falsifiable
+observation, and `papers/PLAN-next-steps.md` noted a rival two-parameter form,
+$t_k=2^{k-2}(10-k)$, exact at the same four points and predicting $t_6=64$.
+Both are now **refuted** by the witnesses of Section 6.3 (6-chord pancyclic
+graphs exist at $n=66$ and $n=67$, so $t_6\ge67>66>64$). The more useful
+observation, from `papers/NOTE-fit-underdetermination.md`, is that neither
+fit was ever special. Consider every three-term integer linear recurrence
+$$t_k=a\,t_{k-1}+b\,t_{k-2}+c\qquad(a,b,c\in\mathbb Z)$$
+consistent with $t_2,\dots,t_5=8,14,24,40$. The two fitting constraints
+$14a+8b+c=24$ and $24a+14b+c=40$ differ by $5a+3b=8$, whose integer solutions
+form the one-parameter family $(a,b,c)=(1+3t,\,1-5t,\,2-2t)$; each member
+reproduces $8,14,24,40$ exactly and predicts
+$$t_6=66-2t.$$
+The Fibonacci form is $t=0$ and the rival form is $t=1$; they are two
+arbitrary members of an unconstrained family rather than competing
+hypotheses, and the four known values constrain $t_6$ **not at all** within
+this family. So no amount of pattern-fitting on $t_2..t_5$ carries
+information about $t_6$; only computation decides it. (Caveat, stated
+precisely: "every even value is predicted by some member" is a property of
+*this* family — three terms, integer coefficients. It is not a theorem that
+$t_6$ is even; families with rational coefficients, more terms, or non-linear
+form predict odd values. The claim is that the data fails to select among
+simple fits, not that $t_6$ is constrained to a parity.) For the record, the
+Fibonacci form also fails at $k=1$ ($2\,\mathrm{Fib}(4)-2=4\ne5$), and the
+related additive recursion $t_k=t_{k-1}+t_{k-2}+2$ fails at $k=3$
+($8+5+2=15\ne14$); no structural reason for any of these forms was ever known.
 
-**Update: partially tested, not settled.** A dedicated 6-chord search
-(Section 6.3, `papers/REPORT-k6-upper.md`) found a confirmed witness at
-$n=56$ and, after extensive local search seeded from it, stalled at a
-verified local optimum missing exactly 3 lengths ($\{5,7,8\}$) when attacking
-$n=66$ directly. So the Fibonacci prediction $t_6=66$ is now bracketed as
-$$56\ \le\ t_6\ \le\ 129,$$
+**What the computation has established.** Confirmed 6-chord witnesses, each
+re-checked with the independent `search/verify.py` (networkx
+`simple_cycles`; full output in `papers/draft/verify-rerun-20260914.txt`),
+exist at every $n$ from $57$ to $67$ (chord sets in Section 6.3), so
+$$67\ \le\ t_6\ \le\ 129,$$
 where $129=2^{6+1}+1$ is the trivial counting ceiling ($N_0$ in
-`papers/REPORT-cyclecounts.md`'s notation) and $56$ is the largest confirmed
-witness — a much wider bracket than the single point-prediction $66$, and
-the search neither confirms nor refutes $66$ itself: it got close (missing
-only 3 of 64 required lengths at a genuine local optimum) but did not find or
-exclude a witness there.
+`papers/REPORT-cyclecounts.md`'s notation). The witnesses at $n=61,62,64$
+already refuted the family members predicting $58,60,62$; those at $n=66,67$
+refute both named fits; and the odd witnesses at $n=65$ and $n=67$ refute
+*every* member of the integer family above simultaneously, since all of them
+predict an even $t_6$. The family $(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)$
+that supplies the $n=64,\dots,67$ witnesses misses exactly one length
+($33$) at $n=68$ (Section 6.3), so $t_6=67$ is possible but not established;
+the exact value is the target of the shape/CSP algorithm of Section 3.5,
+whose $k=6$ ladder was still running when this revision was written.
 
 **Wallis's monotonicity question.** W. D. Wallis's open-problem sheet presented
 at IWOCA 2014 [Wa14] poses exactly two questions about $m(v)$: "1. Is it always
@@ -680,17 +795,67 @@ structures are balanced, and of the kind of "arithmetic of gaps" obstruction
 `papers/PROOF-n25-k4.md` and `notes/01` both identify as the open crux of a
 general proof.
 
-### 6.3 A 6-chord upper bound: $t_6\ge56$, and a near-miss at the Fibonacci prediction
+### 6.3 A 6-chord upper bound: $t_6\ge67$, and both closed forms refuted
 
-A dedicated search for 6-chord pancyclic graphs (`papers/REPORT-k6-upper.md`,
-raw data in `search/k6/`) established:
+A dedicated search for 6-chord pancyclic graphs (`papers/REPORT-k6-upper.md`
+for the first phase, `papers/REPORT-k6-gpu-joint.md` for the GPU
+joint-neighbourhood sweeps, raw data in `search/k6/`) established:
 
-* **Largest confirmed witness: $n=56$**, chords
-  $(0,2)(0,53)(1,39)(20,39)(39,48)(48,53)$ — double-checked by two
-  independent implementations (the constructing script's own check and the
-  project's pre-existing `search/verify.py`), agreeing on all lengths
-  $3,\dots,56$ (`search/k6/witnesses.csv`). So **$t_6\ge56$**, i.e.
-  $h(n)\le6$ is now known for $n$ up to $56$ (previously only up to $41$).
+* **Largest confirmed witness: $n=67$**, chords
+  $(0,2)(0,60)(1,13)(3,61)(4,31)(59,62)$ — confirmed by `search/verify.py`
+  (`search/k6/verify-67-gpu-joint.txt`, "pancyclic [3, 4, ..., 67]"), by the
+  reference cycle-space evaluator `search/k6/cyclespace.py check`
+  ("pancyclic missing=[]"), by the GPU kernel's direct evaluation with the
+  $n=67$ near-miss $(0,2)(0,64)(1,13)(3,63)(4,31)(59,64)$ as a same-session
+  negative control, and by a separately written cycle-space evaluator run
+  with a known witness and a known near-miss as controls. So **$t_6\ge67$**,
+  i.e. $h(n)\le6$ is now known for $n$ up to $67$ (previously $56$ in this
+  note's earlier revisions, and $41$ before that).
+* **Witnesses at every $n$ from $57$ to $67$**, all re-checked with
+  `search/verify.py` in this revision (`papers/draft/verify-rerun-20260914.txt`,
+  every row "pancyclic", missing $[\,]$):
+
+  | $n$ | chords | found by |
+  |---:|---|---|
+  | 57 | $(0,2)(0,54)(1,40)(14,48)(40,49)(49,54)$ | coordinate descent, `search/k6/coord-57.txt` |
+  | 58 | $(0,2)(0,55)(1,41)(14,49)(41,50)(50,55)$ | `search/k6/smart-57-70.txt` |
+  | 59 | $(0,2)(0,56)(1,42)(16,48)(42,51)(51,56)$ | `search/k6/smart-57-70.txt` |
+  | 60 | $(0,2)(0,57)(1,43)(19,44)(43,52)(52,57)$ | `search/k6/smart-57-70.txt`, `search/k6/climb-60-72.txt` |
+  | 61 | $(0,2)(0,58)(1,44)(3,57)(28,53)(53,58)$ | CPU 2-of-6 slot sweep, `search/k6/sweep2-61-34.txt` ("IMPROVE n=61 missing=0") |
+  | 62 | $(0,2)(0,59)(1,11)(3,58)(3,28)(54,59)$ | insertion + ILS + joint-2 sweep, `search/k6/witnesses-v2.csv` |
+  | 63 | $(0,2)(0,60)(1,11)(3,59)(3,28)(55,60)$ | insertion + ILS + joint-2 sweep, `search/k6/witnesses-v2.csv` |
+  | 64 | $(0,2)(0,61)(1,12)(3,60)(4,29)(56,61)$ | insertion + ILS + joint-2 sweep, `search/k6/witnesses-v2.csv` |
+  | 65 | $(0,2)(0,58)(1,13)(3,59)(4,31)(57,60)$ | member of the family below, `search/k6/witnesses-v2.csv` |
+  | 66 | $(0,2)(0,59)(1,13)(3,60)(4,31)(58,61)$ | GPU 3-of-6 sweep around the near-miss $(0,2)(0,63)(1,13)(3,62)(4,31)(58,63)$, `search/k6/witnesses-v2.csv` |
+  | 67 | $(0,2)(0,60)(1,13)(3,61)(4,31)(59,62)$ | lift of the $n=66$ structure by one vertex, `search/k6/witnesses-v2.csv` |
+
+  Together with the earlier witnesses at $n\le56$ (`search/k6/witnesses.csv`,
+  including the $n=56$ graph $(0,2)(0,53)(1,39)(20,39)(39,48)(48,53)$ that is
+  also kernel-checked in Lean, Section 3.3), this gives $h(n)\le6$ for every
+  $41\le n\le67$.
+* **A one-parameter family that carries the last four witnesses.** The
+  $n=64,65,66,67$ witnesses all have the form
+  $$(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5),$$
+  with the two "inner" chords $(1,13)$ and $(4,31)$ fixed. Evaluated with
+  `search/k6/cyclespace.py check` (`papers/REPORT-k6-gpu-joint.md`, "The
+  structure and how far it lifts"), the family is pancyclic for exactly
+  $n=64,65,66,67$ and then loses one length per added vertex, starting at
+  $33$: missing $[33]$ at $n=68$, $[33,34]$ at $69$, $[33,34,35]$ at $70$, and
+  so on. The $n=68$ member $(0,2)(0,61)(1,13)(3,62)(4,31)(60,63)$ was
+  re-checked with `search/verify.py` in this revision: "NOT pancyclic",
+  missing exactly $[33]$ (`papers/draft/verify-rerun-20260914.txt`). Varying
+  the two inner chords over $(1,a)(4,b)$, $a\in[5,44]$, $b\in[a+1,\min(n-9,59)]$,
+  does not repair $n=68$ (best is still missing one length), and a complete
+  2-of-6 slot sweep around the $n=68$ member finds no witness
+  ($36{,}481{,}725$ candidates); the 3-of-6 sweep at $n=68$ was in flight when
+  `papers/REPORT-k6-gpu-joint.md` was written. So $n=68$ is a
+  missing-one near-miss of exactly the kind the 3-of-6 sweep resolved at
+  $n=66$, and $t_6\ge68$ is open, not excluded.
+* **Both closed forms of Section 5 are refuted at their first genuine test.**
+  The rival form $2^{k-2}(10-k)$ predicted $t_6=64$; the $n=65$ witness
+  refutes it. The Fibonacci form $2\,\mathrm{Fib}(k+3)-2$ predicted
+  $t_6=66$; the $n=67$ witness refutes it. Neither witness lies in the chord
+  family the earlier search phases were extending.
 * **The binary-shortcut recipe Alon and Krivelevich [AK25] attribute to
   GKW16 and reproduce approximately** (Section 1 explains why the
   attribution to GKW16 itself is secondary and hedged; every numeric detail
@@ -709,16 +874,20 @@ raw data in `search/k6/`) established:
   is an asymptotically-motivated construction, not the source of this
   project's small-$k$ exact values, which come from the separate
   hand/computer-optimized graphs of Griffin and George–Marr–Wallis.
-* **A direct, dedicated attempt at $n=66$** (the Section 5 Fibonacci
-  prediction) — seeded from the $n=56$ witness, then 350s of strict-hill-climb
-  search followed by exhaustive single-chord coordinate descent (every one of
-  the 6 chords tried against every possible replacement, holding the other 5
-  fixed, over 12,000 evaluations) — drove the missing-length count from $20$
-  down to a confirmed local optimum of **3**, chords
-  $(0,2)(0,48)(1,40)(11,41)(44,47)(47,52)$, **missing exactly
-  $\{5,7,8\}$**. No single-chord change escapes this optimum; escaping would
-  need a joint multi-chord move, a different starting family, or more search
-  depth than this pass used.
+* **How the earlier $n=66$ attempt stalled, and why it no longer bears on
+  $t_6$.** The first phase's direct attack on $n=66$ (seeded from the $n=56$
+  witness, 350 s of strict hill-climb followed by exhaustive single-chord
+  coordinate descent over 12,000 evaluations, `papers/REPORT-k6-upper.md`)
+  reached a confirmed *single-chord* local optimum
+  $(0,2)(0,48)(1,40)(11,41)(44,47)(47,52)$ missing exactly $\{5,7,8\}$, and
+  an earlier revision of this note reported $n=66$ as "stalled 3 lengths
+  short." That optimum was local to single-chord moves and to that seed
+  family; the witness at $n=66$ was subsequently found by a joint 3-of-6
+  chord replacement around a different seed (the near-miss
+  $(0,2)(0,63)(1,13)(3,62)(4,31)(58,63)$, missing only $[57]$), after
+  $22{,}335{,}424{,}500$ GPU-evaluated candidates over 15 of the 20 slot
+  subsets. The stall is therefore a statement about that search's
+  neighbourhood, not about $n=66$.
 
 ## 7. References
 

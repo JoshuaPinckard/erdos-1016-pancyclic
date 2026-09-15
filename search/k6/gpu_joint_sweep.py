@@ -124,7 +124,7 @@ class Kernel:
                 on_progress(start, total, found)
             if log:
                 print(f"  progress {start}/{total} ({100*start/total:.1f}%) {time.time()-t0:.0f}s chunk={t_chunk:.2f}s gap={gap:.2f}s found={found}", file=log, flush=True)
-            if gap > 0 and start < total:
+            if gap > 0:   # also after the last chunk of a subset, else 13 chunks/12 gaps measures ~81 %
                 time.sleep(gap)
         return witnesses, int(fc.get()[0]), total - resume_start
 
