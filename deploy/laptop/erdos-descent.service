@@ -1,0 +1,26 @@
+[Unit]
+Description=Erdos1016 laptop range-mode descent (k=6, levels 93..88)
+After=multi-user.target
+
+[Service]
+Type=simple
+User=j
+Group=j
+WorkingDirectory=/home/j/erdos-shapecsp
+# Resumable: hunt.py keeps a per-shape .done file per level, so a restart
+# re-runs only the undecided shapes of the level it stopped in.
+ExecStart=/home/j/erdos-shapecsp/.venv/bin/python -u /home/j/erdos-shapecsp/descend.py 6 93 88 12 8000000000
+# The 2026-09-16 grant is 90% of this laptop, to be yielded as others need it.
+# CPUQuota is the hard ceiling: 1300% of 1600% leaves a full core for the GPU
+# feeder (which runs at Nice=0) and ~2 cores for interactive use and other agents.
+# Nice=15 means this loses every contested timeslice rather than merely sharing.
+CPUQuota=1300%
+Nice=15
+IOSchedulingClass=idle
+Restart=always
+RestartSec=30
+StandardOutput=append:/home/j/erdos-shapecsp/descend.log
+StandardError=append:/home/j/erdos-shapecsp/descend.log
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Hold ASUS laptop fans at full speed during Erdos1016 GPU runs
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/erdos-fan-pin
+Restart=always
+RestartSec=10
+Nice=-5
+
+[Install]
+WantedBy=multi-user.target

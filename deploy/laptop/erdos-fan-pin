@@ -1,0 +1,45 @@
+#!/bin/bash
+# Hold the ASUS EC cpu fan at full speed while the long GPU exhaustion runs.
+#
+# 2026-09-16: the laptop fans may be pinned at 100%.
+#
+# asus-nb-wmi exposes pwm<N>_enable with 0 = full speed, 1 = manual, 2 = auto.
+# A single write to 0 does not stick -- the EC reverts the channel to 2 within
+# a few seconds -- so this re-asserts it, writing only when the value drifted.
+#
+# Channel 2 (gpu_fan) is deliberately LEFT ON AUTO.  Measured A/B under the
+# n=70 b=10 load on 2026-09-16: pinned and auto both settle at 87 C / 2100 MHz,
+# i.e. pinning buys no airflow because the EC auto curve already runs that fan
+# at its load maximum (6900 rpm, above the full-speed cpu fan at 6200).  What
+# pinning it DOES do is break fan2_input, which then reads a garbage ~3283100
+# rpm and costs us the only tachometer on the hot part.  Cooling is unchanged
+# this way and the sensor stays readable.
+#
+# This raises cooling only.  It never raises a power or thermal limit, and the
+# existing thermal-backstop critical-temperature service is untouched.
+set -u
+PIN_CHANNELS="${PIN_CHANNELS:-1}"
+HWMON=""
+for h in /sys/devices/platform/asus-nb-wmi/hwmon/hwmon*; do
+  [ -e "$h/pwm1_enable" ] && HWMON="$h" && break
+done
+if [ -z "$HWMON" ]; then
+  echo "no asus-nb-wmi pwm_enable found" >&2
+  exit 1
+fi
+echo "pinning fan channels [$PIN_CHANNELS] full via $HWMON" >&2
+restore() {
+  echo "restoring auto" >&2
+  for ch in $PIN_CHANNELS; do echo 2 > "$HWMON/pwm${ch}_enable" 2>/dev/null; done
+  exit 0
+}
+trap restore TERM INT
+while true; do
+  for ch in $PIN_CHANNELS; do
+    f="$HWMON/pwm${ch}_enable"
+    [ -e "$f" ] || continue
+    cur=$(cat "$f" 2>/dev/null || echo x)
+    [ "$cur" = "0" ] || echo 0 > "$f" 2>/dev/null
+  done
+  sleep 4
+done

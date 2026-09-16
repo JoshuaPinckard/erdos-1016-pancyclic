@@ -1,0 +1,22 @@
+[Unit]
+Description=Erdos1016 laptop GPU exhaustion chain (n=70, b>=10)
+After=multi-user.target
+
+[Service]
+Type=simple
+User=j
+Group=j
+WorkingDirectory=/home/j/erdos-n70/search/shapecsp
+ExecStart=/bin/bash /home/j/erdos-n70/run-chain-laptop.sh
+# The GPU feeder needs to stay responsive or the card goes idle between units;
+# it costs about one core, well inside the 90% CPU grant.  Bulk CPU work is
+# niced separately so it yields to interactive use and to other agents.
+Nice=0
+CPUWeight=200
+Restart=always
+RestartSec=20
+StandardOutput=append:/home/j/erdos-n70/chain-laptop.log
+StandardError=append:/home/j/erdos-n70/chain-laptop.log
+
+[Install]
+WantedBy=multi-user.target
