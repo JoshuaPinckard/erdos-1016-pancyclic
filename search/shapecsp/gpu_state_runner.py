@@ -9,6 +9,7 @@ import hashlib
 import json
 import math
 import os
+import threading
 import time
 from pathlib import Path
 
@@ -32,25 +33,44 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("source", type=Path)
     p.add_argument("state", type=Path)
-    p.add_argument("--n", type=int, choices=(68, 69), required=True)
+    # Any level with a manifest in <source>/n<N>.jsonl is runnable; the source
+    # hash recorded in the state file is what binds a run to its manifest.
+    p.add_argument("--n", type=int, required=True)
     p.add_argument("--min-b", type=int, default=6)
     p.add_argument("--max-b", type=int, default=9)
-    p.add_argument("--wall-budget", type=float, default=50.0)
+    p.add_argument("--wall-budget", type=float, default=0.0)
     p.add_argument("--lock-stale", type=float, default=180.0)
     args = p.parse_args()
     lock = args.state.with_suffix(args.state.suffix + ".lock")
     args.state.parent.mkdir(parents=True, exist_ok=True)
+    heartbeat_stop = threading.Event()
+    heartbeat_thread = None
     try:
         fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         os.write(fd, str(os.getpid()).encode())
         os.close(fd)
     except FileExistsError:
+        try:
+            owner_pid = int(lock.read_text(encoding="utf-8"))
+            os.kill(owner_pid, 0)
+            print("LOCKED", flush=True)
+            return 2
+        except (ValueError, OSError, ProcessLookupError):
+            pass
         if time.time() - lock.stat().st_mtime < args.lock_stale:
             print("LOCKED", flush=True)
             return 2
         lock.unlink()
         return main()
     try:
+        def heartbeat():
+            while not heartbeat_stop.wait(5.0):
+                try:
+                    os.utime(lock, None)
+                except FileNotFoundError:
+                    return
+        heartbeat_thread = threading.Thread(target=heartbeat, daemon=True)
+        heartbeat_thread.start()
         raw = (args.source / f"n{args.n}.jsonl").read_bytes()
         source_sha256 = hashlib.sha256(raw).hexdigest()
         rows = [json.loads(line) for line in raw.splitlines()]
@@ -86,7 +106,7 @@ def main():
             key = (unit["shape_index"], unit["offset"], unit["count"])
             if key in done:
                 continue
-            if tested and time.monotonic() - start >= args.wall_budget:
+            if args.wall_budget and tested and time.monotonic() - start >= args.wall_budget:
                 break
             row = by_shape[unit["shape_index"]]
             d = G.record(row["b"], row["chords"])
@@ -107,6 +127,9 @@ def main():
                           "exhausted": len(state["complete"]) == len(units),
                           "tested_this_invocation": tested}), flush=True)
     finally:
+        heartbeat_stop.set()
+        if heartbeat_thread is not None:
+            heartbeat_thread.join(timeout=1)
         try:
             lock.unlink()
         except FileNotFoundError:
