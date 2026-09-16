@@ -98,13 +98,31 @@ function Get-GpuUtil {
         $code = $null
         try { $code = $p.ExitCode } catch { }
         if ($null -ne $code -and $code -ne 0) { return $null }
-        # Require a bare integer. An error message can contain digits, so
-        # "matches \d" is not evidence of a measurement.
+        # THE BARE-INTEGER PARSE IS THE ONLY REAL GUARD. Do not weaken it
+        # believing the exit-code test above backs it up: measured, $p.ExitCode
+        # comes back empty even after the untimed WaitForExit(), so that branch
+        # never fires. A failing nvidia-smi writes its error to stdout and exits
+        # with no code we can see -- e.g. a bad --query-gpu field, or the name
+        # query returning "NVIDIA GeForce RTX 4070 Laptop GPU". Requiring a line
+        # that is nothing but digits is what rejects both; "matches \d" would
+        # accept the 4070. Relaxing this reopens the fail-open bug.
         $v = @(Get-Content -LiteralPath $out -ErrorAction SilentlyContinue | Where-Object { $_ -match '^\s*\d+\s*$' })
         if ($v.Count -eq 0) { return $null }
         return [int]($v[0].Trim())
     } catch { return $null }
-    finally { Remove-Item -LiteralPath $out -ErrorAction SilentlyContinue }
+    finally {
+        # A killed nvidia-smi still holds the redirect handle, so the first
+        # delete fails silently and leaks a temp file per timed-out call -- ~11
+        # per 90s drain. Retry briefly, then sweep any older strays.
+        for ($i = 0; $i -lt 5; $i++) {
+            if (-not (Test-Path -LiteralPath $out)) { break }
+            Remove-Item -LiteralPath $out -Force -ErrorAction SilentlyContinue
+            if (Test-Path -LiteralPath $out) { Start-Sleep -Milliseconds 200 }
+        }
+        Get-ChildItem -LiteralPath $env:TEMP -Filter 'erdos-gpu-*.txt' -ErrorAction SilentlyContinue |
+            Where-Object { $_.LastWriteTime -lt (Get-Date).AddMinutes(-10) } |
+            ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
+    }
 }
 
 function Get-Workers {
@@ -126,6 +144,25 @@ function Test-FullySuspended($Proc) {
     return ($awake.Count -eq 0)
 }
 
+function Resume-Fully($Proc) {
+    # NtSuspendProcess maintains a COUNT, so N suspends need N resumes. A single
+    # NtResumeProcess after a double suspend returns success while leaving the
+    # process suspended -- the caller believes the window ended, the worker is
+    # stranded, and because the last state record then reads RESUME the watchdog
+    # refuses to touch it. Worse, a watchdog that resumed once and wrote
+    # WATCHDOG-RESUME turned a recoverable stall into a permanently unrescuable
+    # one. So drain the count and VERIFY, rather than assume one call is enough.
+    for ($i = 0; $i -lt 8; $i++) {
+        $Proc.Refresh()
+        if (-not (Test-FullySuspended $Proc)) { return $true }
+        $rc = [Erdos.ProcCtl]::NtResumeProcess($Proc.Handle)
+        if ($rc -ne 0) { throw "NtResumeProcess failed on pid $($Proc.Id), status 0x$('{0:X}' -f $rc)" }
+        Start-Sleep -Milliseconds 150
+    }
+    $Proc.Refresh()
+    return (-not (Test-FullySuspended $Proc))
+}
+
 $scan = Get-Workers
 $workers = @($scan.Matched)
 if ($workers.Count -eq 0) {
@@ -142,6 +179,13 @@ foreach ($w in $workers) {
     $proc = Get-Process -Id $w.ProcessId -ErrorAction Stop
     switch ($Action) {
         'Suspend' {
+            # Refuse rather than deepen the suspend count. A second QUIET START
+            # against an already-suspended worker used to report plain success
+            # and silently require two resumes to undo.
+            if (Test-FullySuspended $proc) {
+                Write-Line "REFUSED: pid $($w.ProcessId) is already suspended; not suspending again (NtSuspendProcess is counted)"
+                exit 4
+            }
             $rc = [Erdos.ProcCtl]::NtSuspendProcess($proc.Handle)
             if ($rc -ne 0) { throw "NtSuspendProcess failed on pid $($w.ProcessId), status 0x$('{0:X}' -f $rc)" }
             # Record BEFORE announcing success. If recording throws, resume
@@ -171,8 +215,12 @@ foreach ($w in $workers) {
             else { Write-Line ("WARNING gpu still busy after {0:N1}s -- do not treat the card as quiet" -f $el) }
         }
         'Resume' {
-            $rc = [Erdos.ProcCtl]::NtResumeProcess($proc.Handle)
-            if ($rc -ne 0) { throw "NtResumeProcess failed on pid $($w.ProcessId), status 0x$('{0:X}' -f $rc)" }
+            # Do not announce success, and do not print a reassuring GPU
+            # reading, until the worker is observably running again.
+            if (-not (Resume-Fully $proc)) {
+                Write-Line "FAILED: pid $($w.ProcessId) is STILL SUSPENDED after 8 resume attempts; the run is stalled and needs a human"
+                exit 5
+            }
             Write-State 'RESUME' $proc
             Write-Line "resumed pid $($w.ProcessId)"
             Start-Sleep -Seconds 3
@@ -195,8 +243,23 @@ foreach ($w in $workers) {
                 Write-Line ("pid {0} SUSPENDED {1:N2}h, under the {2}h limit; leaving alone" -f $w.ProcessId, $hours, $MaxSuspendHours)
                 break
             }
-            $rc = [Erdos.ProcCtl]::NtResumeProcess($proc.Handle)
-            if ($rc -ne 0) { throw "watchdog NtResumeProcess failed on pid $($w.ProcessId), status 0x$('{0:X}' -f $rc)" }
+            # Re-read the record immediately before acting. Between the checks
+            # above and here a QUIET END could have landed, so this narrows the
+            # window in which the watchdog could resume a window that just
+            # became legitimate again.
+            $again = Get-SuspendRecord
+            if (-not $again -or $again.WPid -ne $proc.Id -or $again.When -ne $rec.When) {
+                Write-Line "pid $($w.ProcessId) suspend record changed while deciding; leaving alone"
+                break
+            }
+            # Must fully drain the suspend count. Resuming once and recording
+            # WATCHDOG-RESUME would leave the worker suspended with a RESUME as
+            # the last record, which every later tick refuses to act on -- the
+            # watchdog making the stall permanently unrescuable.
+            if (-not (Resume-Fully $proc)) {
+                Write-Line "WATCHDOG FAILED: pid $($w.ProcessId) still suspended after 8 resume attempts; NOT recording a resume"
+                break
+            }
             Write-State 'WATCHDOG-RESUME' $proc
             Write-Line ("WATCHDOG RESUMED pid {0} after {1:N2}h suspended (limit {2}h)" -f $w.ProcessId, $hours, $MaxSuspendHours)
         }
