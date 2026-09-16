@@ -26,28 +26,54 @@ stale window) so a permanently locked tier cannot spin forever.
 
 ## console-dependency-probe
 
-`timeout.exe` refuses to run when stdin is not a console: it exits immediately
-with code 125 instead of waiting. The production launch path is exactly that --
-`wscript //B` -> `WshShell.Run(..., 0, True)` -> `cmd /c` -- so a retry built on
-`timeout /t 200` returned in 0.09s, every attempt elapsed inside the 180s stale
-window, and the retry that was supposed to protect a tier silently did nothing.
+**What this probe actually measures: the launcher, not the command.** Whether a
+wait primitive waits depends on how the process was started, and getting that
+wrong produced two wrong conclusions in a row here -- in both directions.
 
-Measured through the real launch path:
+Same file, two launchers, measured 2026-09-16:
 
-    timeout /t 5   0.09s   errorlevel=125   DID NOT WAIT
-    waitfor /t 5   5.03s   errorlevel=1     waited
-    ping    -n 6   5.17s   errorlevel=0     waited
+    launcher                       timeout /t 5        waitfor /t 5    ping -n 6
+    ---------------------------------------------------------------------------
+    from a shell (bash/pwsh)       errorlevel=125      errorlevel=1    errorlevel=0
+                                   REFUSED, 0.36s      waited          waited
+    from the Task Scheduler        errorlevel=0        errorlevel=1    errorlevel=0
+                                   WAITED              waited          waited
+    (scheduler confirmed twice)
 
-The driver uses `waitfor`, which has no console dependency. Its exit 1 on
-timeout is harmless: `ST` is captured further up and the next statement is an
-unconditional `goto`.
+`timeout.exe` refuses to run when stdin is not a console. A shell hands its
+redirected stdin down the entire chain -- `bash`/`pwsh` -> `wscript` -> `cmd` --
+so `timeout` refuses there. The Task Scheduler does not, so `timeout` waits.
 
-Run this probe through `console-dependency-probe.vbs` (NOT by invoking the .cmd
-directly) whenever a driver gains a new wait, sleep or prompt. Invoking the .cmd
-from an ordinary shell gives it a console and hides the entire defect -- that is
-precisely how it was missed the first time: the earlier driver test used
-`Start-Process cmd.exe -RedirectStandardOutput`, which still had a console
-stdin, so `timeout` worked in the test and failed in production.
+**Read the exit codes, not the durations.** Under load the nominal 5s intervals
+inflated to 40s+; that is the saturated box, not semantics. `errorlevel=125`
+versus `errorlevel=0` is the measurement.
 
-**The rule this encodes: test the driver through the launcher it actually ships
-with, not through a convenient shell.**
+### Which launcher is production
+
+For `run-chain-desktop-v2.cmd` it is the **Task Scheduler**
+(`Erdos1016-desktop-chain`). Running the driver through `wscript` typed at a
+shell is NOT a faithful reproduction: it adds a redirected stdin that production
+never has. So `timeout /t 200` would in fact have waited in production, and the
+"desktop skips the tier" finding was an artifact of testing through a shell.
+
+The driver nonetheless uses `waitfor`, and should keep using it: it waits under
+**both** launchers, so it does not depend on which one starts it. `timeout` only
+works where a console exists. Its exit 1 on timeout is harmless -- `ST` is
+captured further up and the next statement is an unconditional `goto`.
+
+### Running it
+
+    wscript //B //Nologo console-dependency-probe.vbs <tag>
+
+The `.vbs` self-locates the `.cmd` beside it and fails loudly if it is missing.
+An earlier version hard-coded a path that moved, so it exited 1 with no log and
+no failure -- a silent skip, in the artifact meant to catch silent skips.
+
+To reproduce the production arm, register a throwaway scheduled task pointing at
+the same `.vbs` with tag `scheduler`; both arms append to one log so they can be
+compared directly. Remove the throwaway task afterwards.
+
+**The rule this encodes: exercise a driver through the launcher it actually
+ships with.** On Windows that means the Task Scheduler, and "through wscript
+from my shell" is a different environment that can fail and pass for reasons
+production never sees -- in both directions.
