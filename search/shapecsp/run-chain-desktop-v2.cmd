@@ -49,7 +49,14 @@ if not "%ST%"=="2" goto :notlocked
 set /a TRIES+=1
 if %TRIES% GEQ 12 goto :gaveup
 echo [chain] n=%N% b=%B% LOCKED (attempt %TRIES%); waiting out the stale window
-timeout /t 200 /nobreak >nul 2>&1
+REM NOT timeout.exe: it refuses to run when stdin is not a console and exits
+REM immediately with 125.  The production launch path is exactly that --
+REM wscript //B -> WshShell.Run(window style 0) -> cmd /c -- so `timeout /t
+REM 200` returned in 0.09s and every retry elapsed inside the 180s stale
+REM window, silently defeating the whole retry.  waitfor has no console
+REM dependency; it exits 1 on timeout, harmless because ST was captured
+REM above and the next statement is an unconditional goto.
+waitfor /t 200 ErdosLockWait >nul 2>&1
 goto :retry
 :gaveup
 echo [chain] n=%N% b=%B% STILL LOCKED after %TRIES% attempts; leaving tier undone
