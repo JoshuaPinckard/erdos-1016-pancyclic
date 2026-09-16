@@ -29,8 +29,12 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('Suspend', 'Resume', 'Status')]
-    [string]$Action
+    [ValidateSet('Suspend', 'Resume', 'Status', 'Watchdog')]
+    [string]$Action,
+
+    # Dead-man's switch. A quiet window is announced as 1.5-3 hours; this is
+    # deliberately well past that, so it never fights a real window.
+    [double]$MaxSuspendHours = 6.0
 )
 
 Set-StrictMode -Version Latest
@@ -46,6 +50,24 @@ if (-not ('Erdos.ProcCtl' -as [type])) {
 function Get-Workers {
     @(Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" |
         Where-Object { $_.CommandLine -and $_.CommandLine -match 'gpu_state_runner\.py' })
+}
+
+$StateFile = Join-Path $PSScriptRoot 'quiet-window.state'
+
+function Write-State([string]$What) {
+    # Appended, never deleted: this doubles as the audit trail of who paused the
+    # run and for how long.
+    "{0}`t{1}`t{2}" -f (Get-Date).ToUniversalTime().ToString('o'), $What, $env:COMPUTERNAME |
+        Add-Content -LiteralPath $StateFile -Encoding UTF8
+}
+
+function Get-SuspendedSince {
+    if (-not (Test-Path -LiteralPath $StateFile)) { return $null }
+    $last = @(Get-Content -LiteralPath $StateFile | Where-Object { $_ -match '\S' }) | Select-Object -Last 1
+    if (-not $last) { return $null }
+    $parts = $last -split "`t"
+    if ($parts.Count -lt 2 -or $parts[1] -ne 'SUSPEND') { return $null }
+    try { return [datetime]::Parse($parts[0], $null, [Globalization.DateTimeStyles]::RoundtripKind) } catch { return $null }
 }
 
 function Get-GpuUtil {
@@ -69,24 +91,66 @@ foreach ($w in $workers) {
         'Suspend' {
             $rc = [Erdos.ProcCtl]::NtSuspendProcess($proc.Handle)
             if ($rc -ne 0) { throw "NtSuspendProcess failed on pid $($w.ProcessId), status 0x$('{0:X}' -f $rc)" }
+            Write-State "SUSPEND"
             Write-Output "suspended pid $($w.ProcessId)"
+            # Freezing the host process does not stop a kernel already on the
+            # card; in-flight work drains first. Measured 5.2s / 10.6s / 14.8s
+            # over three trials, so a fixed "wait ~3s" is wrong and would
+            # contaminate the first seconds of somebody else's measurement.
+            # Wait for the card to actually go quiet, so this command only
+            # returns once the GPU is genuinely released.
+            $t0 = Get-Date
+            $drained = $false
+            while (((Get-Date) - $t0).TotalSeconds -lt 90) {
+                if ((Get-GpuUtil) -le 5) { $drained = $true; break }
+                Start-Sleep -Milliseconds 400
+            }
+            $el = ((Get-Date) - $t0).TotalSeconds
+            if ($drained) { Write-Output ("gpu released after {0:N1}s" -f $el) }
+            else { Write-Output ("WARNING gpu still busy after {0:N1}s -- do not treat the card as quiet" -f $el) }
         }
         'Resume' {
             $rc = [Erdos.ProcCtl]::NtResumeProcess($proc.Handle)
             if ($rc -ne 0) { throw "NtResumeProcess failed on pid $($w.ProcessId), status 0x$('{0:X}' -f $rc)" }
+            Write-State "RESUME"
             Write-Output "resumed pid $($w.ProcessId)"
+        }
+        'Watchdog' {
+            # Resume a worker that has been suspended far longer than any
+            # announced window. The hazard this closes: the supervisor is told
+            # SUSPENDED is authorised, so if whoever called the window dies
+            # before calling QUIET END, the run stalls silently for days.
+            $threads = @($proc.Threads)
+            $stopped = @($threads | Where-Object { $_.ThreadState -eq 'Wait' -and $_.WaitReason -eq 'Suspended' })
+            if ($stopped.Count -ne $threads.Count) { Write-Output "pid $($w.ProcessId) running, nothing to do"; break }
+            $since = Get-SuspendedSince
+            if (-not $since) { Write-Output "pid $($w.ProcessId) SUSPENDED but no suspend record; leaving alone"; break }
+            $hours = ((Get-Date).ToUniversalTime() - $since).TotalHours
+            if ($hours -lt $MaxSuspendHours) {
+                Write-Output ("pid {0} SUSPENDED {1:N2}h, under the {2}h limit; leaving alone" -f $w.ProcessId, $hours, $MaxSuspendHours)
+                break
+            }
+            $rc = [Erdos.ProcCtl]::NtResumeProcess($proc.Handle)
+            if ($rc -ne 0) { throw "watchdog NtResumeProcess failed on pid $($w.ProcessId), status 0x$('{0:X}' -f $rc)" }
+            Write-State "WATCHDOG-RESUME"
+            Write-Output ("WATCHDOG RESUMED pid {0} after {1:N2}h suspended (limit {2}h)" -f $w.ProcessId, $hours, $MaxSuspendHours)
         }
         'Status' {
             # A fully suspended process has every thread in Wait/Suspended.
             $threads = @($proc.Threads)
             $running = @($threads | Where-Object { $_.ThreadState -ne 'Wait' -or $_.WaitReason -ne 'Suspended' })
             $state = if ($running.Count -eq 0) { 'SUSPENDED' } else { 'RUNNING' }
-            Write-Output "pid $($w.ProcessId) $state threads=$($threads.Count) priority=$($proc.PriorityClass)"
+            $extra = ''
+            if ($state -eq 'SUSPENDED') {
+                $since = Get-SuspendedSince
+                if ($since) { $extra = " since={0:o} ({1:N2}h)" -f $since, ((Get-Date).ToUniversalTime() - $since).TotalHours }
+            }
+            Write-Output "pid $($w.ProcessId) $state threads=$($threads.Count) priority=$($proc.PriorityClass)$extra"
         }
     }
 }
 
-if ($Action -ne 'Status') {
+if ($Action -eq 'Resume') {
     Start-Sleep -Seconds 3
     Write-Output "gpu utilisation now $(Get-GpuUtil)%"
 }
