@@ -1,0 +1,11 @@
+# This repo is worked from Windows but half of it is deployed to Linux.
+# Anything that a Linux shell or systemd has to parse must keep LF endings:
+# bash fails on a CRLF shebang line, and systemd silently mis-parses CRLF
+# directives.
+*.sh            text eol=lf
+*.service       text eol=lf
+deploy/laptop/* text eol=lf
+# Windows-side drivers stay CRLF; cmd.exe is fine either way but the files are
+# edited on Windows.
+*.cmd           text eol=crlf
+*.vbs           text eol=crlf

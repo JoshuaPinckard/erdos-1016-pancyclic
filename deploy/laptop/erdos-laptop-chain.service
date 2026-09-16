@@ -9,12 +9,19 @@ Group=j
 WorkingDirectory=/home/j/erdos-n70/search/shapecsp
 ExecStart=/bin/bash /home/j/erdos-n70/run-chain-laptop.sh
 # The GPU feeder needs to stay responsive or the card goes idle between units;
-# it costs about one core, well inside the 90% CPU grant.  Bulk CPU work is
-# niced separately so it yields to interactive use and to other agents.
+# it costs about 0.002 of a core, so it is not what competes with other agents.
 Nice=0
 CPUWeight=200
-Restart=always
-RestartSec=20
+# This is a FINITE pipeline (n70 b10 then b11), not a daemon, so it must not
+# relaunch on success.
+Restart=on-failure
+RemainAfterExit=yes
+# MUST stay above gpu_state_runner.py's --lock-stale default of 180s.  systemd
+# stops this unit with SIGTERM, which CPython does not turn into an exception,
+# so the interpreter exits without running the finally: that unlinks the lock.
+# Restarting inside the stale window makes the new runner see a live-looking
+# lock and exit 2 immediately.
+RestartSec=200
 StandardOutput=append:/home/j/erdos-n70/chain-laptop.log
 StandardError=append:/home/j/erdos-n70/chain-laptop.log
 

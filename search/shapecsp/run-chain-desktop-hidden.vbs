@@ -4,5 +4,5 @@
 ' the desktop UI.  Runs the identical chain with window style 0 and waits, so
 ' the scheduled task still sees the chain's real exit code.
 Dim sh: Set sh = CreateObject("WScript.Shell")
-Dim cmd: cmd = "cmd.exe /c """"C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\search\shapecsp\run-chain-desktop.cmd"""""
+Dim cmd: cmd = "cmd.exe /c """"C:\Users\ToolsEnabled-Dev\Desktop\erdos1016\search\shapecsp\run-chain-desktop-v2.cmd"""""
 WScript.Quit sh.Run(cmd, 0, True)
