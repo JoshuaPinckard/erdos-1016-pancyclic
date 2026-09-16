@@ -137,4 +137,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main() returns 2 for LOCKED (another instance holds the state lock).
+    # That return MUST reach the exit status: the chain drivers decide
+    # whether to retry the same tier or advance to the next one from it,
+    # and a discarded return makes LOCKED indistinguishable from success,
+    # which silently skips a whole tier.
+    raise SystemExit(main())
