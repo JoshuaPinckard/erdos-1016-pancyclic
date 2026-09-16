@@ -7,33 +7,30 @@
   needs a contention-free GPU measurement, so during its window this job must
   release the GPU rather than merely yield it.
 
-  This SUSPENDS the worker in place (NtSuspendProcess). It deliberately does not
+  It SUSPENDS the worker in place (NtSuspendProcess) and deliberately does not
   kill it. Both chain drivers treat any non-zero, non-2 runner exit as "tier
-  attempted" and advance to the next tier, so killing the worker mid-tier would
-  silently abandon the rest of that tier -- about 32 GPU-hours at these sizes.
-  A suspended process exits nothing, holds its state file lock, and resumes
-  exactly where it stopped, so the cost of a window is its wall-clock length.
+  attempted" and advance, so killing the worker mid-tier would silently abandon
+  the rest of that tier -- about 32 GPU-hours at these sizes.
 
-  A suspended worker stops refreshing the lock mtime, so its lock looks stale
-  after --lock-stale (180s). That is safe only because the scheduled task is
-  single-instance: nothing else can start a competing runner and steal it. Do
-  not run a second runner by hand against the same state file during a window.
+  Watchdog is a dead-man's switch: the supervisor is told SUSPENDED is
+  authorised, so a session that dies mid-window would otherwise stall the run
+  silently for days.
 
-.PARAMETER Action
-  Suspend, Resume, or Status.
+.NOTES
+  The suspend record is BOUND to a specific process (pid + process start time).
+  An unbound "something was suspended at T" record is unsafe in both
+  directions: it let the watchdog resume a legitimately-suspended worker on a
+  stale timestamp, and let it refuse to resume an abandoned one. Start time is
+  carried because a pid alone can be recycled.
 
-.EXAMPLE
-  .\quiet-window.ps1 -Action Suspend    # on QUIET START
-  .\quiet-window.ps1 -Action Resume     # on QUIET END
+  State lives OUTSIDE the git worktree on purpose: as an untracked file inside
+  it, git clean -xfd erased the watchdog's memory.
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet('Suspend', 'Resume', 'Status', 'Watchdog')]
     [string]$Action,
-
-    # Dead-man's switch. A quiet window is announced as 1.5-3 hours; this is
-    # deliberately well past that, so it never fights a real window.
     [double]$MaxSuspendHours = 6.0
 )
 
@@ -47,40 +44,96 @@ if (-not ('Erdos.ProcCtl' -as [type])) {
 '@
 }
 
-function Get-Workers {
-    @(Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" |
-        Where-Object { $_.CommandLine -and $_.CommandLine -match 'gpu_state_runner\.py' })
+$StateDir  = Join-Path $env:LOCALAPPDATA 'Erdos1016'
+$StateFile = Join-Path $StateDir 'quiet-window.state'
+$LogFile   = Join-Path $StateDir 'quiet-window.log'
+if (-not (Test-Path -LiteralPath $StateDir)) { New-Item -ItemType Directory -Path $StateDir -Force | Out-Null }
+
+function Write-Line([string]$Text) {
+    # The watchdog runs under hidden wscript, which discards stdout entirely, so
+    # every outcome is logged. Previously only WATCHDOG-RESUME left any trace:
+    # "leaving alone" and "no worker" vanished without record.
+    Write-Output $Text
+    try {
+        "{0}`t{1}" -f (Get-Date).ToUniversalTime().ToString('o'), $Text | Add-Content -LiteralPath $LogFile -Encoding UTF8
+    } catch { }
 }
 
-$StateFile = Join-Path $PSScriptRoot 'quiet-window.state'
-
-function Write-State([string]$What) {
-    # Appended, never deleted: this doubles as the audit trail of who paused the
-    # run and for how long.
-    "{0}`t{1}`t{2}" -f (Get-Date).ToUniversalTime().ToString('o'), $What, $env:COMPUTERNAME |
-        Add-Content -LiteralPath $StateFile -Encoding UTF8
+function Write-State([string]$What, $Proc) {
+    $pidv = 0
+    $startv = ''
+    if ($Proc) { $pidv = $Proc.Id; $startv = $Proc.StartTime.ToUniversalTime().ToString('o') }
+    "{0}`t{1}`t{2}`t{3}`t{4}" -f (Get-Date).ToUniversalTime().ToString('o'), $What, $env:COMPUTERNAME, $pidv, $startv | Add-Content -LiteralPath $StateFile -Encoding UTF8
 }
 
-function Get-SuspendedSince {
+function Get-SuspendRecord {
+    # Returns $null unless the last record is a SUSPEND carrying a parseable
+    # timestamp, pid and process start time. Every other shape fails safe.
     if (-not (Test-Path -LiteralPath $StateFile)) { return $null }
-    $last = @(Get-Content -LiteralPath $StateFile | Where-Object { $_ -match '\S' }) | Select-Object -Last 1
-    if (-not $last) { return $null }
-    $parts = $last -split "`t"
-    if ($parts.Count -lt 2 -or $parts[1] -ne 'SUSPEND') { return $null }
-    try { return [datetime]::Parse($parts[0], $null, [Globalization.DateTimeStyles]::RoundtripKind) } catch { return $null }
+    $lines = @(Get-Content -LiteralPath $StateFile -ErrorAction SilentlyContinue | Where-Object { $_ -match '\S' })
+    if ($lines.Count -eq 0) { return $null }
+    $parts = ($lines | Select-Object -Last 1) -split "`t"
+    if ($parts.Count -lt 5 -or $parts[1] -ne 'SUSPEND') { return $null }
+    try {
+        $when  = [datetime]::Parse($parts[0], $null, [Globalization.DateTimeStyles]::RoundtripKind)
+        $start = [datetime]::Parse($parts[4], $null, [Globalization.DateTimeStyles]::RoundtripKind)
+        return [pscustomobject]@{ When = $when; WPid = [int]$parts[3]; Start = $start }
+    } catch { return $null }
 }
 
 function Get-GpuUtil {
+    # Returns $null when the card could not be measured, NEVER a sentinel
+    # number. The drain guard was `-le 5` against a -1 sentinel, and -1 -le 5 is
+    # true, so an unmeasurable card read as "quiet" and the command announced
+    # the GPU released on a reading that never happened.
+    $out = Join-Path $env:TEMP ('erdos-gpu-' + [guid]::NewGuid().ToString('N') + '.txt')
     try {
-        $v = & nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>$null
-        if ($LASTEXITCODE -eq 0 -and $v) { return [int]($v | Select-Object -First 1) }
-    } catch { }
-    return -1
+        $p = Start-Process -FilePath 'nvidia-smi' -ArgumentList '--query-gpu=utilization.gpu', '--format=csv,noheader,nounits' -NoNewWindow -PassThru -RedirectStandardOutput $out -ErrorAction Stop
+        if (-not $p.WaitForExit(8000)) { try { $p.Kill() } catch { }; return $null }
+        # Settle the object: with -PassThru and the timed WaitForExit(ms)
+        # overload, ExitCode comes back EMPTY, so a naive `-ne 0` test rejects
+        # every successful reading. That made the drain wait warn on all 90s of
+        # a perfectly measurable card.
+        try { $p.WaitForExit() } catch { }
+        $code = $null
+        try { $code = $p.ExitCode } catch { }
+        if ($null -ne $code -and $code -ne 0) { return $null }
+        # Require a bare integer. An error message can contain digits, so
+        # "matches \d" is not evidence of a measurement.
+        $v = @(Get-Content -LiteralPath $out -ErrorAction SilentlyContinue | Where-Object { $_ -match '^\s*\d+\s*$' })
+        if ($v.Count -eq 0) { return $null }
+        return [int]($v[0].Trim())
+    } catch { return $null }
+    finally { Remove-Item -LiteralPath $out -ErrorAction SilentlyContinue }
 }
 
-$workers = @(Get-Workers)
+function Get-Workers {
+    # Win32_Process.CommandLine is unreadable for processes started in another
+    # context, so a scheduler-launched caller cannot inspect a shell-launched
+    # worker. Treating unreadable as "no worker" made an uninspectable worker
+    # indistinguishable from none -- silently inert exactly when someone has
+    # intervened by hand. Report that case instead of hiding it.
+    $py = @(Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" -ErrorAction SilentlyContinue)
+    $match  = @($py | Where-Object { $_.CommandLine -and $_.CommandLine -match 'gpu_state_runner\.py' })
+    $opaque = @($py | Where-Object { -not $_.CommandLine })
+    return [pscustomobject]@{ Matched = $match; Opaque = $opaque.Count; TotalPython = $py.Count }
+}
+
+function Test-FullySuspended($Proc) {
+    $threads = @($Proc.Threads)
+    if ($threads.Count -eq 0) { return $false }
+    $awake = @($threads | Where-Object { $_.ThreadState -ne 'Wait' -or $_.WaitReason -ne 'Suspended' })
+    return ($awake.Count -eq 0)
+}
+
+$scan = Get-Workers
+$workers = @($scan.Matched)
 if ($workers.Count -eq 0) {
-    Write-Output 'no gpu_state_runner worker running'
+    if ($scan.Opaque -gt 0) {
+        Write-Line "CANNOT INSPECT: $($scan.Opaque) of $($scan.TotalPython) python processes have unreadable CommandLine from this context; a worker may exist and be invisible here"
+        exit 3
+    }
+    Write-Line 'no gpu_state_runner worker running'
     if ($Action -eq 'Status') { exit 0 }
     exit 1
 }
@@ -91,66 +144,72 @@ foreach ($w in $workers) {
         'Suspend' {
             $rc = [Erdos.ProcCtl]::NtSuspendProcess($proc.Handle)
             if ($rc -ne 0) { throw "NtSuspendProcess failed on pid $($w.ProcessId), status 0x$('{0:X}' -f $rc)" }
-            Write-State "SUSPEND"
-            Write-Output "suspended pid $($w.ProcessId)"
+            # Record BEFORE announcing success. If recording throws, resume
+            # rather than leave a suspended worker with no record -- that is
+            # precisely the state the watchdog cannot reason about.
+            try { Write-State 'SUSPEND' $proc }
+            catch {
+                [void][Erdos.ProcCtl]::NtResumeProcess($proc.Handle)
+                throw "suspend recorded nothing and was rolled back on pid $($w.ProcessId): $($_.Exception.Message)"
+            }
+            Write-Line "suspended pid $($w.ProcessId)"
             # Freezing the host process does not stop a kernel already on the
-            # card; in-flight work drains first. Measured 5.2s / 10.6s / 14.8s
-            # over three trials, so a fixed "wait ~3s" is wrong and would
-            # contaminate the first seconds of somebody else's measurement.
-            # Wait for the card to actually go quiet, so this command only
-            # returns once the GPU is genuinely released.
+            # card; in-flight work drains first. Measured 5-30s, so a fixed
+            # short wait would hand out a card that is still busy.
             $t0 = Get-Date
             $drained = $false
+            $unmeasurable = $false
             while (((Get-Date) - $t0).TotalSeconds -lt 90) {
-                if ((Get-GpuUtil) -le 5) { $drained = $true; break }
+                $u = Get-GpuUtil
+                if ($null -eq $u) { $unmeasurable = $true }
+                elseif ($u -le 5) { $drained = $true; break }
                 Start-Sleep -Milliseconds 400
             }
             $el = ((Get-Date) - $t0).TotalSeconds
-            if ($drained) { Write-Output ("gpu released after {0:N1}s" -f $el) }
-            else { Write-Output ("WARNING gpu still busy after {0:N1}s -- do not treat the card as quiet" -f $el) }
+            if ($drained) { Write-Line ("gpu released after {0:N1}s" -f $el) }
+            elseif ($unmeasurable) { Write-Line ("WARNING gpu utilisation could not be measured after {0:N1}s -- do NOT treat the card as quiet" -f $el) }
+            else { Write-Line ("WARNING gpu still busy after {0:N1}s -- do not treat the card as quiet" -f $el) }
         }
         'Resume' {
             $rc = [Erdos.ProcCtl]::NtResumeProcess($proc.Handle)
             if ($rc -ne 0) { throw "NtResumeProcess failed on pid $($w.ProcessId), status 0x$('{0:X}' -f $rc)" }
-            Write-State "RESUME"
-            Write-Output "resumed pid $($w.ProcessId)"
+            Write-State 'RESUME' $proc
+            Write-Line "resumed pid $($w.ProcessId)"
+            Start-Sleep -Seconds 3
+            $u = Get-GpuUtil
+            if ($null -eq $u) { Write-Line 'gpu utilisation now UNMEASURABLE' } else { Write-Line "gpu utilisation now $u%" }
         }
         'Watchdog' {
-            # Resume a worker that has been suspended far longer than any
-            # announced window. The hazard this closes: the supervisor is told
-            # SUSPENDED is authorised, so if whoever called the window dies
-            # before calling QUIET END, the run stalls silently for days.
-            $threads = @($proc.Threads)
-            $stopped = @($threads | Where-Object { $_.ThreadState -eq 'Wait' -and $_.WaitReason -eq 'Suspended' })
-            if ($stopped.Count -ne $threads.Count) { Write-Output "pid $($w.ProcessId) running, nothing to do"; break }
-            $since = Get-SuspendedSince
-            if (-not $since) { Write-Output "pid $($w.ProcessId) SUSPENDED but no suspend record; leaving alone"; break }
-            $hours = ((Get-Date).ToUniversalTime() - $since).TotalHours
+            if (-not (Test-FullySuspended $proc)) { Write-Line "pid $($w.ProcessId) running, nothing to do"; break }
+            $rec = Get-SuspendRecord
+            if (-not $rec) { Write-Line "pid $($w.ProcessId) SUSPENDED but no usable suspend record; leaving alone"; break }
+            # The record must belong to THIS process. An unbound timestamp let
+            # the watchdog resume a legitimately-suspended worker.
+            if ($rec.WPid -ne $proc.Id) { Write-Line "pid $($w.ProcessId) SUSPENDED but record names pid $($rec.WPid); leaving alone"; break }
+            if ([math]::Abs(($rec.Start - $proc.StartTime.ToUniversalTime()).TotalSeconds) -gt 2) {
+                Write-Line "pid $($w.ProcessId) SUSPENDED but record start time does not match (likely pid reuse); leaving alone"
+                break
+            }
+            $hours = ((Get-Date).ToUniversalTime() - $rec.When).TotalHours
             if ($hours -lt $MaxSuspendHours) {
-                Write-Output ("pid {0} SUSPENDED {1:N2}h, under the {2}h limit; leaving alone" -f $w.ProcessId, $hours, $MaxSuspendHours)
+                Write-Line ("pid {0} SUSPENDED {1:N2}h, under the {2}h limit; leaving alone" -f $w.ProcessId, $hours, $MaxSuspendHours)
                 break
             }
             $rc = [Erdos.ProcCtl]::NtResumeProcess($proc.Handle)
             if ($rc -ne 0) { throw "watchdog NtResumeProcess failed on pid $($w.ProcessId), status 0x$('{0:X}' -f $rc)" }
-            Write-State "WATCHDOG-RESUME"
-            Write-Output ("WATCHDOG RESUMED pid {0} after {1:N2}h suspended (limit {2}h)" -f $w.ProcessId, $hours, $MaxSuspendHours)
+            Write-State 'WATCHDOG-RESUME' $proc
+            Write-Line ("WATCHDOG RESUMED pid {0} after {1:N2}h suspended (limit {2}h)" -f $w.ProcessId, $hours, $MaxSuspendHours)
         }
         'Status' {
-            # A fully suspended process has every thread in Wait/Suspended.
-            $threads = @($proc.Threads)
-            $running = @($threads | Where-Object { $_.ThreadState -ne 'Wait' -or $_.WaitReason -ne 'Suspended' })
-            $state = if ($running.Count -eq 0) { 'SUSPENDED' } else { 'RUNNING' }
+            $state = 'RUNNING'
+            if (Test-FullySuspended $proc) { $state = 'SUSPENDED' }
             $extra = ''
             if ($state -eq 'SUSPENDED') {
-                $since = Get-SuspendedSince
-                if ($since) { $extra = " since={0:o} ({1:N2}h)" -f $since, ((Get-Date).ToUniversalTime() - $since).TotalHours }
+                $rec = Get-SuspendRecord
+                if ($rec -and $rec.WPid -eq $proc.Id) { $extra = " since={0:o} ({1:N2}h)" -f $rec.When, ((Get-Date).ToUniversalTime() - $rec.When).TotalHours }
+                else { $extra = ' (no matching suspend record)' }
             }
-            Write-Output "pid $($w.ProcessId) $state threads=$($threads.Count) priority=$($proc.PriorityClass)$extra"
+            Write-Line "pid $($w.ProcessId) $state threads=$(@($proc.Threads).Count) priority=$($proc.PriorityClass)$extra"
         }
     }
-}
-
-if ($Action -eq 'Resume') {
-    Start-Sleep -Seconds 3
-    Write-Output "gpu utilisation now $(Get-GpuUtil)%"
 }
