@@ -1,0 +1,104 @@
+#!/bin/bash
+# erdos-boot-probe -- read-only boot-time instrument for the Erdos1016 laptop chain.
+#
+# Records what erdos-laptop-chain.service is ABOUT to see at boot, so that the
+# boot path (which cannot be exercised on demand without rebooting a machine
+# that is mid-run) is observed for free the next time the box restarts.
+#
+# HARD RULE: this instrument is read-only.  It stats lock files and reads
+# /proc; it never creates, removes, touches or refreshes a lock.  An instrument
+# that mutates what it measures is worse than no instrument.  In particular the
+# runner's staleness test is on the lock's MTIME, and nothing here writes to a
+# lock path.
+#
+# It must also never delay or fail the boot: every external call is bounded,
+# and the script exits 0 unconditionally.
+set -u
+
+STATE_DIR="${ERDOS_STATE_DIR:-/home/j/erdos-n70}"
+RUNNER="${ERDOS_RUNNER:-$STATE_DIR/search/shapecsp/gpu_state_runner.py}"
+LOG="${ERDOS_PROBE_LOG:-$STATE_DIR/boot-probe.log}"
+NVSMI="${ERDOS_NVSMI:-nvidia-smi}"
+UNIT="${ERDOS_UNIT:-erdos-laptop-chain.service}"
+
+# Read the stale window out of the runner so this probe cannot drift from it.
+LOCK_STALE=$(grep -oP -- '--lock-stale.*default=\K[0-9.]+' "$RUNNER" 2>/dev/null | head -1)
+if [ -z "${LOCK_STALE:-}" ]; then LOCK_STALE=180; STALE_SRC="fallback"; else STALE_SRC="$RUNNER"; fi
+
+emit() { printf '%s\n' "$*" >> "$LOG"; }
+
+NOW=$(date +%s)
+emit "=== erdos-boot-probe $(date -Is) ==="
+emit "  boot_id      $(cat /proc/sys/kernel/random/boot_id 2>/dev/null || echo unknown)"
+emit "  uptime_s     $(cut -d. -f1 /proc/uptime 2>/dev/null || echo unknown)"
+emit "  trigger      ${1:-boot}"
+emit "  lock_stale_s $LOCK_STALE (from $STALE_SRC)"
+
+# --- GPU readiness: the thing a boot-time start can race ---
+t0=$(date +%s%N)
+nv_out=$(timeout 10 "$NVSMI" --query-gpu=name,utilization.gpu --format=csv,noheader 2>&1)
+nv_rc=$?
+t1=$(date +%s%N)
+emit "  nvidia_smi_rc      $nv_rc$( [ $nv_rc -eq 124 ] && echo '  (TIMED OUT after 10s)')"
+emit "  nvidia_smi_ms      $(( (t1 - t0) / 1000000 ))"
+emit "  nvidia_smi_out     $(printf '%s' "$nv_out" | head -1)"
+
+# --- Every state lock: age, recorded owner, and whether that owner is real ---
+shopt -s nullglob
+locks=("$STATE_DIR"/*.json.lock)
+if [ ${#locks[@]} -eq 0 ]; then
+  emit "  locks              none present"
+fi
+for L in "${locks[@]}"; do
+  mt=$(stat -c %Y "$L" 2>/dev/null) || { emit "  lock $L  <stat failed>"; continue; }
+  age=$(( NOW - mt ))
+  pid=$(cat "$L" 2>/dev/null)
+  if [ -d "/proc/$pid" ] 2>/dev/null; then
+    owner_comm=$(cat "/proc/$pid/comm" 2>/dev/null || echo '?')
+    # field 22 of /proc/pid/stat is starttime in clock ticks since boot
+    st=$(awk '{print $22}' "/proc/$pid/stat" 2>/dev/null)
+    hz=$(getconf CLK_TCK 2>/dev/null || echo 100)
+    boot_epoch=$(( NOW - $(cut -d. -f1 /proc/uptime) ))
+    proc_start=$(( boot_epoch + st / hz ))
+    if [ "$proc_start" -gt "$mt" ]; then reuse="LIKELY PID REUSE (proc started after the lock)"; else reuse="consistent"; fi
+    owner="ALIVE comm=$owner_comm started=$(date -Is -d @$proc_start) $reuse"
+  else
+    owner="DEAD (no /proc/$pid)"
+  fi
+  # This is the exact decision gpu_state_runner.py will make.
+  if [ "${pid:-x}" != "x" ] && [ -d "/proc/$pid" ]; then verdict="LOCKED (owner looks alive)"
+  elif awk -v a="$age" -v s="$LOCK_STALE" 'BEGIN{exit !(a<s)}'; then verdict="LOCKED (age ${age}s < ${LOCK_STALE}s stale window) -> TIER WOULD BE DEFERRED"
+  else verdict="acquirable (age ${age}s >= ${LOCK_STALE}s)"; fi
+  emit "  lock $(basename "$L")"
+  emit "      mtime_age_s  $age"
+  emit "      owner_pid    ${pid:-<empty>}  $owner"
+  emit "      chain_sees   $verdict"
+done
+
+# --- Boot ordering ---
+# Static ordering first: this is the part that must hold at boot, and unlike
+# critical-chain it answers even while the boot is still in progress.
+after=$(timeout 8 systemctl show "$UNIT" -p After --value 2>/dev/null | tr ' ' '
+' | grep -c '^erdos-boot-probe\.service$')
+if [ "${after:-0}" -ge 1 ]; then
+  emit "  ordering_static    OK: $UNIT is ordered After=erdos-boot-probe.service"
+else
+  emit "  ordering_static    BROKEN: $UNIT does NOT list erdos-boot-probe.service in After -- this probe raced the chain"
+fi
+
+# critical-chain is best-effort: it needs a finished boot and can be slow on a
+# loaded box.  Record WHY it is missing rather than leaving the field blank --
+# a silently empty field is indistinguishable from a passing one.
+ca=$(timeout 10 systemd-analyze critical-chain "$UNIT" 2>&1)
+ca_rc=$?
+if [ $ca_rc -ne 0 ]; then
+  emit "  critical_chain     UNAVAILABLE rc=$ca_rc$( [ $ca_rc -eq 124 ] && echo ' (timed out after 10s)')"
+elif [ -z "$(printf '%s' "$ca" | tr -d '[:space:]')" ]; then
+  emit "  critical_chain     UNAVAILABLE (empty output, rc=0)"
+else
+  emit "  critical_chain:"
+  printf '%s
+' "$ca" | head -12 | sed 's/^/      /' >> "$LOG"
+fi
+emit ""
+exit 0

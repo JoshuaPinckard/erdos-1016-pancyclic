@@ -1,0 +1,22 @@
+[Unit]
+Description=Erdos1016 read-only boot-state probe (records what the chain is about to see)
+Documentation=file:/usr/local/sbin/erdos-boot-probe
+# Same anchor as the chain, then ordered strictly ahead of it, so the probe
+# records the state the chain is about to see rather than racing it.
+After=multi-user.target
+Before=erdos-laptop-chain.service
+
+[Service]
+Type=oneshot
+User=j
+Group=j
+ExecStart=/usr/local/sbin/erdos-boot-probe boot
+# Hard bound: a hung nvidia-smi can never delay boot or wedge multi-user.target.
+# Before= is ordering only, so even a failure here cannot stop the chain.
+TimeoutStartSec=30
+# Never fail the boot: the script exits 0 unconditionally and records failures.
+StandardOutput=null
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
