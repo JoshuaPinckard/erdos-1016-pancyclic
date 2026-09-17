@@ -57,9 +57,16 @@ the same `bb` build as levels 93..111. The contiguous refuted block is now
 Level 91 started 2026-09-17 13:54 PDT (`hunt.py 6 91 4 8000000000 0`,
 eligible=181, caps 101..91).
 
-## GPU tiers observed during the same watch (for the record, not part of the bound)
+## GPU tiers that exhausted during the same watch (not part of the bound)
 
-| tier | state |
+Recorded with `search/shapecsp/verify_tier_exhaustion.py`, which re-derives the
+expected unit set from the hashed `gpu-blast/n{n}.jsonl` manifest and ignores the
+runner's own `exhausted` flag. Desktop run locally; laptop run over ssh with the
+same script copied to `/tmp` (the laptop checkout has no copy).
+
+| tier | verify_tier_exhaustion.py |
 |---|---|
-| laptop n=70 b=10 (`~/erdos-n70/n70-state-b10.json`) | complete 3040/3040, `chain-laptop.log` `"exhausted": true`, hits=0; chain moved to b=11 at 12:43:52 PDT |
-| desktop n=68 b=10 (`search/shapecsp/gpu-state-n68-b10.json`) | complete 2302/2302, hits=0 |
+| desktop n=68 b=10 (`search/shapecsp/gpu-state-n68-b10.json`) | `source_sha256 b57e9d74...`, expected 2302 / covered 2302, missing 0, extra 0, rank totals 90425326969618 = match, `exact_match: true`, hits `[]` |
+| laptop n=70 b=10 (`~/erdos-n70/n70-state-b10.json`) | `source_sha256 a7c01425...`, expected 3040 / covered 3040, missing 0, extra 0, rank totals 104015764237632 = match, `exact_match: true`, hits `[]`; `chain-laptop.log` `[chain] n=70 b=10 exit=0 2026-09-17T12:43:52-07:00` then `b=11 starting` |
+
+Live at 14:05 PDT: laptop n70 b11 108/7265 (expected units from the manifest, UNIT=5e10), desktop n69 b10 80/2188.
