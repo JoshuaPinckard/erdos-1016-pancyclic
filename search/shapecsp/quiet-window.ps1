@@ -44,7 +44,16 @@ if (-not ('Erdos.ProcCtl' -as [type])) {
 '@
 }
 
-$StateDir  = Join-Path $env:LOCALAPPDATA 'Erdos1016'
+# Tests MUST be able to redirect state without editing this file. A replica that
+# differs from production is a replica that can pass while production fails --
+# and worse, an unmodified copy run by hand writes its fixtures into the live
+# record. That happened: two test fixtures (a pid 999999 binding probe, and a
+# line mangled by a shell that ate its tab escapes) are preserved in the
+# production state file, and mining it for window durations produced a phantom
+# "9.0h window" from a FAKEHOST SUSPEND closed by an unrelated real RESUME.
+# Set ERDOS_QUIET_STATE_DIR to run the shipping script against a scratch record.
+$StateDir = $env:ERDOS_QUIET_STATE_DIR
+if ([string]::IsNullOrWhiteSpace($StateDir)) { $StateDir = Join-Path $env:LOCALAPPDATA 'Erdos1016' }
 $StateFile = Join-Path $StateDir 'quiet-window.state'
 $LogFile   = Join-Path $StateDir 'quiet-window.log'
 if (-not (Test-Path -LiteralPath $StateDir)) { New-Item -ItemType Directory -Path $StateDir -Force | Out-Null }
@@ -74,6 +83,11 @@ function Get-SuspendRecord {
     if ($lines.Count -eq 0) { return $null }
     $parts = ($lines | Select-Object -Last 1) -split "`t"
     if ($parts.Count -lt 5 -or $parts[1] -ne 'SUSPEND') { return $null }
+    # Reject a record written on another machine, which in practice means a test
+    # fixture that reached the live file. Reading only the LAST line is retained
+    # deliberately as the safe rule: scanning backwards past a malformed line
+    # could resurrect an older SUSPEND that a newer RESUME already closed.
+    if ($parts[2] -ne $env:COMPUTERNAME) { return $null }
     try {
         $when  = [datetime]::Parse($parts[0], $null, [Globalization.DateTimeStyles]::RoundtripKind)
         $start = [datetime]::Parse($parts[4], $null, [Globalization.DateTimeStyles]::RoundtripKind)
