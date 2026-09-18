@@ -1,0 +1,94 @@
+#!/bin/bash
+# erdos-thermal-guard -- keep the Erdos1016 laptop jobs from cooking the box.
+#
+# 2026-09-18: the laptop shut itself off twice in one day while
+# erdos-descent (4 cores) and erdos-laptop-chain (GPU at 100%) ran together;
+# the GPU had sat at 86-87 C for over 24 h.  erdos-fan-pin already runs the
+# fans at their maximum and measured no headroom from airflow, so the only
+# lever left is power: cap the GPU clock, and freeze both units whenever the
+# sensors approach the shutdown region, thawing once they have come back down.
+#
+# Freeze/thaw is SIGSTOP/SIGCONT on the whole unit cgroup.  Both jobs are safe
+# to freeze: hunt.py has no wall-clock timeouts (only a node budget), the GPU
+# runner's lock heartbeat merely pauses and nothing else launches a runner
+# while the chain unit is stopped, and both resume from their ledgers if the
+# box does go down anyway.  A frozen job loses time; a thermal shutdown loses
+# the shapes in flight and, eventually, the laptop.
+#
+# Hysteresis: freeze at >= FREEZE_GPU or >= FREEZE_CPU, thaw only when BOTH
+# are back at or below the THAW values.  Sampling every POLL seconds.
+set -u
+UNITS="${GUARD_UNITS:-erdos-descent.service erdos-laptop-chain.service}"
+FREEZE_GPU="${FREEZE_GPU:-84}"
+FREEZE_CPU="${FREEZE_CPU:-90}"
+THAW_GPU="${THAW_GPU:-75}"
+THAW_CPU="${THAW_CPU:-78}"
+POLL="${POLL:-15}"
+# GPU core clock ceiling in MHz.  The n=70 b=10 run settled at 2100 MHz / 87 C;
+# a 1500 MHz ceiling is roughly 55-60% of the power at ~70% of the throughput.
+GPU_MAX_CLOCK="${GPU_MAX_CLOCK:-1500}"
+LOG="${GUARD_LOG:-/home/j/erdos-thermal-guard.log}"
+
+log() { printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG"; }
+
+gpu_temp() {
+  timeout 10 nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -dc '0-9'
+}
+cpu_temp() {
+  # Hottest of: k10temp/coretemp package sensors, then any thermal zone.  All in
+  # millidegrees; returns whole degrees.
+  local best=0 v
+  for f in /sys/class/hwmon/hwmon*/temp*_input /sys/class/thermal/thermal_zone*/temp; do
+    [ -r "$f" ] || continue
+    v=$(cat "$f" 2>/dev/null) || continue
+    case "$v" in ''|*[!0-9]*) continue;; esac
+    [ "$v" -gt "$best" ] && best=$v
+  done
+  echo $((best / 1000))
+}
+
+apply_clock_cap() {
+  if timeout 10 nvidia-smi -lgc 0,"$GPU_MAX_CLOCK" >/dev/null 2>&1; then
+    log "gpu clock ceiling set to ${GPU_MAX_CLOCK} MHz"
+  else
+    log "WARN could not set gpu clock ceiling (nvidia-smi -lgc failed); freeze/thaw only"
+  fi
+}
+release_clock_cap() { timeout 10 nvidia-smi -rgc >/dev/null 2>&1 && log "gpu clock ceiling released"; }
+
+frozen=0
+freeze() {
+  systemctl kill --signal=SIGSTOP $UNITS 2>/dev/null
+  frozen=1
+  log "FREEZE gpu=${1}C cpu=${2}C (limits gpu>=${FREEZE_GPU} cpu>=${FREEZE_CPU})"
+}
+thaw() {
+  systemctl kill --signal=SIGCONT $UNITS 2>/dev/null
+  frozen=0
+  log "THAW gpu=${1}C cpu=${2}C"
+}
+on_exit() {
+  # Never leave the jobs frozen if the guard itself goes away.
+  [ "$frozen" = 1 ] && thaw "$(gpu_temp)" "$(cpu_temp)"
+  release_clock_cap
+  log "guard exiting"
+  exit 0
+}
+trap on_exit TERM INT
+
+log "guard start units=[$UNITS] freeze gpu>=${FREEZE_GPU} cpu>=${FREEZE_CPU} thaw gpu<=${THAW_GPU} cpu<=${THAW_CPU} poll=${POLL}s"
+apply_clock_cap
+n=0
+while true; do
+  g=$(gpu_temp); c=$(cpu_temp)
+  g=${g:-0}; c=${c:-0}
+  if [ "$frozen" = 0 ]; then
+    if [ "$g" -ge "$FREEZE_GPU" ] || [ "$c" -ge "$FREEZE_CPU" ]; then freeze "$g" "$c"; fi
+  else
+    if [ "$g" -le "$THAW_GPU" ] && [ "$c" -le "$THAW_CPU" ]; then thaw "$g" "$c"; fi
+  fi
+  # One line every 5 minutes so the temperature history is on disk after a crash.
+  n=$((n + 1))
+  if [ $((n % (300 / POLL))) -eq 0 ]; then log "sample gpu=${g}C cpu=${c}C frozen=${frozen}"; fi
+  sleep "$POLL"
+done

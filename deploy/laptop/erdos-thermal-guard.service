@@ -1,0 +1,14 @@
+[Unit]
+Description=Freeze Erdos1016 laptop jobs near thermal shutdown and cap the GPU clock
+After=multi-user.target
+Before=erdos-descent.service erdos-laptop-chain.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/erdos-thermal-guard
+Restart=always
+RestartSec=5
+Nice=-5
+
+[Install]
+WantedBy=multi-user.target
