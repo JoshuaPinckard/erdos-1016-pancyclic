@@ -8,9 +8,9 @@ install -m 0644 erdos-thermal-guard.service /etc/systemd/system/erdos-thermal-gu
 mkdir -p /etc/systemd/system/erdos-descent.service.d
 cat > /etc/systemd/system/erdos-descent.service.d/thermal.conf <<'CONF'
 [Service]
-# 2026-09-18: two thermal shutdowns in one day with 4 cores + GPU. Three cores
-# is a quarter less CPU heat; the level ledger resumes shape-by-shape either way.
-CPUQuota=300%
+# 2026-09-18: two thermal shutdowns in one day with 4 cores + GPU. Two cores
+# is half the CPU heat; the level ledger resumes shape-by-shape either way.
+CPUQuota=200%
 CONF
 systemctl daemon-reload
 systemctl enable --now erdos-thermal-guard.service
