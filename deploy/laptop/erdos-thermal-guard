@@ -15,18 +15,24 @@
 # box does go down anyway.  A frozen job loses time; a thermal shutdown loses
 # the shapes in flight and, eventually, the laptop.
 #
+# THE NUMBER THAT MATTERS: an earlier agent installed a thermal backstop on
+# this laptop that POWERS IT OFF at 80 C.  The GPU's own throttle target is
+# 87 C, so an uncapped run is guaranteed to trip that backstop; that is what
+# the 2026-09-18 shutdown loop was (boot -> jobs start -> 80 C -> off).  Every
+# threshold here therefore sits well under 80 C, not near the silicon limit.
 # Hysteresis: freeze at >= FREEZE_GPU or >= FREEZE_CPU, thaw only when BOTH
 # are back at or below the THAW values.  Sampling every POLL seconds.
 set -u
 UNITS="${GUARD_UNITS:-erdos-descent.service erdos-laptop-chain.service}"
-FREEZE_GPU="${FREEZE_GPU:-84}"
-FREEZE_CPU="${FREEZE_CPU:-90}"
-THAW_GPU="${THAW_GPU:-75}"
-THAW_CPU="${THAW_CPU:-78}"
+FREEZE_GPU="${FREEZE_GPU:-75}"
+FREEZE_CPU="${FREEZE_CPU:-75}"
+THAW_GPU="${THAW_GPU:-66}"
+THAW_CPU="${THAW_CPU:-66}"
 POLL="${POLL:-15}"
-# GPU core clock ceiling in MHz.  The n=70 b=10 run settled at 2100 MHz / 87 C;
-# a 1500 MHz ceiling is roughly 55-60% of the power at ~70% of the throughput.
-GPU_MAX_CLOCK="${GPU_MAX_CLOCK:-1500}"
+# GPU core clock ceiling in MHz.  The n=70 b=10 run settled at 2100 MHz / 87 C.
+# 1200 MHz is roughly 40% of that power; the point is a steady state under
+# 75 C, not throughput.  Raise it only with the guard log showing headroom.
+GPU_MAX_CLOCK="${GPU_MAX_CLOCK:-1200}"
 LOG="${GUARD_LOG:-/home/j/erdos-thermal-guard.log}"
 
 log() { printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG"; }
