@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run ON THE LAPTOP as root (sudo) from the directory holding these files.
-# Installs the thermal guard, trims the descent CPU grant from 4 to 3 cores,
+# Installs the thermal guard, trims the descent CPU grant from 4 cores to 2,
 # and (re)starts everything in the right order.
 set -eu
 install -m 0755 erdos-thermal-guard /usr/local/sbin/erdos-thermal-guard
@@ -16,4 +16,4 @@ systemctl daemon-reload
 systemctl enable --now erdos-thermal-guard.service
 systemctl restart erdos-descent.service
 systemctl status --no-pager erdos-thermal-guard.service erdos-descent.service erdos-laptop-chain.service | grep -E "Active|Loaded" || true
-tail -3 /home/j/erdos-thermal-guard.log
+tail -3 /home/j/erdos-thermal-guard.log 2>/dev/null || true
