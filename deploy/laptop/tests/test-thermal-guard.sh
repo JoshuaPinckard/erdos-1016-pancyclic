@@ -85,8 +85,9 @@ setup; set_gpu 55; set_cpu 50; start_guard
 sleep 2
 if [ "$(stops)" = "0" ]; then ok "cool box is never frozen"
 else bad "cool box is never frozen" "actions: $(cat "$T/actions")"; fi
-# the clock ceiling is applied unconditionally at start
-if grep -q 'gpu clock ceiling set' "$T/guard.log"; then ok "gpu clock ceiling applied at start"
+# the clock ceiling is applied unconditionally at start (awaited: a loaded
+# Windows git-bash can take several seconds just to fork the guard's startup)
+if await 'grep -q "gpu clock ceiling set" "$T/guard.log"'; then ok "gpu clock ceiling applied at start"
 else bad "gpu clock ceiling applied at start" "$(cat "$T/guard.log")"; fi
 teardown
 
