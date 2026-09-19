@@ -37,20 +37,41 @@ LOG="${GUARD_LOG:-/home/j/erdos-thermal-guard.log}"
 
 log() { printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG"; }
 
+# Both sensor readers print a whole number of degrees, or NOTHING when they
+# could not read anything at all.  An empty reading is deliberately not folded
+# into 0: 0 C compares as "cool" against every threshold, so a guard that
+# treated an unreadable sensor as 0 would run the jobs blind at full tilt,
+# which is the exact failure it exists to prevent.  See the blind branch below.
+SANE_MAX="${SANE_MAX:-125}"
+# Overridable so the test harness can point the reader at a fixture tree; the
+# default is the real sysfs.  Deliberately unquoted where it is used: it is a
+# list of globs.
+HWMON_GLOB="${HWMON_GLOB:-/sys/class/hwmon/hwmon*/temp*_input /sys/class/thermal/thermal_zone*/temp}"
+
 gpu_temp() {
-  timeout 10 nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -dc '0-9'
+  local v
+  v=$(timeout 10 nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -dc '0-9')
+  [ -n "$v" ] || return 0
+  # A card reading above SANE_MAX is a broken sensor, not a reading.
+  [ "$v" -le "$SANE_MAX" ] || return 0
+  echo "$v"
 }
+
 cpu_temp() {
   # Hottest of: k10temp/coretemp package sensors, then any thermal zone.  All in
-  # millidegrees; returns whole degrees.
-  local best=0 v
-  for f in /sys/class/hwmon/hwmon*/temp*_input /sys/class/thermal/thermal_zone*/temp; do
+  # millidegrees.  Readings above SANE_MAX are dropped: this box is known to
+  # produce garbage from at least one hwmon channel when a fan is pinned, and a
+  # single bogus 3283100 would otherwise pin the guard frozen forever.
+  local best="" v d
+  for f in $HWMON_GLOB; do
     [ -r "$f" ] || continue
     v=$(cat "$f" 2>/dev/null) || continue
     case "$v" in ''|*[!0-9]*) continue;; esac
-    [ "$v" -gt "$best" ] && best=$v
+    d=$((v / 1000))
+    [ "$d" -le "$SANE_MAX" ] || continue
+    if [ -z "$best" ] || [ "$d" -gt "$best" ]; then best="$d"; fi
   done
-  echo $((best / 1000))
+  [ -n "$best" ] && echo "$best"
 }
 
 apply_clock_cap() {
@@ -75,7 +96,7 @@ thaw() {
 }
 on_exit() {
   # Never leave the jobs frozen if the guard itself goes away.
-  [ "$frozen" = 1 ] && thaw "$(gpu_temp)" "$(cpu_temp)"
+  if [ "$frozen" = 1 ]; then g=$(gpu_temp); c=$(cpu_temp); thaw "${g:-?}" "${c:-?}"; fi
   release_clock_cap
   log "guard exiting"
   exit 0
@@ -85,16 +106,38 @@ trap on_exit TERM INT
 log "guard start units=[$UNITS] freeze gpu>=${FREEZE_GPU} cpu>=${FREEZE_CPU} thaw gpu<=${THAW_GPU} cpu<=${THAW_CPU} poll=${POLL}s"
 apply_clock_cap
 n=0
+blind_logged=0
 while true; do
   g=$(gpu_temp); c=$(cpu_temp)
-  g=${g:-0}; c=${c:-0}
-  if [ "$frozen" = 0 ]; then
-    if [ "$g" -ge "$FREEZE_GPU" ] || [ "$c" -ge "$FREEZE_CPU" ]; then freeze "$g" "$c"; fi
+
+  # blind: not one usable sensor this round.  Fail closed -- freeze, and stay
+  # frozen until a real reading comes back and says it is cool.
+  if [ -z "$g" ] && [ -z "$c" ]; then
+    if [ "$frozen" = 0 ]; then
+      freeze "?" "?"
+      log "WARN no readable temperature sensor; frozen until one returns"
+    elif [ "$blind_logged" = 0 ]; then
+      log "WARN still no readable temperature sensor; staying frozen"
+    fi
+    blind_logged=1
   else
-    if [ "$g" -le "$THAW_GPU" ] && [ "$c" -le "$THAW_CPU" ]; then thaw "$g" "$c"; fi
+    blind_logged=0
+    hot=0
+    [ -n "$g" ] && [ "$g" -ge "$FREEZE_GPU" ] && hot=1
+    [ -n "$c" ] && [ "$c" -ge "$FREEZE_CPU" ] && hot=1
+    # Cool means every sensor we CAN read is at or under its thaw point.  A
+    # sensor that is missing this round cannot vote for thawing.
+    cool=1
+    [ -n "$g" ] && [ "$g" -gt "$THAW_GPU" ] && cool=0
+    [ -n "$c" ] && [ "$c" -gt "$THAW_CPU" ] && cool=0
+    if [ "$frozen" = 0 ]; then
+      [ "$hot" = 1 ] && freeze "${g:-?}" "${c:-?}"
+    else
+      [ "$cool" = 1 ] && thaw "${g:-?}" "${c:-?}"
+    fi
   fi
   # One line every 5 minutes so the temperature history is on disk after a crash.
   n=$((n + 1))
-  if [ $((n % (300 / POLL))) -eq 0 ]; then log "sample gpu=${g}C cpu=${c}C frozen=${frozen}"; fi
+  if [ $((n % (300 / POLL))) -eq 0 ]; then log "sample gpu=${g:-?}C cpu=${c:-?}C frozen=${frozen}"; fi
   sleep "$POLL"
 done

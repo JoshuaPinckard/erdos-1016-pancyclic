@@ -14,6 +14,9 @@ LOG="${CATCH_LOG:-$HERE/../../catch-and-guard.log}"
 HOST="${CATCH_HOST:-josh}"
 POLL="${CATCH_POLL:-5}"
 HOURS="${CATCH_HOURS:-24}"
+# Seconds to let the box settle after the install before reading temperatures
+# back.  Only the tests lower it.
+SETTLE="${CATCH_SETTLE:-45}"
 SSH=(ssh -o BatchMode=yes -o ConnectTimeout=4 -o StrictHostKeyChecking=yes "$HOST")
 
 log() { printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG"; }
@@ -43,17 +46,18 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
     run 'systemctl list-unit-files --no-pager 2>/dev/null | grep -iE "therm|backstop" ; for f in /etc/systemd/system/*therm* /usr/local/sbin/*therm* /usr/local/bin/*therm*; do [ -e "$f" ] && { echo "== $f"; cat "$f"; }; done 2>/dev/null'
 
     log "--- installing guard ---"
-    run 'mkdir -p /tmp/erdos-guard'
+    run 'rm -rf /tmp/erdos-guard && mkdir -p /tmp/erdos-guard/tests'
     scp -o BatchMode=yes \
       "$HERE/erdos-thermal-guard" \
       "$HERE/erdos-thermal-guard.service" \
       "$HERE/install-thermal-guard.sh" \
       "$HOST:/tmp/erdos-guard/" >> "$LOG" 2>&1
+    scp -o BatchMode=yes "$HERE/tests/test-thermal-guard.sh" "$HOST:/tmp/erdos-guard/tests/" >> "$LOG" 2>&1
     if "${SSH[@]}" 'sudo -n true' >/dev/null 2>&1; then
       run 'cd /tmp/erdos-guard && chmod +x erdos-thermal-guard install-thermal-guard.sh && sudo -n bash install-thermal-guard.sh'
       log "--- guard installed; releasing the freeze ---"
       thaw_jobs
-      sleep 45
+      sleep "$SETTLE"
       run 'tail -8 /home/j/erdos-thermal-guard.log 2>/dev/null; nvidia-smi --query-gpu=temperature.gpu,clocks.gr --format=csv,noheader 2>/dev/null; systemctl is-active erdos-thermal-guard erdos-descent erdos-laptop-chain 2>&1'
       log "=== DONE: guard running, jobs under caps ==="
     else
