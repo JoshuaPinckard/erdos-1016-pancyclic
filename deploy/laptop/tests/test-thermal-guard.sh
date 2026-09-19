@@ -110,7 +110,7 @@ teardown
 # ------------------------------------------------------- 3. cpu alone can trip
 setup; set_gpu 50; set_cpu 50; start_guard
 await '[ "$(stops)" = "0" ]' || true
-set_cpu 86
+set_cpu 91
 if await '[ "$(stops)" -ge 1 ]'; then ok "cpu alone can trigger the freeze"
 else bad "cpu alone can trigger the freeze" "$(cat "$T/guard.log")"; fi
 # gpu is cool but the cpu is not: a single cool sensor must not thaw it

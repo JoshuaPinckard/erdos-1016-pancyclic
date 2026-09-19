@@ -26,7 +26,9 @@
 # the guard freezes while that margin is small.  The GPU and CPU package
 # thresholds remain as silicon guards (the GPU's own throttle target is 87 C,
 # the CPU throttles itself at 100 C) but they sit at silicon-sensible values,
-# not at values chosen for the backstop.
+# not at values chosen for the backstop.  The CPU package spikes to 85-86 C
+# for a single sample several times an hour under turbo and is back at 66-70 C
+# fifteen seconds later; a limit at 85 froze both jobs on every such spike.
 # Hysteresis: freeze when margin <= FREEZE_MARGIN, gpu >= FREEZE_GPU or cpu >=
 # FREEZE_CPU; thaw only when margin >= THAW_MARGIN AND gpu <= THAW_GPU AND
 # cpu <= THAW_CPU.  Sampling every POLL seconds; the backstop needs two
@@ -37,14 +39,18 @@ UNITS="${GUARD_UNITS:-erdos-descent.service erdos-laptop-chain.service}"
 FREEZE_MARGIN="${FREEZE_MARGIN:-8}"
 THAW_MARGIN="${THAW_MARGIN:-14}"
 FREEZE_GPU="${FREEZE_GPU:-75}"
-FREEZE_CPU="${FREEZE_CPU:-85}"
+FREEZE_CPU="${FREEZE_CPU:-90}"
 THAW_GPU="${THAW_GPU:-66}"
-THAW_CPU="${THAW_CPU:-75}"
+THAW_CPU="${THAW_CPU:-80}"
 POLL="${POLL:-15}"
-# GPU core clock ceiling in MHz.  The n=70 b=10 run settled at 2100 MHz / 87 C.
-# 1200 MHz is roughly 40% of that power; the point is a steady state under
-# 75 C, not throughput.  Raise it only with the guard log showing headroom.
-GPU_MAX_CLOCK="${GPU_MAX_CLOCK:-1200}"
+# GPU core clock ceiling in MHz.  The n=70 b=10 run settled at 2100 MHz / 87 C
+# and tripped the backstop.  Measured 2026-09-18 with both jobs running: at
+# 1200 MHz the GPU sits at 65 C / 32 W and SEN2 at 62-63 C (17-18 C of margin);
+# at 1400 MHz it is 67-68 C / 39 W and SEN2 64-65 C (15-16 C of margin), with a
+# GPU unit taking 65 s instead of 75 s.  1400 is the default; 1500 would put
+# the margin inside the thaw band.  Raise only with the guard log showing
+# headroom.
+GPU_MAX_CLOCK="${GPU_MAX_CLOCK:-1400}"
 LOG="${GUARD_LOG:-/home/j/erdos-thermal-guard.log}"
 
 log() { printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG"; }
