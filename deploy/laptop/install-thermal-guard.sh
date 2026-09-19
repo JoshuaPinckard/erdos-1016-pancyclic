@@ -51,7 +51,12 @@ CPUQuota=200%
 CONF
 
 systemctl daemon-reload
-systemctl enable --now erdos-thermal-guard.service
+systemctl enable erdos-thermal-guard.service
+# A restart, not `enable --now`: --now leaves an already-running guard on the
+# OLD script, which is how a threshold change once installed without taking
+# effect.  Restarting the guard restarts the units that Require= it, so the
+# descent comes back under the new guard either way.
+systemctl restart erdos-thermal-guard.service
 systemctl restart erdos-descent.service
 
 echo "== state =="

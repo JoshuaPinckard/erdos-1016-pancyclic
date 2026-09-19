@@ -5,8 +5,8 @@
 #
 # What is under test is the decision the guard makes, i.e. exactly when it sends
 # SIGSTOP and SIGCONT, because that is the whole safety property: the laptop
-# powers off at 80 C and the guard is the only thing that keeps the load under
-# it.
+# powers off when a critical-trip zone reaches its trip (SEN2 at 80 C on the
+# real box) and the guard is the only thing that keeps the load under it.
 set -u
 
 GUARD="$(cd "$(dirname "$0")/.." && pwd)/erdos-thermal-guard"
@@ -20,7 +20,7 @@ bad()  { fail=$((fail+1)); printf 'FAIL %s\n     %s\n' "$1" "${2:-}"; }
 # guard log.  set_gpu/set_cpu rewrite what the stubs report while it runs.
 setup() {
   T=$(mktemp -d); export T
-  mkdir -p "$T/bin" "$T/sensors"
+  mkdir -p "$T/bin" "$T/sensors" "$T/zones"
   cat > "$T/bin/nvidia-smi" <<'STUB'
 #!/bin/bash
 case "$*" in
@@ -51,9 +51,19 @@ unset_gpu() { rm -f "$T/gpu"; }
 set_cpu()   { printf '%s\n' "$(( $1 * 1000 ))" > "$T/sensors/temp1_input"; }
 unset_cpu() { rm -f "$T/sensors"/*; }
 raw_cpu()   { printf '%s\n' "$1" > "$T/sensors/temp1_input"; }
+# A thermal zone the way sysfs lays it out: type, temp, and a critical trip.
+# set_zone NAME TEMP_C CRIT_C [RAW_CRIT]  (RAW_CRIT overrides the trip verbatim)
+set_zone()  {
+  local z="$T/zones/$1"; mkdir -p "$z"
+  printf '%s\n' "$1" > "$z/type"
+  printf '%s\n' "$(( $2 * 1000 ))" > "$z/temp"
+  printf 'critical\n' > "$z/trip_point_0_type"
+  printf '%s\n' "${4:-$(( $3 * 1000 ))}" > "$z/trip_point_0_temp"
+}
+unset_zones() { rm -rf "$T/zones"/*; }
 
 start_guard() {
-  HWMON_GLOB="$T/sensors/*" GUARD_LOG="$T/guard.log" POLL=1 \
+  HWMON_GLOB="$T/sensors/*" ZONE_GLOB="$T/zones/*" GUARD_LOG="$T/guard.log" POLL=1 \
     GUARD_UNITS="unit-a.service unit-b.service" "$GUARD" &
   GPID=$!
 }
@@ -99,7 +109,7 @@ teardown
 # ------------------------------------------------------- 3. cpu alone can trip
 setup; set_gpu 50; set_cpu 50; start_guard
 await '[ "$(stops)" = "0" ]' || true
-set_cpu 80
+set_cpu 86
 if await '[ "$(stops)" -ge 1 ]'; then ok "cpu alone can trigger the freeze"
 else bad "cpu alone can trigger the freeze" "$(cat "$T/guard.log")"; fi
 # gpu is cool but the cpu is not: a single cool sensor must not thaw it
@@ -109,10 +119,49 @@ if [ "$(conts)" = "0" ]; then ok "a cool gpu does not thaw a hot cpu"
 else bad "a cool gpu does not thaw a hot cpu" "actions: $(cat "$T/actions")"; fi
 teardown
 
+# ------------------- 3b. the backstop's own zones: margin to the critical trip
+# This is the sensor that actually powers the box off.  The cpu package stays
+# well under its own limit throughout so only the margin decides.
+setup; set_gpu 50; set_cpu 60; set_zone SEN2 60 80; set_zone acpitz 30 105; start_guard
+sleep 2
+if [ "$(stops)" = "0" ]; then ok "20 C of margin to the critical trip is not hot"
+else bad "20 C of margin to the critical trip is not hot" "actions: $(cat "$T/actions")"; fi
+set_zone SEN2 72 80      # margin 8
+if await '[ "$(stops)" -ge 1 ]'; then ok "freezes at 8 C from the critical trip"
+else bad "freezes at 8 C from the critical trip" "$(cat "$T/guard.log")"; fi
+set_zone SEN2 68 80      # margin 12: under the 14 thaw margin
+sleep 2
+if [ "$(conts)" = "0" ]; then ok "hysteresis holds the freeze at 12 C of margin"
+else bad "hysteresis holds the freeze at 12 C of margin" "actions: $(cat "$T/actions")"; fi
+set_zone SEN2 65 80      # margin 15
+if await '[ "$(conts)" -ge 1 ]'; then ok "thaws at 14 C of margin"
+else bad "thaws at 14 C of margin" "$(cat "$T/guard.log")"; fi
+# the nearest trip decides, not the first zone found
+set_zone SEN1 100 105
+if await '[ "$(stops)" -ge 2 ]'; then ok "the zone nearest its own trip decides"
+else bad "the zone nearest its own trip decides" "actions: $(cat "$T/actions")"; fi
+teardown
+
+# a cpu package at 77 C with the chassis zones cool is the normal descent
+# operating point on this box; it must not freeze (the old 75 C cpu limit did,
+# halving throughput for a sensor the backstop never reads)
+setup; set_gpu 50; set_cpu 77; set_zone SEN2 52 80; start_guard
+sleep 2
+if [ "$(stops)" = "0" ]; then ok "cpu package at 77 C with cool chassis zones runs"
+else bad "cpu package at 77 C with cool chassis zones runs" "actions: $(cat "$T/actions")"; fi
+teardown
+
+# a zone whose trip is garbage is skipped, not treated as a 0 C trip
+setup; set_gpu 50; set_cpu 50; set_zone SEN2 50 80 3283100; set_zone SEN3 50 80 notanumber; start_guard
+sleep 2
+if [ "$(stops)" = "0" ]; then ok "a zone with a garbage critical trip is ignored"
+else bad "a zone with a garbage critical trip is ignored" "actions: $(cat "$T/actions")"; fi
+teardown
+
 # ------------------------------------- 4. blind sensors must fail CLOSED
-setup; set_gpu 55; set_cpu 50; start_guard
+setup; set_gpu 55; set_cpu 50; set_zone SEN2 50 80; start_guard
 await '[ "$(stops)" = "0" ]' || true
-unset_gpu; unset_cpu
+unset_gpu; unset_cpu; unset_zones
 if await '[ "$(stops)" -ge 1 ]'; then ok "freezes when no sensor can be read"
 else bad "freezes when no sensor can be read" "$(cat "$T/guard.log")"; fi
 sleep 2

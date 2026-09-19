@@ -66,8 +66,13 @@ else
   bad "no directive lands in the wrong section" "$(cat "$f" 2>&1)"
 fi
 
-grep -q 'enable --now erdos-thermal-guard.service' "$T/systemctl.log" \
-  && ok "guard is enabled and started" || bad "guard is enabled and started" "$(cat "$T/systemctl.log")"
+grep -q 'enable erdos-thermal-guard.service' "$T/systemctl.log" \
+  && ok "guard is enabled" || bad "guard is enabled" "$(cat "$T/systemctl.log")"
+# a guard that was already running must come up on the NEW script, so it is
+# restarted, not merely started (`enable --now` is a no-op on a running unit)
+grep -q 'restart erdos-thermal-guard.service' "$T/systemctl.log" \
+  && ok "a running guard is restarted onto the new script" \
+  || bad "a running guard is restarted onto the new script" "$(cat "$T/systemctl.log")"
 grep -q 'daemon-reload' "$T/systemctl.log" \
   && ok "systemd is reloaded before the units are touched" || bad "systemd is reloaded" ""
 

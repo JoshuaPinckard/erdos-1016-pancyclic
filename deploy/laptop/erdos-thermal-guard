@@ -16,18 +16,30 @@
 # the shapes in flight and, eventually, the laptop.
 #
 # THE NUMBER THAT MATTERS: an earlier agent installed a thermal backstop on
-# this laptop that POWERS IT OFF at 80 C.  The GPU's own throttle target is
-# 87 C, so an uncapped run is guaranteed to trip that backstop; that is what
-# the 2026-09-18 shutdown loop was (boot -> jobs start -> 80 C -> off).  Every
-# threshold here therefore sits well under 80 C, not near the silicon limit.
-# Hysteresis: freeze at >= FREEZE_GPU or >= FREEZE_CPU, thaw only when BOTH
-# are back at or below the THAW values.  Sampling every POLL seconds.
+# this laptop (thermal-backstop.service) that POWERS IT OFF when any thermal
+# zone with a `critical` trip reaches it.  On this box those are the ASUS
+# chassis zones SEN1/SEN2/SEN3 at 80 C (plus acpitz at 105 C); both 2026-09-18
+# shutdowns were "SEN2 reached 80C".  The CPU package and the GPU die are NOT
+# what it watches: under the CPU-only descent the package sits at 75-77 C while
+# SEN1-3 read 50-53 C.  So the primary signal here is the MARGIN to the
+# nearest critical trip, read from the very same zones the backstop reads, and
+# the guard freezes while that margin is small.  The GPU and CPU package
+# thresholds remain as silicon guards (the GPU's own throttle target is 87 C,
+# the CPU throttles itself at 100 C) but they sit at silicon-sensible values,
+# not at values chosen for the backstop.
+# Hysteresis: freeze when margin <= FREEZE_MARGIN, gpu >= FREEZE_GPU or cpu >=
+# FREEZE_CPU; thaw only when margin >= THAW_MARGIN AND gpu <= THAW_GPU AND
+# cpu <= THAW_CPU.  Sampling every POLL seconds; the backstop needs two
+# consecutive 5 s samples at critical, so a 15 s poll with an 8 C margin on a
+# chassis sensor that moves about 1 C / 10 s is comfortably inside it.
 set -u
 UNITS="${GUARD_UNITS:-erdos-descent.service erdos-laptop-chain.service}"
+FREEZE_MARGIN="${FREEZE_MARGIN:-8}"
+THAW_MARGIN="${THAW_MARGIN:-14}"
 FREEZE_GPU="${FREEZE_GPU:-75}"
-FREEZE_CPU="${FREEZE_CPU:-75}"
+FREEZE_CPU="${FREEZE_CPU:-85}"
 THAW_GPU="${THAW_GPU:-66}"
-THAW_CPU="${THAW_CPU:-66}"
+THAW_CPU="${THAW_CPU:-75}"
 POLL="${POLL:-15}"
 # GPU core clock ceiling in MHz.  The n=70 b=10 run settled at 2100 MHz / 87 C.
 # 1200 MHz is roughly 40% of that power; the point is a steady state under
@@ -47,6 +59,7 @@ SANE_MAX="${SANE_MAX:-125}"
 # default is the real sysfs.  Deliberately unquoted where it is used: it is a
 # list of globs.
 HWMON_GLOB="${HWMON_GLOB:-/sys/class/hwmon/hwmon*/temp*_input /sys/class/thermal/thermal_zone*/temp}"
+ZONE_GLOB="${ZONE_GLOB:-/sys/class/thermal/thermal_zone*}"
 
 gpu_temp() {
   local v
@@ -74,6 +87,33 @@ cpu_temp() {
   [ -n "$best" ] && echo "$best"
 }
 
+crit_margin() {
+  # Smallest (critical trip - current temperature), in whole degrees, over the
+  # zones that carry a critical trip -- exactly the set thermal-backstop
+  # discovers, read the way it reads them.  Prints nothing when no such zone
+  # is readable this round.  A garbage temperature (above SANE_MAX) is dropped
+  # just like in cpu_temp; a garbage trip is skipped with its zone.
+  local best="" z t v c d m
+  for z in $ZONE_GLOB; do
+    [ -d "$z" ] || continue
+    c=""
+    for t in "$z"/trip_point_*_type; do
+      [ -r "$t" ] || continue
+      [ "$(cat "$t" 2>/dev/null)" = critical ] || continue
+      c=$(cat "${t%_type}_temp" 2>/dev/null)
+      break
+    done
+    case "$c" in ''|*[!0-9]*) continue;; esac
+    v=$(cat "$z/temp" 2>/dev/null) || continue
+    case "$v" in ''|*[!0-9]*) continue;; esac
+    d=$((v / 1000))
+    [ "$d" -le "$SANE_MAX" ] || continue
+    m=$((c / 1000 - d))
+    if [ -z "$best" ] || [ "$m" -lt "$best" ]; then best="$m"; fi
+  done
+  [ -n "$best" ] && echo "$best"
+}
+
 apply_clock_cap() {
   if timeout 10 nvidia-smi -lgc 0,"$GPU_MAX_CLOCK" >/dev/null 2>&1; then
     log "gpu clock ceiling set to ${GPU_MAX_CLOCK} MHz"
@@ -87,34 +127,49 @@ frozen=0
 freeze() {
   systemctl kill --signal=SIGSTOP $UNITS 2>/dev/null
   frozen=1
-  log "FREEZE gpu=${1}C cpu=${2}C (limits gpu>=${FREEZE_GPU} cpu>=${FREEZE_CPU})"
+  log "FREEZE margin=${3}C gpu=${1}C cpu=${2}C (limits margin<=${FREEZE_MARGIN} gpu>=${FREEZE_GPU} cpu>=${FREEZE_CPU})"
 }
 thaw() {
   systemctl kill --signal=SIGCONT $UNITS 2>/dev/null
   frozen=0
-  log "THAW gpu=${1}C cpu=${2}C"
+  log "THAW margin=${3}C gpu=${1}C cpu=${2}C"
 }
 on_exit() {
   # Never leave the jobs frozen if the guard itself goes away.
-  if [ "$frozen" = 1 ]; then g=$(gpu_temp); c=$(cpu_temp); thaw "${g:-?}" "${c:-?}"; fi
+  if [ "$frozen" = 1 ]; then g=$(gpu_temp); c=$(cpu_temp); m=$(crit_margin); thaw "${g:-?}" "${c:-?}" "${m:-?}"; fi
   release_clock_cap
   log "guard exiting"
   exit 0
 }
 trap on_exit TERM INT
 
-log "guard start units=[$UNITS] freeze gpu>=${FREEZE_GPU} cpu>=${FREEZE_CPU} thaw gpu<=${THAW_GPU} cpu<=${THAW_CPU} poll=${POLL}s"
+log "guard start units=[$UNITS] freeze margin<=${FREEZE_MARGIN} gpu>=${FREEZE_GPU} cpu>=${FREEZE_CPU} thaw margin>=${THAW_MARGIN} gpu<=${THAW_GPU} cpu<=${THAW_CPU} poll=${POLL}s"
+list_crit_zones() {
+  # "SEN2@80C SEN3@80C ..." for the start-of-guard log line; garbage trips print raw.
+  local z t c
+  for z in $ZONE_GLOB; do
+    for t in "$z"/trip_point_*_type; do
+      [ -r "$t" ] || continue
+      [ "$(cat "$t" 2>/dev/null)" = critical ] || continue
+      c=$(cat "${t%_type}_temp" 2>/dev/null)
+      case "$c" in ''|*[!0-9]*) printf '%s@%s(bad) ' "$(cat "$z/type" 2>/dev/null)" "$c";;
+                   *) printf '%s@%sC ' "$(cat "$z/type" 2>/dev/null)" "$((c / 1000))";; esac
+      break
+    done
+  done
+}
+log "critical zones: $(list_crit_zones)"
 apply_clock_cap
 n=0
 blind_logged=0
 while true; do
-  g=$(gpu_temp); c=$(cpu_temp)
+  g=$(gpu_temp); c=$(cpu_temp); m=$(crit_margin)
 
   # blind: not one usable sensor this round.  Fail closed -- freeze, and stay
   # frozen until a real reading comes back and says it is cool.
-  if [ -z "$g" ] && [ -z "$c" ]; then
+  if [ -z "$g" ] && [ -z "$c" ] && [ -z "$m" ]; then
     if [ "$frozen" = 0 ]; then
-      freeze "?" "?"
+      freeze "?" "?" "?"
       log "WARN no readable temperature sensor; frozen until one returns"
     elif [ "$blind_logged" = 0 ]; then
       log "WARN still no readable temperature sensor; staying frozen"
@@ -123,21 +178,23 @@ while true; do
   else
     blind_logged=0
     hot=0
+    [ -n "$m" ] && [ "$m" -le "$FREEZE_MARGIN" ] && hot=1
     [ -n "$g" ] && [ "$g" -ge "$FREEZE_GPU" ] && hot=1
     [ -n "$c" ] && [ "$c" -ge "$FREEZE_CPU" ] && hot=1
     # Cool means every sensor we CAN read is at or under its thaw point.  A
     # sensor that is missing this round cannot vote for thawing.
     cool=1
+    [ -n "$m" ] && [ "$m" -lt "$THAW_MARGIN" ] && cool=0
     [ -n "$g" ] && [ "$g" -gt "$THAW_GPU" ] && cool=0
     [ -n "$c" ] && [ "$c" -gt "$THAW_CPU" ] && cool=0
     if [ "$frozen" = 0 ]; then
-      [ "$hot" = 1 ] && freeze "${g:-?}" "${c:-?}"
+      [ "$hot" = 1 ] && freeze "${g:-?}" "${c:-?}" "${m:-?}"
     else
-      [ "$cool" = 1 ] && thaw "${g:-?}" "${c:-?}"
+      [ "$cool" = 1 ] && thaw "${g:-?}" "${c:-?}" "${m:-?}"
     fi
   fi
   # One line every 5 minutes so the temperature history is on disk after a crash.
   n=$((n + 1))
-  if [ $((n % (300 / POLL))) -eq 0 ]; then log "sample gpu=${g:-?}C cpu=${c:-?}C frozen=${frozen}"; fi
+  if [ $((n % (300 / POLL))) -eq 0 ]; then log "sample margin=${m:-?}C gpu=${g:-?}C cpu=${c:-?}C frozen=${frozen}"; fi
   sleep "$POLL"
 done
