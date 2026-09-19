@@ -77,3 +77,11 @@ compared directly. Remove the throwaway task afterwards.
 ships with.** On Windows that means the Task Scheduler, and "through wscript
 from my shell" is a different environment that can fail and pass for reasons
 production never sees -- in both directions.
+
+## b=12 job list (2026-09-19)
+
+`run-chain-desktop-v3.cmd` (6 tiers: 68/10, 69/10, 68/11, 69/11, 68/12, 69/12)
+and `run-chain-laptop-v2.sh` (70/10, 70/11, 70/12) re-ran this stub test with
+`LOCK_WAIT` shortened. Both are green: each of the nine tiers logged
+`exit=2 -> LOCKED (attempt 1) -> exit=0`, advanced in list order, and the
+drivers exited `rc=0`. Test logs are `*.log`, which `.gitignore` excludes.

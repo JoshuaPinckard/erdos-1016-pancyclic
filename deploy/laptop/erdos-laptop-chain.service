@@ -7,7 +7,7 @@ Type=simple
 User=j
 Group=j
 WorkingDirectory=/home/j/erdos-n70/search/shapecsp
-ExecStart=/bin/bash /home/j/erdos-n70/run-chain-laptop.sh
+ExecStart=/bin/bash /home/j/erdos-n70/run-chain-laptop-v2.sh
 # The GPU feeder needs to stay responsive or the card goes idle between units;
 # it costs about 0.002 of a core, so it is not what competes with other agents.
 Nice=0
