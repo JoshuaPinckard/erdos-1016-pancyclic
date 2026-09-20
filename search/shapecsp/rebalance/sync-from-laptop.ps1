@@ -204,4 +204,66 @@ foreach ($tier in $PairwiseTiers) {
     Write-Output "        verifier exit $vExit (1 is expected while the tier is still running)"
 }
 
+# Claim files.  finalize-laptop.sh writes ~/erdos-n70/verification/
+# nN-bB-combined.json for every tier the laptop computes (level 71 and the odd
+# levels 87..73).  papers/verification in this repository is the record of
+# claims, so each one is pulled here.  Never overwrites: a local file with the
+# same bytes is left alone, one with different bytes is a conflict (the laptop
+# copy is kept beside it as .laptop-conflict and reported).  .part/.err files
+# and empty files are not claims and are not pulled.
+$claimOut = Join-Path (Split-Path -Parent (Split-Path -Parent $RepoDir)) 'papers\verification'
+$RemoteClaimDir = '~/erdos-n70/verification'
+$claimList = $null
+try {
+    $ErrorActionPreference = 'Continue'
+    $claimList = & ssh -o BatchMode=yes $Remote "ls -1 $RemoteClaimDir 2>/dev/null | grep -E '^n[0-9]+-b[0-9]+-(combined|unrestricted)[.]json$' || true" 2>&1
+    $lsExit = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = 'Stop'
+}
+if ($lsExit -ne 0) {
+    Write-Output "[sync] claims SKIPPED: ssh exit $lsExit ($($claimList -join ' '))"
+} else {
+    $claimNames = @($claimList | ForEach-Object { "$_".Trim() } | Where-Object { $_ -match '^n[0-9]+-b[0-9]+-(combined|unrestricted)\.json$' })
+    Write-Output "[sync] claims on the laptop: $($claimNames.Count)"
+    foreach ($name in $claimNames) {
+        $localClaim = Join-Path $claimOut $name
+        $tmpClaim = "$localClaim.incoming"
+        $scpOut = $null
+        try {
+            $ErrorActionPreference = 'Continue'
+            $scpOut = & scp -o BatchMode=yes "${Remote}:$RemoteClaimDir/$name" $tmpClaim 2>&1
+            $scpExit = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = 'Stop'
+        }
+        if ($scpExit -ne 0 -or -not (Test-Path $tmpClaim) -or (Get-Item -LiteralPath $tmpClaim).Length -eq 0) {
+            Write-Output "[sync] claim $name SKIPPED: scp exit $scpExit $($scpOut -join ' ')"
+            if (Test-Path $tmpClaim) { Remove-Item -LiteralPath $tmpClaim -Force }
+            continue
+        }
+        if (Test-Path $localClaim) {
+            $same = (Get-FileHash -LiteralPath $localClaim -Algorithm SHA256).Hash -eq (Get-FileHash -LiteralPath $tmpClaim -Algorithm SHA256).Hash
+            if ($same) {
+                Remove-Item -LiteralPath $tmpClaim -Force
+                continue
+            }
+            Move-Item -LiteralPath $tmpClaim -Destination "$localClaim.laptop-conflict" -Force
+            Write-Output "[sync] claim $name CONFLICT: local file differs from the laptop's; laptop copy kept as $name.laptop-conflict, local untouched"
+            continue
+        }
+        if ($WhatIfOnly) {
+            Write-Output "[sync] claim $name WOULD be installed (WhatIfOnly)"
+            Remove-Item -LiteralPath $tmpClaim -Force
+            continue
+        }
+        Move-Item -LiteralPath $tmpClaim -Destination $localClaim -Force
+        $exact = Select-String -LiteralPath $localClaim -Pattern '"exact_match": (true|false)' | Select-Object -First 1
+        $hits = Select-String -LiteralPath $localClaim -Pattern '"hits": \[\]' | Select-Object -First 1
+        $exactText = if ($exact) { $exact.Matches[0].Value } else { 'exact_match ?' }
+        $hitsText = if ($hits) { 'hits none' } else { 'hits PRESENT or unreadable' }
+        Write-Output "[sync] claim $name installed: $exactText, $hitsText"
+    }
+}
+
 Write-Output "[sync] done $((Get-Date).ToUniversalTime().ToString('o'))"

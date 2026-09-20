@@ -61,8 +61,10 @@ papers/draft/*.pdf
 search/shapecsp/*.pkl
 
 # claim files under papers/verification are tracked; the finalizers' partial
-# outputs are not
+# outputs and the laptop sync's transfer/conflict copies are not
 papers/verification/*.part
+papers/verification/*.incoming
+papers/verification/*.laptop-conflict
 
 # shape/CSP evidence cited by papers/REPORT-shape-csp.md
 !search/shapecsp/control-k2-k5.log
