@@ -2,17 +2,19 @@
 
 Reviewer: Worker 20 (VERIFIER). Date 2026-09-19. Repository root
 `C:\Users\ToolsEnabled-Dev\Desktop\erdos1016`. No existing file under
-`search/shapecsp` was edited; the six probe scripts written for this review are
+`search/shapecsp` was edited; the eight probe scripts written for this review are
 new files under `search/shapecsp/review/`, and their raw output is beside them.
-Nothing was committed.
+
+Addendum 2 (end of file) re-reviews the fixes that landed for findings 1, 2 and
+5 while this review was open, and records what is still outstanding.
 
 Short verdicts:
 
 | question | verdict |
 |---|---|
 | (1) Is `A` a superset of every pancyclic composition? | **YES**, with the premises named. No counterexample found; 29 real pancyclic witnesses and 58,461 exhaustively-found SAT compositions all lie in `A`. |
-| (2) Do the tables and the kernel enumerate exactly `A`? | **YES on everything that can be tested**, but the cross-word half of the coverage predicate is untested — see finding 2. |
-| (3) Is an incomplete or wrongly-planned tier impossible to report as exhausted? | **NO.** Two state files that pass `verify_tier_exhaustion_pairwise.py` with `exact_match: true` and exit 0 while `A` is not covered are in `search/shapecsp/review/vattack/`. |
+| (2) Do the tables and the kernel enumerate exactly `A`? | **YES on everything that can be tested.** The cross-word half of the coverage predicate was untested (finding 2); since fixed and re-verified — addendum 2. |
+| (3) Is an incomplete or wrongly-planned tier impossible to report as exhausted? | **NO at the time of review.** Two state files that pass `verify_tier_exhaustion_pairwise.py` with `exact_match: true` and exit 0 while `A` is not covered are in `search/shapecsp/review/vattack/`. Both now exit 1 against commit 8bf6087 — addendum 2. |
 
 ---
 
@@ -589,10 +591,113 @@ case `stock_reports_sat true` / `mutant_sat_count 0`, verdict
 tier: `.npz` byte-identical, `tables_sha256` identical, totals identical,
 `tier-manifest.json` differs (992 vs 993 bytes).
 
+## Addendum 2, 2026-09-19 evening: re-review of the fixes
+
+Findings 1, 2 and 5 were fixed by others while this review was open. I re-ran
+the attacks against the fixed code rather than take the fix reports on trust.
+All three fixes hold.
+
+### Findings 1 and 5 - fixed, and by default (commit 8bf6087)
+
+`gpu_state_runner_pairwise.main` now resolves `row = by_shape[unit["shape_index"]]`
+and refuses when `current["n"] != args.n`, `current["b"] != row["b"]`, or the
+loaded `chords` or `lows` differ from the gpu-blast row. That closes finding 5
+(`n`/`b` unchecked) as well as D2.
+
+`verify_tier_exhaustion_pairwise.main` gained an **unconditional** per-shape
+header check over every gpu-blast row - it loads each `shape-{idx}.npz` with the
+manifest hash and compares `n`, `b`, `chords`, `lows`, `total_prefixes` and
+`total_compositions` - plus `--rebuild -1` for a full rebuild. Re-running
+`w20_probe_verifier.py` unchanged against it (`w20-vattack2.out`):
+
+| case | before | after |
+|---|---|---|
+| CONTROL (honest manifest and state) | exit 0, `exact_match true` | exit 0, `exact_match true` |
+| D1 understated manifest | exit 0, `exact_match true` | **exit 1**, `"1 shape table files do not describe their gpu-blast shape: ['2083']"` |
+| D2 shape swap | exit 0, `exact_match true` | **exit 1**, same error |
+| D2 with `--rebuild 2` | exit 1 | exit 1, both the header error and the rebuild error |
+
+D1 is now caught without any `--rebuild`, because the header check compares the
+npz's own `total_prefixes` against the manifest's and that is exactly what D1
+falsified. The honest tier still passes, so the new check is not a blanket
+refusal.
+
+### Finding 2 - fixed, and the new gate is a real gate
+
+`gpu_search_pairwise.scan` now takes a `U* cov_out` and, inside the existing
+`if (debug && j < MAXC)` block, stores `cov0` and `cov1` - **the same two locals
+that produced `sat` on the line above**, not a recomputation - so `Engine.run`'s
+debug tuple is now `(rows, flags, cn, coverage)`. The non-debug path is
+untouched: the diff adds nothing outside the `debug` guard.
+
+`test_pairwise_carry.py` finds prefixes whose completion loop carries a form
+length across 63/64 in both directions and compares the coverage words
+bit-exactly rather than the verdict. That is the right shape for this problem:
+all nine of its cases report `sat_in_window 0`, so a verdict-only test would
+have been blind there - which is exactly why the old suite was.
+
+Stock run (`w20-newcarry-stock.out`), **exit code 0**:
+
+```
+9 cases, crossing_prefixes 54, compositions_checked 795,
+stock_all_match true, mutant_differences 516, mutation_detected true
+```
+
+The test builds its own carry-deleted mutant and requires
+`mutant_differences > 0`, which proves it can tell two kernels apart. That does
+not by itself prove it would go red if the **shipped** kernel were the broken
+one. `search/shapecsp/review/w20_probe_newcarry_mutation.py` imports the test
+unmodified, rebinds `gpu_search_pairwise.CUDA` in-process to the carry-deleted
+version and calls `test_pairwise_carry.main()` (`w20-newcarry-mut.out`):
+
+```
+all 9 cases: stock_matches_cpu false, coverage_words_identical false
+summary:     stock_all_match false, mutant_differences 0, mutation_detected false
+test_pairwise_carry return code with broken kernel: 1
+"RED as required: the gate catches a broken shipped carry"
+```
+
+RED with the carry deleted, GREEN with it present. The green mutant recorded in
+finding 2 is closed. My `w20_probe_carry_case.py` fixture is now redundant for
+coverage: the new test reaches the same fault by a better route, because it does
+not depend on finding a pancyclic witness at all.
+
+### No regression from the debug change
+
+`w20_probe_kernel.py` re-run against the new kernel (`w20-kernel2.out`, exit 0)
+reproduces the pre-change numbers exactly at the production levels: `n=68`
+17,004 compositions, `n=69` 16,171, `n=70` 15,980, each with
+`ordered_sequence_identical true`, `counter_matches true`, `flags_identical
+true`, and `per_arc_violations 0`.
+
+### Still open after the fixes
+
+* **`exact_match` does not require `rebuild_covers_every_shape`.** The verifier
+  computes `out["rebuild_covers_every_shape"] = len(picked) == len(mshapes)` and
+  then `out["exact_match"] = (not out["errors"] and not missing and not extra
+  and out["composition_totals_match"])`. A run with the default `--rebuild 0`
+  still prints `exact_match: true` and exits 0, so "the final tier claim uses
+  `--rebuild -1`" is a procedure, not a gate - the same shape of defect as
+  `state_tier_manifest_sha256` in finding 3. This matters most for shapes with
+  `total_prefixes == 0`: the header check binds their tables to their chords,
+  but nothing re-derives that their admissible set really is empty except a
+  rebuild. `--rebuild -1` does cover them, since `picked = sorted(mshapes)`.
+* **`test_pairwise_carry.cpu_coverage` masks lengths to `[3, n]` while the
+  kernel masks only to `[0, 127]`.** They agree, and provably rather than by
+  luck: a cycle in an `n`-vertex graph visits each vertex at most once, so every
+  form length is at most `n`, and a cycle has length at least 3. That also makes
+  the kernel's `if (len < 0 || len > 127) continue` vacuous for every tier here,
+  which upgrades the measured bound of 70 I reported under question (2) to a
+  proof. Worth stating so the mask is not later "fixed" into disagreement.
+* `mutant_differences > 0` is required in aggregate, not per case, so eight of
+  the nine cases could stop separating stock from mutant unnoticed.
+
+Findings 3, 4 and 6 are unchanged and still open.
+
 ## Files added by this review
 
-All under `search/shapecsp/review/` (no file under `search/shapecsp` was
-modified):
+All under `search/shapecsp/review/` (no existing file under `search/shapecsp`
+was edited):
 
 ```
 w20_probe_soundness.py        Q1: monotonicity, downward closure, forward/reverse
@@ -606,6 +711,8 @@ w20_probe_carry2.py           whether any witness's verdict depends on it
 w20_probe_carry_mutation.py   delete both carries in-process and re-run the suite
 w20_probe_carry_case.py       find the dihedral image that DOES depend on it, and
                               separate stock from mutant on it
+w20_probe_newcarry_mutation.py  break the SHIPPED carry and check the new
+                              test_pairwise_carry.py gate goes red (addendum 2)
 w20-*.out / w20-*.err         raw output of every run above
 vattack/, det-a/, det-b/      the synthetic tiers the verifier probes built
 ```
