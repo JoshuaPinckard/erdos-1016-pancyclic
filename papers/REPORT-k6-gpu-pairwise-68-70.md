@@ -81,10 +81,13 @@ Pairwise plan (cutover tiers), claim tool verify_tier_combined.py --rebuild -1:
 | n=68 b=11 | 1257 | 474 | 783 | 3543 of 3543 | 18,790,392,772,211 = counted | 783 | 0 | 0 | True | n68-b11-combined.json |
 | n=68 b=12 | 298 | 0 | 298 | 1738 of 1738 | 8,073,813,826,147 = counted | 298 | 0 | 0 | True | n68-b12-combined.json |
 | n=69 b=11 | 1234 | 73 | 1161 | 5565 of 5565 | 29,700,459,821,233 = counted | 1161 | 0 | 0 | True | n69-b11-combined.json |
+| n=69 b=12 | 296 | 0 | 296 | 1909 of 1909 | 9,083,689,300,924 = counted | 296 | 0 | 0 | True | n69-b12-combined.json |
+| n=70 b=11 | 1138 | 469 | 669 | 3698 of 3698 | 20,260,638,830,081 = counted | 669 | 0 | 0 | True | n70-b11-combined.json |
+| n=70 b=12 | 281 | 0 | 281 | 2011 of 2011 | 9,768,224,097,653 = counted | 281 | 0 | 0 | True | n70-b12-combined.json |
 
 * n = 68: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 11 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 11 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
-* n = 69: INCOMPLETE -- b=12: no claim file
-* n = 70: INCOMPLETE -- b=11: no claim file; b=12: no claim file
+* n = 69: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 11 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 11 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+* n = 70: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 11 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 11 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
 
 ## Provenance
 
@@ -131,6 +134,9 @@ for the claims above. A GPU A/B has not been run (the cards are on production).
 
 ## Status
 
-Levels complete per the verdict lines above. This file is regenerated as the
-remaining claim files land (69/12, 70/11, 70/12); the T ledger (T543, T573)
-carries the checkpoints.
+* n = 68: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 11 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 11 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+* n = 69: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 11 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 11 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+* n = 70: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 11 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 11 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+
+All three levels are complete: every tier of the census manifest at n = 68, 69, 70 is exhausted with zero hits, so h(n) > 6 for n = 68, 69, 70 and t_6 is 67 or lies in 71..88.
+The T ledger (T543, T573) carries the checkpoints.
