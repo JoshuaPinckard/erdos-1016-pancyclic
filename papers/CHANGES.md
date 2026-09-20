@@ -541,3 +541,42 @@ tabs.
 symbolic spectrum of $F_n$ for general $n$ is Builder's certificate, read but
 not re-derived here; and the upper end of the $t_6$ bracket is unchanged at 93,
 since the descent below 93 had not reported when this pass was written.
+
+# 2026-09-19 - levels 68..70 exhausted on the GPU; h(n) <= 6 on 41..67 now Lean-checked (Manager (f4d1e0af))
+
+1. **No 6-chord pancyclic `C_n` + chords exists at n = 68, 69, 70.** Every
+   shape of the k = 6 census at each level, for every b from 6 to 12, is
+   exhausted with zero hits: b <= 10 by the unrestricted GPU plan (15 claim
+   files `papers/verification/n{N}-b{B}-unrestricted.json`, unit sets
+   re-derived from the census manifest, rank totals equal), b = 11, 12 by the
+   pairwise-admissible plan (`search/shapecsp/pairwise/SPEC.md`; 6 claim files
+   `n{N}-b{B}-combined.json` from `verify_tier_combined.py --rebuild -1`, every
+   one of the 3,388 pairwise shapes' tables rebuilt from its census row with
+   matching hashes, counted compositions equal to the manifest totals).
+   Report: `papers/REPORT-k6-gpu-pairwise-68-70.md`. Consequence: h(n) >= 7
+   for n = 68, 69, 70, and with the CPU descent (`REPORT-k6-level89-91-verify.md`,
+   levels 89..111 refuted) the bracket is now **t_6 = 67 or 71 <= t_6 <= 88**.
+   The draft's abstract and Sections 2.1 and 5 still print `67 <= t_6 <= 93`;
+   they are to be updated together once the descent 87..71 (running on both
+   cards under `deploy/laptop/run-chain-laptop-v9.sh` and
+   `search/shapecsp/run-chain-desktop-v12.cmd`) either finds the first witness
+   above 70 or closes the gap, at which point t_6 is known exactly.
+2. **The upper half of `h(n) = 6` on 41..67 is now kernel-checked in Lean.**
+   `Erdos1016/Family.lean` proves `family_pancyclic_41_67 : âˆ€ n, 41 â‰¤ n â†’ n â‰¤ 67
+   â†’ PancyclicWithChords n 6` from 27 certificates `Erdos1016/Family/W41.lean`
+   .. `W67.lean` (the family `(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)`, one
+   explicit vertex list per cycle length, all facts re-derived by `decide`);
+   `lake build` clean, `#print axioms` gives `[propext, Classical.choice,
+   Quot.sound]` for every theorem in `Axioms.lean` (35 lines). Generator:
+   `search/k6/gen_family_lean.py`. Before tonight only n = 41 (a different
+   chord set) and n = 56 were Lean-checked among the k = 6 witnesses; the draft's
+   sentence "each reconfirmed by three from-scratch verifiers and by a
+   kernel-checked Lean 4 proof" is now true of the whole family, not only of
+   the n <= 41 witnesses.
+3. **Still computation, not Lean:** h(n) >= 6 for n >= 41, t_6 <= 88, and item 1.
+   The independent review of the pairwise plan (`papers/REPORT-review-pairwise.md`,
+   addenda 1-5: soundness of A proved and measured, tables and kernel exact,
+   forged-tier attacks D1-D4 rejected by the frozen claim tool) and the
+   level-67 blind positive control (running; b = 12 passed) are the evidence
+   standard for those.
+
