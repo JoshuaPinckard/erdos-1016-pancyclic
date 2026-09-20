@@ -1,0 +1,112 @@
+{
+ "b": 7,
+ "build_wall_seconds": 0.2,
+ "excluded": [],
+ "format": "pairwise-tables-v1",
+ "n": 71,
+ "partial": false,
+ "shapes": {
+  "1946": {
+   "build_seconds": 0.101,
+   "empty": false,
+   "nstates": [
+    1,
+    2,
+    2,
+    2,
+    2,
+    7
+   ],
+   "tables_sha256": "d98e0a39c51366f5d651e61838d36ae8c2e46e6e6b98eafb1cc2aaf954494855",
+   "total_compositions": 60153608,
+   "total_prefixes": 5210727,
+   "unrestricted_total": 90858768
+  },
+  "1976": {
+   "build_seconds": 0.075,
+   "empty": false,
+   "nstates": [
+    1,
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "tables_sha256": "38a2e5f64bc643d674def0679c96f666911da87dd4975f9a5235bd43688cfab4",
+   "total_compositions": 7423842,
+   "total_prefixes": 3917326,
+   "unrestricted_total": 74974368
+  },
+  "2091": {
+   "build_seconds": 0.078,
+   "empty": false,
+   "nstates": [
+    1,
+    5,
+    7,
+    11,
+    18,
+    18
+   ],
+   "tables_sha256": "c6237295a62a95bf9bfedbad8a5a51992ab09ed83e5a92c7adecfc85f06f8137",
+   "total_compositions": 13009361,
+   "total_prefixes": 1526178,
+   "unrestricted_total": 131115985
+  },
+  "2103": {
+   "build_seconds": 0.077,
+   "empty": false,
+   "nstates": [
+    1,
+    5,
+    7,
+    12,
+    9,
+    18
+   ],
+   "tables_sha256": "6320a572df8c9c2bfe6a6afab2eb69c6a226ddc58b67a3d9f5c5cf246c0cafc3",
+   "total_compositions": 11152072,
+   "total_prefixes": 962946,
+   "unrestricted_total": 131115985
+  },
+  "2104": {
+   "build_seconds": 0.05,
+   "empty": false,
+   "nstates": [
+    1,
+    3,
+    3,
+    7,
+    12,
+    10
+   ],
+   "tables_sha256": "0a35eb153325a0bca045cc2758220a132cfe3cacf08b691eaf5bab96e5b2c1e3",
+   "total_compositions": 515145,
+   "total_prefixes": 67001,
+   "unrestricted_total": 131115985
+  },
+  "2106": {
+   "build_seconds": 0.067,
+   "empty": false,
+   "nstates": [
+    1,
+    4,
+    5,
+    9,
+    10,
+    8
+   ],
+   "tables_sha256": "0b81cd972b0f44851634b85f256502916813d835e59fe1f2ac1af9a7738b0073",
+   "total_compositions": 17728715,
+   "total_prefixes": 1665425,
+   "unrestricted_total": 131115985
+  }
+ },
+ "shapes_count": 6,
+ "source_sha256": "a0d6ef2e1945f8b4e7125adab28144b471b91fff46f0865d27174290c12f2f88",
+ "tier_total_compositions": 109982743,
+ "tier_total_prefixes": 13349603,
+ "tier_unrestricted_ranks": 690297076,
+ "unit_prefix": 1073741824
+}

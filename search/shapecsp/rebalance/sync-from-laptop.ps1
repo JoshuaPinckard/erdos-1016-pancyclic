@@ -175,9 +175,22 @@ foreach ($tier in $PairwiseTiers) {
     }
     Move-Item -LiteralPath $tmpPath -Destination $localPath -Force
     Write-Output "[sync] pairwise n=$n b=$b installed $incoming units; verifying against this repo's tier manifest"
-    & $python $pverify $blast $localPath --n $n --b $b --tables (Join-Path $pairwiseDir 'tables') 2>&1 |
+    # The verifier prints a CuPy warning on stderr and exits 1 for a tier that is
+    # simply not finished yet; under $ErrorActionPreference='Stop' either one
+    # would abort the whole sync (it did, 2026-09-19 17:58), so run it with
+    # Continue and report what it printed.
+    $vOut = $null
+    try {
+        $ErrorActionPreference = 'Continue'
+        $vOut = & $python $pverify $blast $localPath --n $n --b $b --tables (Join-Path $pairwiseDir 'tables') 2>&1
+        $vExit = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = 'Stop'
+    }
+    $vOut | ForEach-Object { "$_" } |
         Select-String -Pattern '"expected_unit_count"|"covered_unit_count"|"missing_unit_count"|"extra_unit_count"|"composition_totals_match"|"exact_match"|"errors"' |
-        ForEach-Object { Write-Output "        $_" }
+        ForEach-Object { Write-Output "        $($_.Line.Trim())" }
+    Write-Output "        verifier exit $vExit (1 is expected while the tier is still running)"
 }
 
 Write-Output "[sync] done $((Get-Date).ToUniversalTime().ToString('o'))"
