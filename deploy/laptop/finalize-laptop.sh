@@ -12,7 +12,15 @@ R="$HOME/erdos-n70"; BASE="$R/search/shapecsp"; PW="$BASE/pairwise"; PROD="$BASE
 PY="$HOME/erdos-gpu-n70-builder-t92/venv/bin/python"
 OUT="$R/verification"; mkdir -p "$OUT"
 POLL=${POLL:-600}
-TIERS=${TIERS:-"71:12 71:11 71:10 71:9 71:8 71:7 71:6"}
+TIERS=${TIERS:-"71:12 71:11 71:10 71:9 71:8 71:7 71:6 \
+87:12 87:11 87:10 \
+85:12 85:11 85:10 \
+83:12 83:11 83:10 83:9 \
+81:12 81:11 81:10 81:9 \
+79:12 79:11 79:10 79:9 \
+77:12 77:11 77:10 77:9 77:8 \
+75:12 75:11 75:10 75:9 75:8 \
+73:12 73:11 73:10 73:9 73:8 73:7"}
 say() { echo "[finalize-laptop] $(date '+%F %T') $*"; }
 say "start tiers=$TIERS poll=${POLL}s prod=$PROD pid=$$"
 while true; do

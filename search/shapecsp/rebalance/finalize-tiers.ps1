@@ -33,7 +33,15 @@ param(
     [string[]]$Tiers = @('69:11', '68:12', '69:12', '68:11', '70:11', '70:12',
                          '67:12:control', '67:11:control', '67:10:control', '67:9:control',
                          '67:8:control', '67:7:control', '67:6:control',
-                         '89:12:ext', '89:11:ext', '89:10:ext', '88:12:ext', '88:11:ext', '88:10:ext')
+                         '89:12:ext', '89:11:ext', '89:10:ext', '88:12:ext', '88:11:ext', '88:10:ext',
+                         '86:12:ext', '86:11:ext', '86:10:ext',
+                         '84:12:ext', '84:11:ext', '84:10:ext', '84:9:ext',
+                         '82:12:ext', '82:11:ext', '82:10:ext', '82:9:ext',
+                         '80:12:ext', '80:11:ext', '80:10:ext', '80:9:ext',
+                         '78:12:ext', '78:11:ext', '78:10:ext', '78:9:ext',
+                         '76:12:ext', '76:11:ext', '76:10:ext', '76:9:ext', '76:8:ext',
+                         '74:12:ext', '74:11:ext', '74:10:ext', '74:9:ext', '74:8:ext',
+                         '72:12:ext', '72:11:ext', '72:10:ext', '72:9:ext', '72:8:ext', '72:7:ext', '72:6:ext')
 )
 $ErrorActionPreference = 'Continue'
 $SC = Split-Path -Parent $PSScriptRoot
