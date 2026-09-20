@@ -12,3 +12,13 @@ _test-*.out
 _test-*.err
 perf-*.json
 __pycache__/
+_smoke*
+tables-ext/*/shape-*.npz
+tables-ext/*/tier-build.json
+control-state-*.json*
+repoint-*.log
+resize-*.log
+cutover-*.log
+build-*.log
+build-*.err
+shapes-k6-forms.pkl

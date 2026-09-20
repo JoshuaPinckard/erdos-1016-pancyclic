@@ -483,8 +483,8 @@ def _build_one(args):
                                     total_prefixes=tab["total_prefixes"],
                                     total_compositions=tab["total_compositions"],
                                     unrestricted_total=int(row["total"]),
-                                    nstates=tab["nstates"], build_seconds=tab["build_seconds"],
-                                    empty=tab["empty"])
+                                    nstates=tab["nstates"],
+                                    empty=tab["empty"]), tab["build_seconds"]
 
 
 def build_tier(source, n, b, out_dir, workers=1, affinity=None, shapes=None, save_arrays=True):
@@ -498,29 +498,38 @@ def build_tier(source, n, b, out_dir, workers=1, affinity=None, shapes=None, sav
     out.mkdir(parents=True, exist_ok=True)
     jobs = [(n, r, str(out) if save_arrays else None, affinity) for r in rows]
     t0 = time.perf_counter()
-    results = {}
+    results, timings = {}, {}
     if workers > 1:
         with ProcessPoolExecutor(max_workers=workers) as ex:
-            for idx, meta in ex.map(_build_one, jobs, chunksize=1):
+            for idx, meta, secs in ex.map(_build_one, jobs, chunksize=1):
                 results[idx] = meta
-                print(json.dumps({"shape_index": idx, **{k: meta[k] for k in ("total_prefixes", "total_compositions", "build_seconds")}}), flush=True)
+                timings[idx] = secs
+                print(json.dumps({"shape_index": idx, **{k: meta[k] for k in ("total_prefixes", "total_compositions")}, "build_seconds": secs}), flush=True)
     else:
         _pin(affinity)
         for job in jobs:
-            idx, meta = _build_one(job)
+            idx, meta, secs = _build_one(job)
             results[idx] = meta
-            print(json.dumps({"shape_index": idx, **{k: meta[k] for k in ("total_prefixes", "total_compositions", "build_seconds")}}), flush=True)
+            timings[idx] = secs
+            print(json.dumps({"shape_index": idx, **{k: meta[k] for k in ("total_prefixes", "total_compositions")}, "build_seconds": secs}), flush=True)
+    # The manifest carries no wall-clock field, so two builds of the same tier
+    # are byte-identical and its file hash is a real binding (review finding 3).
+    # Timings go to a sidecar.
     manifest = dict(format=FORMAT, n=n, b=b, source_sha256=source_sha256, unit_prefix=UNIT_PREFIX,
                     shapes={str(k): results[k] for k in sorted(results)},
                     tier_total_prefixes=sum(m["total_prefixes"] for m in results.values()),
                     tier_total_compositions=sum(m["total_compositions"] for m in results.values()),
                     tier_unrestricted_ranks=sum(m["unrestricted_total"] for m in results.values()),
                     excluded=[k for k in sorted(results) if results[k]["total_compositions"] == 0],
-                    shapes_count=len(results), partial=shapes is not None,
-                    build_wall_seconds=round(time.perf_counter() - t0, 1))
+                    shapes_count=len(results), partial=shapes is not None)
     with (out / "tier-manifest.json").open("w", encoding="utf-8", newline="\n") as f:
         json.dump(manifest, f, indent=1, sort_keys=True)
         f.write("\n")
+    with (out / "tier-build.json").open("w", encoding="utf-8", newline="\n") as f:
+        json.dump(dict(n=n, b=b, build_wall_seconds=round(time.perf_counter() - t0, 1), workers=workers,
+                       build_seconds={str(k): timings[k] for k in sorted(timings)}), f, indent=1, sort_keys=True)
+        f.write("\n")
+    manifest["build_wall_seconds"] = round(time.perf_counter() - t0, 1)   # returned, not written
     return manifest
 
 

@@ -109,7 +109,10 @@ def run_case(label, n, chords, tab, unrestricted_size):
                ranks_round_tripped=rank_ok, rank_round_trip_ok=rank_ok == tab["total_prefixes"],
                pair_count_dp=indep, counts_agree=(indep == tab["total_compositions"] == len(ref)),
                nstates=tab["nstates"], prune=round(unrestricted_size / max(1, tab["total_compositions"]), 3))
-    if unrestricted_size <= LIMIT_U:
+    # SOUND is mandatory: a case too large for it is a failure, not a skip
+    # (review finding 4: a missing key used to score green by default).
+    rec["sound_evaluated"] = unrestricted_size <= LIMIT_U
+    if rec["sound_evaluated"]:
         allc = enumerate_unrestricted(n, tab["lows"])
         sats = [a for a in allc if PT.sat(n, [tuple(f) for f in tab["forms"]], a)]
         lost = [a for a in sats if not PT.admitted(tab, a)]
@@ -132,7 +135,7 @@ if __name__ == "__main__":
     recs = [run_case(*c) for c in cases]
     fails = [r for r in recs if not (r["ordered_sequence_identical"] and r["duplicates"] == 0
                                      and r["missing"] == 0 and r["extra"] == 0 and r["rank_round_trip_ok"]
-                                     and r["counts_agree"] and r.get("sat_lost_by_A", 0) == 0
+                                     and r["counts_agree"] and r["sound_evaluated"] and r["sat_lost_by_A"] == 0
                                      and r["io_round_trip_hash"] and r["io_round_trip_arrays"])]
     print(json.dumps({"cases": len(recs),
                       "compositions_compared_against_reference": sum(r["sequence_size"] for r in recs),

@@ -35,7 +35,7 @@ Const MAX_LOG_BYTES = 67108864   ' 64 MiB; one .1 generation kept => 128 MiB cei
 
 Dim fso: Set fso = CreateObject("Scripting.FileSystemObject")
 Dim here: here = fso.GetParentFolderName(WScript.ScriptFullName)
-Dim chain: chain = fso.BuildPath(here, "run-chain-desktop-v7.cmd")
+Dim chain: chain = fso.BuildPath(here, "run-chain-desktop-v8.cmd")
 Dim launcher: launcher = fso.BuildPath(here, "run-chain-desktop-logged.cmd")
 Dim logPath: logPath = fso.BuildPath(here, "chain-desktop.log")
 Dim oldPath: oldPath = logPath & ".1"

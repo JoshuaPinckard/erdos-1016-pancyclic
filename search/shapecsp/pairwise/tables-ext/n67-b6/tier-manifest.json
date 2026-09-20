@@ -1,0 +1,31 @@
+{
+ "b": 6,
+ "build_wall_seconds": 0.1,
+ "excluded": [],
+ "format": "pairwise-tables-v1",
+ "n": 67,
+ "partial": false,
+ "shapes": {
+  "361": {
+   "build_seconds": 0.094,
+   "empty": false,
+   "nstates": [
+    1,
+    4,
+    4,
+    4,
+    4
+   ],
+   "tables_sha256": "1cdb455c7318a83622d2ec15908e64163334ffcff0c96b21838900a7913e5752",
+   "total_compositions": 3336492,
+   "total_prefixes": 272733,
+   "unrestricted_total": 5461512
+  }
+ },
+ "shapes_count": 1,
+ "source_sha256": "06589626c6bb28426c7bbfca5bc84681aac66a41592d9274357298d2251a9870",
+ "tier_total_compositions": 3336492,
+ "tier_total_prefixes": 272733,
+ "tier_unrestricted_ranks": 5461512,
+ "unit_prefix": 1073741824
+}

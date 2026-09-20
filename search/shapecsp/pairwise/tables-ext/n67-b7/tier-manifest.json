@@ -1,0 +1,416 @@
+{
+ "b": 7,
+ "build_wall_seconds": 0.7,
+ "excluded": [],
+ "format": "pairwise-tables-v1",
+ "n": 67,
+ "partial": false,
+ "shapes": {
+  "1893": {
+   "build_seconds": 0.128,
+   "empty": false,
+   "nstates": [
+    1,
+    4,
+    4,
+    3,
+    12,
+    13
+   ],
+   "tables_sha256": "203c78b0efc6ba969a7e232172bd86a408e774918581a7b7b99868bf68e6082b",
+   "total_compositions": 22129745,
+   "total_prefixes": 2128977,
+   "unrestricted_total": 67945521
+  },
+  "1946": {
+   "build_seconds": 0.136,
+   "empty": false,
+   "nstates": [
+    1,
+    4,
+    4,
+    4,
+    4,
+    12
+   ],
+   "tables_sha256": "a58df163b605898b7a5926d19365fbdacdfe9cb21b6db16ec2d59d64c87f6084",
+   "total_compositions": 46170696,
+   "total_prefixes": 4200585,
+   "unrestricted_total": 61474519
+  },
+  "1947": {
+   "build_seconds": 0.14,
+   "empty": false,
+   "nstates": [
+    1,
+    4,
+    4,
+    3,
+    16,
+    20
+   ],
+   "tables_sha256": "9fa0936065d8e57265f0fbb3906d32cd5153952a40bafd57755340ce44eeea73",
+   "total_compositions": 29153270,
+   "total_prefixes": 3161702,
+   "unrestricted_total": 67945521
+  },
+  "1976": {
+   "build_seconds": 0.134,
+   "empty": false,
+   "nstates": [
+    1,
+    6,
+    6,
+    6,
+    6,
+    6
+   ],
+   "tables_sha256": "c7ef84f910c0edd36ebae3093acfce557828a7717a2a1f42f5dcd25d1771a06f",
+   "total_compositions": 6265792,
+   "total_prefixes": 3302651,
+   "unrestricted_total": 50063860
+  },
+  "2079": {
+   "build_seconds": 0.111,
+   "empty": false,
+   "nstates": [
+    1,
+    5,
+    11,
+    12,
+    12,
+    15
+   ],
+   "tables_sha256": "0969cd4035615230de74c278ecf1bda8f29296c1505da48e4e783806d39d81a2",
+   "total_compositions": 6906247,
+   "total_prefixes": 653796,
+   "unrestricted_total": 90858768
+  },
+  "2080": {
+   "build_seconds": 0.114,
+   "empty": false,
+   "nstates": [
+    1,
+    5,
+    12,
+    16,
+    16,
+    18
+   ],
+   "tables_sha256": "b54c840bee39dfa531ef7523157644e577ccfe174fb1a2207d0b7a847eb38e6f",
+   "total_compositions": 6302820,
+   "total_prefixes": 591315,
+   "unrestricted_total": 90858768
+  },
+  "2081": {
+   "build_seconds": 0.082,
+   "empty": false,
+   "nstates": [
+    1,
+    7,
+    9,
+    10,
+    18,
+    25
+   ],
+   "tables_sha256": "a6243b1428ca5bc23f568a420d92bb01ab64b419e37a5af52a07096ddc537222",
+   "total_compositions": 6677766,
+   "total_prefixes": 977100,
+   "unrestricted_total": 90858768
+  },
+  "2082": {
+   "build_seconds": 0.073,
+   "empty": false,
+   "nstates": [
+    1,
+    5,
+    7,
+    11,
+    9,
+    13
+   ],
+   "tables_sha256": "2c6fea535af1bbc5e7c37df1b3cab63221b4af2d5a02721bb0ba11d2b9c7d394",
+   "total_compositions": 10530795,
+   "total_prefixes": 982950,
+   "unrestricted_total": 90858768
+  },
+  "2083": {
+   "build_seconds": 0.072,
+   "empty": false,
+   "nstates": [
+    1,
+    4,
+    6,
+    9,
+    16,
+    7
+   ],
+   "tables_sha256": "463f3b560607cfb585224d9a59299e98a7aed675580dd8598e1c52e17ad88dd9",
+   "total_compositions": 13010248,
+   "total_prefixes": 1352861,
+   "unrestricted_total": 90858768
+  },
+  "2084": {
+   "build_seconds": 0.076,
+   "empty": false,
+   "nstates": [
+    1,
+    6,
+    10,
+    26,
+    18,
+    15
+   ],
+   "tables_sha256": "78acb78e2b3cc0f2203fbb7bd30a4da5f8829afc3df678b36718f0fb67a4aaa5",
+   "total_compositions": 9147587,
+   "total_prefixes": 1068578,
+   "unrestricted_total": 90858768
+  },
+  "2085": {
+   "build_seconds": 0.13,
+   "empty": false,
+   "nstates": [
+    1,
+    6,
+    9,
+    9,
+    10,
+    7
+   ],
+   "tables_sha256": "8c0231583dda3e95da32f9b951a9a0b3ff27860d49a402a2a5f3a55795134b33",
+   "total_compositions": 11307778,
+   "total_prefixes": 1156407,
+   "unrestricted_total": 90858768
+  },
+  "2087": {
+   "build_seconds": 0.115,
+   "empty": false,
+   "nstates": [
+    1,
+    7,
+    18,
+    16,
+    13,
+    16
+   ],
+   "tables_sha256": "1440c0f12958b7aebfbd226ac74bde7b455785cffeb5f98b125eececd3a63707",
+   "total_compositions": 6346023,
+   "total_prefixes": 686343,
+   "unrestricted_total": 90858768
+  },
+  "2089": {
+   "build_seconds": 0.068,
+   "empty": false,
+   "nstates": [
+    1,
+    6,
+    10,
+    18,
+    18,
+    20
+   ],
+   "tables_sha256": "7455df35ee1e68468e09efa56644b67a6b233684755e00a6e3df3ecc0eb38045",
+   "total_compositions": 8513549,
+   "total_prefixes": 804759,
+   "unrestricted_total": 90858768
+  },
+  "2091": {
+   "build_seconds": 0.086,
+   "empty": false,
+   "nstates": [
+    1,
+    5,
+    7,
+    11,
+    18,
+    18
+   ],
+   "tables_sha256": "5458f19a924aeb583f629e959978ce28640e63cb0c7fceeda9b200a03105cef1",
+   "total_compositions": 15653528,
+   "total_prefixes": 1730596,
+   "unrestricted_total": 90858768
+  },
+  "2092": {
+   "build_seconds": 0.07,
+   "empty": false,
+   "nstates": [
+    1,
+    4,
+    7,
+    17,
+    18,
+    14
+   ],
+   "tables_sha256": "f987a7110cbcf49af4afbcd6d933c67fd8de18c57f92fb0c493ca9897c5ec125",
+   "total_compositions": 9355736,
+   "total_prefixes": 1180385,
+   "unrestricted_total": 90858768
+  },
+  "2094": {
+   "build_seconds": 0.106,
+   "empty": false,
+   "nstates": [
+    1,
+    4,
+    10,
+    12,
+    13,
+    8
+   ],
+   "tables_sha256": "07ce96ab20f73b3c4699e21a5c3b60fd4613a5333f6dc39f4dbe60500fa1b5a0",
+   "total_compositions": 8159491,
+   "total_prefixes": 958087,
+   "unrestricted_total": 90858768
+  },
+  "2095": {
+   "build_seconds": 0.105,
+   "empty": false,
+   "nstates": [
+    1,
+    5,
+    10,
+    11,
+    21,
+    14
+   ],
+   "tables_sha256": "519ae71a1a5761b4882e661d03624c590acc5bba82bc44e2557f1098730b331e",
+   "total_compositions": 5906747,
+   "total_prefixes": 770417,
+   "unrestricted_total": 90858768
+  },
+  "2097": {
+   "build_seconds": 0.069,
+   "empty": false,
+   "nstates": [
+    1,
+    5,
+    9,
+    21,
+    27,
+    21
+   ],
+   "tables_sha256": "6dd328997d2b89def6bb16d14b16dbaaa31ccfffbfbdda5b9013da81bbe5bb9a",
+   "total_compositions": 8906505,
+   "total_prefixes": 1124201,
+   "unrestricted_total": 90858768
+  },
+  "2099": {
+   "build_seconds": 0.065,
+   "empty": false,
+   "nstates": [
+    1,
+    5,
+    13,
+    24,
+    23,
+    15
+   ],
+   "tables_sha256": "3cc72c5828bc1985ef593a8ec577cb2204eb86e1904b0d713457106829e15031",
+   "total_compositions": 6638043,
+   "total_prefixes": 784896,
+   "unrestricted_total": 90858768
+  },
+  "2100": {
+   "build_seconds": 0.065,
+   "empty": false,
+   "nstates": [
+    1,
+    4,
+    12,
+    21,
+    16,
+    12
+   ],
+   "tables_sha256": "56147557920176f31c49953592a4ea895f1d91689308f173d60e1e69628a456d",
+   "total_compositions": 8852071,
+   "total_prefixes": 1105568,
+   "unrestricted_total": 90858768
+  },
+  "2103": {
+   "build_seconds": 0.142,
+   "empty": false,
+   "nstates": [
+    1,
+    5,
+    7,
+    12,
+    9,
+    18
+   ],
+   "tables_sha256": "1cbd6ceb326945146ba7641141946bf8b46ce8f83d95b2ff15006a2c658b2a07",
+   "total_compositions": 13731587,
+   "total_prefixes": 1151749,
+   "unrestricted_total": 90858768
+  },
+  "2104": {
+   "build_seconds": 0.101,
+   "empty": false,
+   "nstates": [
+    1,
+    3,
+    3,
+    7,
+    12,
+    10
+   ],
+   "tables_sha256": "a1980f4bbab8438db9d3a2c1f1fc6a3a3e50fa375a7a423d1fda2431f2f42fa8",
+   "total_compositions": 819942,
+   "total_prefixes": 94430,
+   "unrestricted_total": 90858768
+  },
+  "2105": {
+   "build_seconds": 0.077,
+   "empty": false,
+   "nstates": [
+    1,
+    6,
+    10,
+    22,
+    22,
+    25
+   ],
+   "tables_sha256": "91d9a33e4bc96bf6266b6831c467bac56c3b561052642acc69c31ceea6c13180",
+   "total_compositions": 7673289,
+   "total_prefixes": 769330,
+   "unrestricted_total": 90858768
+  },
+  "2106": {
+   "build_seconds": 0.086,
+   "empty": false,
+   "nstates": [
+    1,
+    4,
+    5,
+    9,
+    10,
+    8
+   ],
+   "tables_sha256": "ab4c14583fc225074c2af564a4774fe5d30a831eacdf53e87b1cf32229c54004",
+   "total_compositions": 20318695,
+   "total_prefixes": 1865737,
+   "unrestricted_total": 90858768
+  },
+  "2108": {
+   "build_seconds": 0.113,
+   "empty": false,
+   "nstates": [
+    1,
+    5,
+    7,
+    25,
+    11,
+    8
+   ],
+   "tables_sha256": "b2a2eb1d055204a0a7a102d4ae40dda0c7959f6e69fb5bfc631d16c37c188ba8",
+   "total_compositions": 14810165,
+   "total_prefixes": 1605994,
+   "unrestricted_total": 90858768
+  }
+ },
+ "shapes_count": 25,
+ "source_sha256": "06589626c6bb28426c7bbfca5bc84681aac66a41592d9274357298d2251a9870",
+ "tier_total_compositions": 303288115,
+ "tier_total_prefixes": 34209414,
+ "tier_unrestricted_ranks": 2155463549,
+ "unit_prefix": 1073741824
+}

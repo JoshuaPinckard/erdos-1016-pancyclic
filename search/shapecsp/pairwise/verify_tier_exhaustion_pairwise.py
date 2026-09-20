@@ -75,6 +75,9 @@ def main():
     unit = int(manifest["unit_prefix"])
     if state.get("unit_prefix") != unit:
         out["errors"].append(f"state unit_prefix {state.get('unit_prefix')} != manifest unit_prefix {unit}")
+    mfile_sha = hashlib.sha256(mpath.read_bytes()).hexdigest()
+    if state.get("tier_manifest_sha256") != mfile_sha:
+        out["errors"].append("state tier_manifest_sha256 != hash of the tier manifest on disk (review finding 3)")
     expected = {}
     for idx, meta in mshapes.items():
         total = int(meta["total_prefixes"])

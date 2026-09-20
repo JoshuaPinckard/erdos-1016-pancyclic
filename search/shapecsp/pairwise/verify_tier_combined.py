@@ -95,6 +95,16 @@ def main():
             errors.append(f"unrestricted total mismatch in manifest for shape {idx}")
     if ps.get("unit_prefix") != int(manifest["unit_prefix"]):
         errors.append("pairwise state unit_prefix != manifest unit_prefix")
+    # The state recorded the hash of the manifest file it planned from; the
+    # file on disk must still be that file (review finding 3: reported but
+    # never compared).
+    mfile_sha = hashlib.sha256(mpath.read_bytes()).hexdigest()
+    if ps.get("tier_manifest_sha256") != mfile_sha:
+        errors.append("pairwise state tier_manifest_sha256 != hash of the tier manifest on disk")
+    # This is the CLAIM tool: it accepts nothing less than a full rebuild of
+    # every pairwise shape's tables from the gpu-blast row (review finding 1).
+    if args.rebuild != -1:
+        errors.append("the combined claim requires --rebuild -1 (every pairwise shape rebuilt from source)")
     units = R.build_units(manifest, only_set)
     digest = R.plan_hash(args.n, args.b, manifest, source_sha256, units, sorted(only_set) if only is not None else None)
     if ps.get("plan_sha256") != digest:
