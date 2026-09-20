@@ -81,7 +81,12 @@ def run_prefixes(engine, tab, ranks):
 
 
 def cpu_coverage(n, forms, a):
-    """The two 64-bit coverage words the kernel should produce for composition a."""
+    """The two 64-bit coverage words the kernel should produce for composition a.
+
+    This masks to [3, n] while the kernel only drops lengths outside [0, 127];
+    they agree by proof, not by luck: a cycle of an n-vertex graph visits each
+    vertex at most once, so every form length is <= n, and a cycle has at
+    least 3 edges.  Do not "fix" either side into disagreement."""
     c0 = c1 = 0
     for mask, ch in forms:
         ln = ch + sum(a[j] for j in range(len(a)) if mask >> j & 1)
@@ -180,14 +185,16 @@ def main():
             if picked >= 3:
                 break
     witness = carry_witness_case(stock, mutant)
+    # every case must separate the mutant on its own, not only the aggregate
+    cases_not_separating = [c["shape_index"] for c in cases if c["mutant_differences"] == 0]
     summary = dict(cases=len(cases), crossing_prefixes=total_prefixes, compositions_checked=total_rows,
                    stock_all_match=stock_ok, mutant_differences=mutant_diffs,
-                   mutation_detected=mutant_diffs > 0,
+                   mutation_detected=mutant_diffs > 0, cases_not_separating_mutant=cases_not_separating,
                    carry_witness_sat_on_stock_and_not_on_mutant=witness["passes"],
-                   note="coverage words compared bit-exactly against the CPU; the carry mutant must differ, "
-                        "and the carry-critical witness must flip its verdict")
+                   note="coverage words compared bit-exactly against the CPU; every case must differ on the "
+                        "carry mutant, and the carry-critical witness must flip its verdict")
     print(json.dumps(summary), flush=True)
-    return 0 if stock_ok and mutant_diffs > 0 and cases and witness["passes"] else 1
+    return 0 if stock_ok and mutant_diffs > 0 and cases and not cases_not_separating and witness["passes"] else 1
 
 
 if __name__ == "__main__":

@@ -172,7 +172,14 @@ def main():
         "rebuilt_shapes": rebuilt,
         "missing_sample": missing[:5], "extra_sample": extra[:5],
     })
+    # exact_match is manifest-consistency (what the hourly monitor needs); a
+    # CLAIM requires every shape rebuilt from source (--rebuild -1), which is
+    # reported separately and enforced by verify_tier_combined.py.
     out["exact_match"] = (not out["errors"] and not missing and not extra and out["composition_totals_match"])
+    out["exact_match_full_rebuild"] = bool(out["exact_match"] and out.get("rebuild_covers_every_shape")
+                                           and out.get("rebuilt_mismatches") == 0)
+    out["claim_grade"] = "source-rebuilt-every-shape" if out["exact_match_full_rebuild"] else \
+        ("manifest-consistent-only" if out["exact_match"] else "not-exhausted")
     print(json.dumps(out, indent=1))
     return 0 if out["exact_match"] else 1
 
