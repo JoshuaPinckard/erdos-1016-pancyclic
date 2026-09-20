@@ -53,7 +53,16 @@ param(
     # Level 71 (whole-tier pairwise states, tables under pairwise/tables-ext,
     # census under pairwise/gpu-blast-ext) is pulled for safekeeping; its claim
     # is finalized on the laptop, which holds the table files.
-    [string[]]$PairwiseTiers = @('68:11', '70:11', '70:12', '71:12', '71:11', '71:10', '71:9', '71:8', '71:7', '71:6'),
+    # The odd levels 87..73 (laptop chain v9, 2026-09-19 22:00) are listed the
+    # same way: their states are pulled as a second copy; the desktop has no
+    # tables for them, so they are not verified here (see the manifest check
+    # below), and their claims come from the laptop finalizer.
+    [string[]]$PairwiseTiers = @('68:11', '70:11', '70:12', '71:12', '71:11', '71:10', '71:9', '71:8', '71:7', '71:6',
+                                 '87:12', '87:11', '87:10', '85:12', '85:11', '85:10',
+                                 '83:12', '83:11', '83:10', '83:9', '81:12', '81:11', '81:10', '81:9',
+                                 '79:12', '79:11', '79:10', '79:9', '77:12', '77:11', '77:10', '77:9', '77:8',
+                                 '75:12', '75:11', '75:10', '75:9', '75:8',
+                                 '73:12', '73:11', '73:10', '73:9', '73:8', '73:7'),
     [string]$RemotePairwiseDir = '~/erdos-n70/search/shapecsp/pairwise',
     [switch]$WhatIfOnly
 )
@@ -179,6 +188,18 @@ foreach ($tier in $PairwiseTiers) {
         continue
     }
     Move-Item -LiteralPath $tmpPath -Destination $localPath -Force
+    $psrc = $blast
+    $ptab = Join-Path $pairwiseDir 'tables'
+    if (-not (Test-Path (Join-Path $blast "n$n.jsonl"))) {
+        $psrc = Join-Path $pairwiseDir 'gpu-blast-ext'
+        $ptab = Join-Path $pairwiseDir 'tables-ext'
+    }
+    if (-not (Test-Path (Join-Path $ptab "n$n-b$b\tier-manifest.json"))) {
+        # The odd levels 87..73 are computed and claimed on the laptop and their
+        # tables were never built here; the state is kept as a second copy only.
+        Write-Output "[sync] pairwise n=$n b=$b installed $incoming units; no tier manifest for it under $ptab, kept as a backup copy only"
+        continue
+    }
     Write-Output "[sync] pairwise n=$n b=$b installed $incoming units; verifying against this repo's tier manifest"
     # The verifier prints a CuPy warning on stderr and exits 1 for a tier that is
     # simply not finished yet; under $ErrorActionPreference='Stop' either one
@@ -187,12 +208,6 @@ foreach ($tier in $PairwiseTiers) {
     $vOut = $null
     try {
         $ErrorActionPreference = 'Continue'
-        $psrc = $blast
-        $ptab = Join-Path $pairwiseDir 'tables'
-        if (-not (Test-Path (Join-Path $blast "n$n.jsonl"))) {
-            $psrc = Join-Path $pairwiseDir 'gpu-blast-ext'
-            $ptab = Join-Path $pairwiseDir 'tables-ext'
-        }
         $vOut = & $python $pverify $psrc $localPath --n $n --b $b --tables $ptab 2>&1
         $vExit = $LASTEXITCODE
     } finally {
@@ -202,6 +217,31 @@ foreach ($tier in $PairwiseTiers) {
         Select-String -Pattern '"expected_unit_count"|"covered_unit_count"|"missing_unit_count"|"extra_unit_count"|"composition_totals_match"|"exact_match"|"errors"' |
         ForEach-Object { Write-Output "        $($_.Line.Trim())" }
     Write-Output "        verifier exit $vExit (1 is expected while the tier is still running)"
+}
+
+# Second copy of the desktop's own state files on the laptop.  The desktop
+# chain's states (levels 68..70 production, the level-67 control, 89, 88 and
+# the even levels 86..72) exist only on this disk until their claims are
+# committed; one scp per run keeps a current copy under
+# ~/erdos-n70/backup-desktop-states/.  Tiers the laptop owns (PairwiseTiers)
+# are excluded so the laptop's live copy is never shadowed by a stale one.
+$RemoteBackupDir = '~/erdos-n70/backup-desktop-states'
+$owned = @{}
+foreach ($tier in $PairwiseTiers) { $n, $b = $tier.Split(':'); $owned["pairwise-state-n$n-b$b.json"] = $true }
+$push = @(Get-ChildItem -LiteralPath $pairwiseDir -File |
+    Where-Object { ($_.Name -match '^(pairwise|control)-state-n[0-9]+-b[0-9]+\.json$') -and -not $owned.ContainsKey($_.Name) } |
+    ForEach-Object { $_.FullName })
+if ($push.Count -gt 0 -and -not $WhatIfOnly) {
+    $pushOut = $null
+    try {
+        $ErrorActionPreference = 'Continue'
+        $pushOut = & scp -o BatchMode=yes -q @push "${Remote}:$RemoteBackupDir/" 2>&1
+        $pushExit = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = 'Stop'
+    }
+    if ($pushExit -eq 0) { Write-Output "[sync] pushed $($push.Count) desktop state files to ${Remote}:$RemoteBackupDir" }
+    else { Write-Output "[sync] push of desktop state files FAILED: scp exit $pushExit $($pushOut -join ' ')" }
 }
 
 # Claim files.  finalize-laptop.sh writes ~/erdos-n70/verification/
