@@ -89,6 +89,36 @@ Pairwise plan (cutover tiers), claim tool verify_tier_combined.py --rebuild -1:
 * n = 69: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 11 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 11 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
 * n = 70: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 11 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 11 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
 
+## What is machine-checked in Lean, and what is not
+
+Lean 4 (v4.33.1, Mathlib v4.33.1), project root `lakefile.toml`, library
+`Erdos1016`; `lake build` clean on 2026-09-19 23:52 (8743 jobs, no `sorry`),
+and `lake env lean Axioms.lean` reports every listed theorem depending only on
+`propext`, `Classical.choice`, `Quot.sound`.
+
+* Kernel-checked upper bounds: `pancyclicWithChords_38_5`, `_39_5`, `_40_5`
+  (h(38), h(39), h(40) <= 5), `pancyclicWithChords_41_6`, `_56_6`, and, new
+  tonight, `family_pancyclic_41_67 : ∀ n, 41 ≤ n → n ≤ 67 → PancyclicWithChords n 6`
+  (`Erdos1016/Family.lean`), i.e. h(n) <= 6 for every n in 41..67, from 27
+  per-level certificates `Erdos1016/Family/W41.lean` .. `W67.lean` in which the
+  family `(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)` is given one explicit vertex
+  list per cycle length and Lean re-derives, by `decide`, that each list is a
+  cycle of the stated length in the stated graph, that the six chords are
+  distinct non-cycle edges, and that the Bool adjacency equals `baseCycle n ⊔
+  fromEdgeSet cs`. The lists were produced by `search/k6/gen_family_lean.py`
+  (networkx simple cycles) and are certificates only; nothing computed by that
+  script is trusted.
+* NOT in Lean, and not formalisable at this size: every non-existence result.
+  h(n) >= 6 for n >= 41 (the k = 5 shape search at levels 41..58), t_6 <= 88
+  (the CPU descent 89..111) and tonight's h(n) >= 7 for n = 68, 69, 70 are
+  exhaustive computations; their evidence is the claim files above, the
+  independent verifiers, the frozen code snapshot, the review's forged-tier
+  attacks and the level-67 blind control, not a kernel proof. A Lean proof of
+  the reduction itself (a pancyclic C_n + 6 chords is a subdivision of one of
+  the census shapes; Hall is necessary and monotone; A is a superset) would
+  shrink the trusted computation to "the enumeration of A visited every
+  composition", but the enumeration would still be trusted, not checked.
+
 ## Provenance
 
 * Chains: desktop `run-chain-desktop-v{8..12}.cmd` (69/11, 68/12, 69/12, then
