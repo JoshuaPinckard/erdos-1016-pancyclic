@@ -7,10 +7,11 @@
   Every PollMinutes, for each entry in Tiers that has no result file yet under
   papers/verification/:
 
-    N:B           production tier.  Run the fast monitoring verifier
-                  (pairwise-prod/verify_tier_exhaustion_pairwise.py) on the
-                  pairwise state; when it exits 0 the tier's pairwise units are
-                  all present, so start the CLAIM tool
+    N:B           production tier.  Run the completeness gate
+                  (pairwise/check_control.py: unit set re-derived from the tier
+                  manifest and the state's own --only-shapes list) on the
+                  pairwise state; when it does not exit 2 the tier's pairwise
+                  units are all present, so start the CLAIM tool
                   (pairwise-prod/verify_tier_combined.py --rebuild -1: every
                   shape rebuilt from its gpu-blast row, hash compared) as a
                   low-priority background process pinned off the runner's
@@ -87,9 +88,16 @@ while ($true) {
         $src = Join-Path $SC 'gpu-blast'
         $tab = Join-Path $PW 'tables'
         if ($kind -eq 'ext') { $src = Join-Path $PW 'gpu-blast-ext'; $tab = Join-Path $PW 'tables-ext' }
-        & $PY (Join-Path $PROD 'verify_tier_exhaustion_pairwise.py') $src $state --n $n --b $b --tables $tab 2>$null | Out-Null
-        if ($LASTEXITCODE -ne 0) { continue }
-        Say "n=$n b=$b pairwise units complete (fast verifier exit 0); starting the claim tool with --rebuild -1"
+        # Completeness gate.  A production state is restricted with --only-shapes,
+        # which the whole-tier monitoring verifier reports as an error by design
+        # (it expects every unit of the tier: 5396 expected vs 3543 covered on the
+        # finished 68/11 at 19:37), so the gate is check_control.py, which
+        # re-derives the unit set from the manifest and the state's own shape
+        # list: exit 2 = not complete, 0 or 1 = complete.  An ext tier is a
+        # whole-tier state and takes the same gate.
+        & $PY (Join-Path $PW 'check_control.py') --n $n --b $b --state $state --source $src --tables $tab 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 2) { continue }
+        Say "n=$n b=$b pairwise units complete (gate exit $LASTEXITCODE); starting the claim tool with --rebuild -1"
         $ustate = Join-Path $SC "gpu-state-n$n-b$b.json"
         $vargs = @((Join-Path $PROD 'verify_tier_combined.py'), $src, '--n', $n, '--b', $b,
                    '--pairwise-state', $state, '--tables', $tab, '--rebuild', '-1')
