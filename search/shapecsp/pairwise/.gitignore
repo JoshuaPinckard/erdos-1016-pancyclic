@@ -1,0 +1,14 @@
+# built tables (480 MB, regenerable and hash-verified; keep only the manifests)
+tables/*/shape-*.npz
+tables/n68-b12-desktop-partial/
+# live and superseded state files, locks, logs, scratch
+pairwise-state-*.json*
+*.lock
+*.log
+*.err
+_mgr-*
+_partition-dryrun/
+_test-*.out
+_test-*.err
+perf-*.json
+__pycache__/
