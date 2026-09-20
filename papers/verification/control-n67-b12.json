@@ -1,0 +1,19 @@
+{
+ "n": 67,
+ "b": 12,
+ "state": "C:\\Users\\ToolsEnabled-Dev\\Desktop\\erdos1016\\search\\shapecsp\\pairwise\\control-state-n67-b12.json",
+ "enumeration_ok": true,
+ "source_sha256_matches": true,
+ "tier_manifest_sha256_matches": true,
+ "shapes": 309,
+ "expected_units": 1675,
+ "covered_units": 1675,
+ "missing_units": 0,
+ "extra_units": 0,
+ "hits": 0,
+ "hit_shapes": 0,
+ "hits_failing_independent_verifier": 0,
+ "family_witness_b": 11,
+ "complete": true,
+ "status": "passed"
+}
