@@ -106,18 +106,53 @@ def main():
     except Exception as exc:
         out["errors"].append(f"could not recompute plan hash: {exc!r}")
 
+    # Header check on every shape's npz: it must describe THIS gpu-blast shape
+    # at THIS n (review finding D2: a swapped or wrong-level table set that is
+    # self-consistent with its manifest passes the hash check).
+    header_bad = []
+    for idx, r in tshapes.items():
+        f = args.tables / f"n{args.n}-b{args.b}" / f"shape-{idx}.npz"
+        if not f.exists():
+            header_bad.append(f"{idx}:missing")
+            continue
+        try:
+            tab = PT.load(f, expected_sha256=mshapes[idx]["tables_sha256"])
+        except Exception as exc:
+            header_bad.append(f"{idx}:{exc!r}")
+            continue
+        if (tab["n"] != args.n or tab["b"] != r["b"] or [list(c) for c in tab["chords"]] != [list(c) for c in r["chords"]]
+                or list(tab["lows"]) != list(r["lows"]) or tab["total_prefixes"] != int(mshapes[idx]["total_prefixes"])
+                or tab["total_compositions"] != int(mshapes[idx]["total_compositions"])):
+            header_bad.append(str(idx))
+    if header_bad:
+        out["errors"].append(f"{len(header_bad)} shape table files do not describe their gpu-blast shape: {header_bad[:5]}")
+
+    # Rebuild: --rebuild K samples K shapes; --rebuild -1 rebuilds EVERY shape
+    # from the gpu-blast row with pairwise_tables.build and requires hash and
+    # total equality (review finding D1: a self-consistent manifest can
+    # understate a shape's A; only a rebuild from the source detects it).  The
+    # final exhaustion claim uses -1.
     rebuilt = []
     if args.rebuild:
-        rng = random.Random(args.n * 1000 + args.b)
-        for idx in rng.sample(sorted(mshapes), min(args.rebuild, len(mshapes))):
+        if args.rebuild < 0:
+            picked = sorted(mshapes)
+        else:
+            picked = random.Random(args.n * 1000 + args.b).sample(sorted(mshapes), min(args.rebuild, len(mshapes)))
+        bad = 0
+        for idx in picked:
             r = tshapes[idx]
             tab = PT.build(args.n, r["b"], r["chords"], r["lows"], shape_index=idx)
             ok = (tab["tables_sha256"] == mshapes[idx]["tables_sha256"]
                   and tab["total_prefixes"] == int(mshapes[idx]["total_prefixes"])
                   and tab["total_compositions"] == int(mshapes[idx]["total_compositions"]))
-            rebuilt.append({"shape_index": idx, "hash_and_totals_match": ok})
+            bad += int(not ok)
+            if not ok or len(picked) <= 50:
+                rebuilt.append({"shape_index": idx, "hash_and_totals_match": ok})
             if not ok:
                 out["errors"].append(f"rebuilt tables for shape {idx} disagree with the manifest")
+        out["rebuilt_count"] = len(picked)
+        out["rebuilt_mismatches"] = bad
+        out["rebuild_covers_every_shape"] = len(picked) == len(mshapes)
 
     out.update({
         "tier_manifest_sha256": hashlib.sha256(mpath.read_bytes()).hexdigest(),

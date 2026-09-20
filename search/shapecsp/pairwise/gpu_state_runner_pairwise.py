@@ -190,6 +190,7 @@ def main():
                      "only_shapes": subset, "complete": [], "hits": []}
             atomic_json(args.state, state)
         done = {tuple(x[:3]) for x in state["complete"]}
+        by_shape = {r["shape_index"]: r for r in tier_rows}
         engine = G.Engine()
         if not args.skip_controls:
             control = G.controls(engine)
@@ -213,6 +214,16 @@ def main():
                 current_idx = unit["shape_index"]
                 if current["total_prefixes"] != unit["total_prefixes"]:
                     raise ValueError("tables total_prefixes disagrees with the manifest")
+                # The tables must describe THIS shape at THIS level.  A manifest
+                # and npz that agree with each other but were built for another
+                # shape or another n would pass the hash check (review finding
+                # D2, 2026-09-19); the gpu-blast row is the ground truth here.
+                row = by_shape[unit["shape_index"]]
+                if (current["n"] != args.n or current["b"] != row["b"]
+                        or [list(c) for c in current["chords"]] != [list(c) for c in row["chords"]]
+                        or list(current["lows"]) != list(row["lows"])):
+                    raise ValueError(f"tables for shape {unit['shape_index']} do not describe the gpu-blast "
+                                     f"shape at n={args.n} (n={current['n']} b={current['b']} chords={current['chords']})")
             if current["total_prefixes"] == 0:
                 continue
             found, elapsed, comps, _ = engine.run(current, unit["offset"], unit["count"])

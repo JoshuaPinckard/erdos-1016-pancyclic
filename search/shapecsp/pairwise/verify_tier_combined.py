@@ -117,14 +117,39 @@ def main():
     p_total = sum(int(mshapes[i]["total_compositions"]) for i in only_set)
     if ps.get("hits"):
         errors.append("pairwise state has hits")
+    # Every pairwise shape's npz must describe its gpu-blast row at this n
+    # (review finding D2), and --rebuild -1 rebuilds every one of them from the
+    # source and requires hash and total equality (review finding D1).
+    header_bad = []
+    for idx in sorted(only_set):
+        f = args.tables / f"n{args.n}-b{args.b}" / f"shape-{idx}.npz"
+        try:
+            tab = PT.load(f, expected_sha256=mshapes[idx]["tables_sha256"])
+        except Exception as exc:
+            header_bad.append(f"{idx}:{exc!r}")
+            continue
+        r = rows[idx]
+        if (tab["n"] != args.n or tab["b"] != r["b"] or [list(c) for c in tab["chords"]] != [list(c) for c in r["chords"]]
+                or list(tab["lows"]) != list(r["lows"]) or tab["total_prefixes"] != int(mshapes[idx]["total_prefixes"])
+                or tab["total_compositions"] != int(mshapes[idx]["total_compositions"])):
+            header_bad.append(str(idx))
+    if header_bad:
+        errors.append(f"{len(header_bad)} shape table files do not describe their gpu-blast shape: {header_bad[:5]}")
     rebuilt = []
+    rebuilt_count = rebuilt_bad = 0
     if args.rebuild:
-        rng = random.Random(args.n * 1000 + args.b)
-        for idx in rng.sample(sorted(only_set), min(args.rebuild, len(only_set))):
+        picked = sorted(only_set) if args.rebuild < 0 else \
+            random.Random(args.n * 1000 + args.b).sample(sorted(only_set), min(args.rebuild, len(only_set)))
+        for idx in picked:
             r = rows[idx]
             tab = PT.build(args.n, r["b"], r["chords"], r["lows"], shape_index=idx)
-            ok = tab["tables_sha256"] == mshapes[idx]["tables_sha256"] and tab["total_compositions"] == int(mshapes[idx]["total_compositions"])
-            rebuilt.append({"shape_index": idx, "match": ok})
+            ok = (tab["tables_sha256"] == mshapes[idx]["tables_sha256"]
+                  and tab["total_prefixes"] == int(mshapes[idx]["total_prefixes"])
+                  and tab["total_compositions"] == int(mshapes[idx]["total_compositions"]))
+            rebuilt_count += 1
+            rebuilt_bad += int(not ok)
+            if not ok or len(picked) <= 50:
+                rebuilt.append({"shape_index": idx, "match": ok})
             if not ok:
                 errors.append(f"rebuilt tables disagree for shape {idx}")
 
@@ -135,7 +160,9 @@ def main():
                pairwise_covered_units=len(covered_p), pairwise_missing=len(missing), pairwise_extra=len(extra),
                pairwise_compositions_manifest=p_total, pairwise_compositions_counted=sum(per_shape.values()),
                composition_mismatch_shapes=comp_bad[:10], union_covers_tier=union_ok,
-               hits=(ps.get("hits") or []), rebuilt=rebuilt, errors=errors)
+               hits=(ps.get("hits") or []), rebuilt=rebuilt, rebuilt_count=rebuilt_count,
+               rebuilt_mismatches=rebuilt_bad, rebuild_covers_every_pairwise_shape=rebuilt_count == len(only_set),
+               errors=errors)
     out["exact_match"] = union_ok and not errors and not missing and not extra and not comp_bad \
         and sum(per_shape.values()) == p_total
     print(json.dumps(out, indent=1))
