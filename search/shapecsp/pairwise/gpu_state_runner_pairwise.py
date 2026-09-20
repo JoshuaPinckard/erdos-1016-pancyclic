@@ -191,7 +191,11 @@ def main():
             atomic_json(args.state, state)
         done = {tuple(x[:3]) for x in state["complete"]}
         by_shape = {r["shape_index"]: r for r in tier_rows}
-        engine = G.Engine()
+        # max_n is a bookkeeping bound only (MAX_N never reaches the CUDA source;
+        # MAX_B, MAX_V, MAX_F are unchanged, so the compiled kernel is identical);
+        # the default 70 refused every level-71+ table with "tables exceed engine
+        # capacity" (laptop chain v9, 21:58 on 2026-09-19).  Size it by the level.
+        engine = G.Engine(max_n=max(70, args.n))
         if not args.skip_controls:
             control = G.controls(engine)
             if control["positive_control"] != "PASS" or control["mismatches"] != 0:
