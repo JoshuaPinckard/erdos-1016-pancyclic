@@ -34,6 +34,10 @@ sys.path.insert(0, str(HERE.parent))
 import pairwise_tables as PT            # noqa: E402
 import gpu_search_pairwise as G         # noqa: E402
 
+# Header format under test; v1 cannot record an arc order, so under it the
+# permuted crossing case is refused by name instead of being skipped silently.
+FMT = PT.FORMAT_V2
+
 RISING = "p1 = (p1 << 1) | (p0 >> 63); p0 <<= 1;"
 FALLING = "m0 = (m0 >> 1) | (m1 << 63); m1 >>= 1;"
 assert RISING in G.CUDA and FALLING in G.CUDA, "kernel carry lines changed; update this test"
@@ -41,8 +45,15 @@ assert RISING in G.CUDA and FALLING in G.CUDA, "kernel carry lines changed; upda
 
 def crossing_prefixes(tab, want=6, scan=200000):
     """Prefix ranks whose completions include a rising form passing 63->64 and a
-    falling form passing 64->63, found by direct CPU evaluation."""
-    n, b, forms = tab["n"], tab["b"], [tuple(f) for f in tab["forms"]]
+    falling form passing 64->63, found by direct CPU evaluation.
+
+    The masks are permuted into ASSIGNMENT order first, because that is the
+    space the kernel shifts in: bit k must name the arc assigned at level k, and
+    the rising/falling split is decided by positions b-2 and b-1 of the order,
+    not by natural arcs b-2 and b-1.  For the natural order permute_mask is the
+    identity, so this is the same test it was."""
+    n, b = tab["n"], tab["b"]
+    forms = [(PT.permute_mask(m, tab["order"]), c) for m, c in (tuple(f) for f in tab["forms"])]
     found = []
     for r in range(min(scan, tab["total_prefixes"])):
         a, st, s = PT.unrank_prefix(tab, r)
@@ -112,10 +123,10 @@ def carry_witness_case(stock, mutant):
     the carry mutant must not, and search/verify.py must agree it is pancyclic."""
     n, chords, arcs = CARRY_WITNESS["n"], CARRY_WITNESS["chords"], CARRY_WITNESS["arcs"]
     b = len(arcs)
-    tab = PT.build(n, b, chords)
+    tab = PT.build(n, b, chords, fmt=FMT)
     ok_admitted = PT.admitted(tab, arcs)
     truth = G.V.pancyclic(n, G.materialise(tab["chords"], arcs))
-    r, st, s = PT.rank_prefix(tab, arcs[:b - 2])
+    r, st, s = PT.rank_prefix(tab, PT.permuted(tab, arcs)[:b - 2])
     hits, _, _, (rows, flags, _, _) = stock.run(tab, r, 1, debug=True)
     _, _, _, (mrows, mflags, _, _) = mutant.run(tab, r, 1, debug=True, verify_hits=False)
     idx = rows.index(arcs) if arcs in rows else -1
@@ -132,6 +143,14 @@ def carry_witness_case(stock, mutant):
 
 
 def main():
+    global FMT
+    if "--format" in sys.argv:
+        FMT = sys.argv[sys.argv.index("--format") + 1]
+    if FMT not in PT.FORMATS:
+        raise SystemExit(f"--format must be one of {PT.FORMATS}")
+    if FMT == PT.FORMAT:
+        print(json.dumps({"refusal": "permuted crossing case not run",
+                          "reason": f"{PT.FORMAT} has no order header key"}), flush=True)
     src = HERE.parent / "gpu-blast"
     stock = G.Engine()
     mutated_src = G.CUDA.replace(RISING, "p1 = (p1 << 1); p0 <<= 1;").replace(FALLING, "m0 = (m0 >> 1); m1 >>= 1;")
@@ -154,40 +173,56 @@ def main():
         for row in rows:
             if row["b"] < 8:
                 continue
-            tab = PT.build(n, row["b"], row["chords"], None, shape_index=row["shape_index"])
-            if tab["total_prefixes"] == 0:
-                continue
-            ranks = crossing_prefixes(tab)
-            if not ranks:
-                continue
-            forms = [tuple(f) for f in tab["forms"]]
-            expected_rows, expected_flags, expected_cov = [], [], []
-            for r in ranks:
-                a, st, s = PT.unrank_prefix(tab, r)
-                for v, w in PT.completions(tab, st, s):
-                    expected_rows.append(a + [v, w])
-                    expected_flags.append(PT.sat(n, forms, a + [v, w]))
-                    expected_cov.append(cpu_coverage(n, forms, a + [v, w]))
-            s_rows, s_flags, s_cov = run_prefixes(stock, tab, ranks)
-            m_rows, m_flags, m_cov = run_prefixes(mutant, tab, ranks)
-            same = s_rows == expected_rows and list(map(bool, s_flags)) == expected_flags and s_cov == expected_cov
-            diffs = (sum(int(bool(x) != bool(y)) for x, y in zip(m_flags, s_flags)) + int(m_rows != s_rows)
-                     + sum(int(x != y) for x, y in zip(m_cov, s_cov)))
-            cases.append(dict(n=n, shape_index=row["shape_index"], b=row["b"], prefixes=len(ranks), compositions=len(expected_rows),
-                              stock_matches_cpu=same, coverage_words_identical=s_cov == expected_cov,
-                              sat_in_window=sum(expected_flags), mutant_differences=diffs))
-            print(json.dumps(cases[-1]), flush=True)
-            stock_ok &= same
-            mutant_diffs += diffs
-            total_rows += len(expected_rows)
-            total_prefixes += len(ranks)
-            picked += 1
+            # the first shape that yields crossings is also run with a reversed
+            # arc order: the carry lines shift masks the kernel was handed in
+            # ASSIGNMENT order, so a permuted build exercises the same word
+            # boundary with a different rising/falling split
+            orders = [("natural", None)]
+            if not picked and FMT != PT.FORMAT:
+                orders.append(("reversed", list(range(row["b"]))[::-1]))
+            made = False
+            for order_name, order in orders:
+                tab = PT.build(n, row["b"], row["chords"], None, shape_index=row["shape_index"], order=order,
+                               fmt=FMT if order is None else PT.FORMAT_V2)
+                if tab["total_prefixes"] == 0:
+                    continue
+                ranks = crossing_prefixes(tab)
+                if not ranks:
+                    continue
+                made = True
+                forms = [tuple(f) for f in tab["forms"]]
+                expected_rows, expected_flags, expected_cov = [], [], []
+                for r in ranks:
+                    a, st, s = PT.unrank_prefix(tab, r)
+                    for v, w in PT.completions(tab, st, s):
+                        nat = PT.natural(tab, list(a) + [v, w])
+                        expected_rows.append(nat)
+                        expected_flags.append(PT.sat(n, forms, nat))
+                        expected_cov.append(cpu_coverage(n, forms, nat))
+                s_rows, s_flags, s_cov = run_prefixes(stock, tab, ranks)
+                m_rows, m_flags, m_cov = run_prefixes(mutant, tab, ranks)
+                same = s_rows == expected_rows and list(map(bool, s_flags)) == expected_flags and s_cov == expected_cov
+                diffs = (sum(int(bool(x) != bool(y)) for x, y in zip(m_flags, s_flags)) + int(m_rows != s_rows)
+                         + sum(int(x != y) for x, y in zip(m_cov, s_cov)))
+                cases.append(dict(n=n, shape_index=row["shape_index"], b=row["b"], order_name=order_name,
+                                  order=list(tab["order"]), prefixes=len(ranks), compositions=len(expected_rows),
+                                  stock_matches_cpu=same, coverage_words_identical=s_cov == expected_cov,
+                                  sat_in_window=sum(expected_flags), mutant_differences=diffs))
+                print(json.dumps(cases[-1]), flush=True)
+                stock_ok &= same
+                mutant_diffs += diffs
+                total_rows += len(expected_rows)
+                total_prefixes += len(ranks)
+            if made:
+                picked += 1
             if picked >= 3:
                 break
     witness = carry_witness_case(stock, mutant)
     # every case must separate the mutant on its own, not only the aggregate
-    cases_not_separating = [c["shape_index"] for c in cases if c["mutant_differences"] == 0]
-    summary = dict(cases=len(cases), crossing_prefixes=total_prefixes, compositions_checked=total_rows,
+    cases_not_separating = [[c["shape_index"], c["order_name"]] for c in cases if c["mutant_differences"] == 0]
+    summary = dict(cases=len(cases), format=FMT,
+                   permuted_order_cases=sum(1 for c in cases if c["order_name"] != "natural"),
+                   crossing_prefixes=total_prefixes, compositions_checked=total_rows,
                    stock_all_match=stock_ok, mutant_differences=mutant_diffs,
                    mutation_detected=mutant_diffs > 0, cases_not_separating_mutant=cases_not_separating,
                    carry_witness_sat_on_stock_and_not_on_mutant=witness["passes"],

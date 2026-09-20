@@ -152,7 +152,13 @@ def main():
             random.Random(args.n * 1000 + args.b).sample(sorted(only_set), min(args.rebuild, len(only_set)))
         for idx in picked:
             r = rows[idx]
-            tab = PT.build(args.n, r["b"], r["chords"], r["lows"], shape_index=idx)
+            # rebuild in the manifest's own format and order, not this version's
+            # defaults: a v1 tier has neither key and must still rebuild to its
+            # recorded v1 hash, and a v2 shape must rebuild against the order it
+            # was actually filed with rather than whatever rule is default today
+            tab = PT.build(args.n, r["b"], r["chords"], r["lows"], shape_index=idx,
+                           order=mshapes[idx].get("order") or manifest.get("order_rule", "natural"),
+                           fmt=manifest.get("format", PT.FORMAT))
             ok = (tab["tables_sha256"] == mshapes[idx]["tables_sha256"]
                   and tab["total_prefixes"] == int(mshapes[idx]["total_prefixes"])
                   and tab["total_compositions"] == int(mshapes[idx]["total_compositions"]))

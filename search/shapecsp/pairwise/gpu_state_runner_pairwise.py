@@ -70,7 +70,7 @@ def pid_alive(pid):
 def load_manifest(tables_dir, n, b):
     path = Path(tables_dir) / f"n{n}-b{b}" / "tier-manifest.json"
     m = json.loads(path.read_text(encoding="utf-8"))
-    if m["format"] != PT.FORMAT or m["n"] != n or m["b"] != b:
+    if m["format"] not in PT.FORMATS or m["n"] != n or m["b"] != b:
         raise ValueError("tier manifest does not describe this tier")
     unit = int(m["unit_prefix"])
     if not (1 << 20) <= unit <= (1 << 40):

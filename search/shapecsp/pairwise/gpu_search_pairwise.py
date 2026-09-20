@@ -1,7 +1,16 @@
 """CuPy kernel over the pairwise-admissible composition space of one shape.
 
-One thread per PREFIX (a_0..a_{b-3}), unranked through the DP-state tables of
-pairwise_tables.py; the two completion arcs are enumerated inside the thread.
+One thread per PREFIX (the first b-2 assigned arcs), unranked through the
+DP-state tables of pairwise_tables.py; the two completion arcs are enumerated
+inside the thread.
+
+The kernel works entirely in the tables' ASSIGNMENT order.  Nothing in it knows
+about the order: lows, hi, Tlast and the caps arrive already permuted from
+pairwise_tables.kernel_pack, and so do the form masks (bit k of an uploaded mask
+is bit order[k] of the natural one), so a[j] inside the kernel indexes the arc it
+actually assigned.  Every arc vector leaving this module -- hits and debug rows
+-- is put back into NATURAL order first, because materialise(), search/verify.py
+and the chord list are all natural-order.
 
 The coverage test is the production one (gpu_search.scan: two 64-bit words,
 need0/need1 over [3, n]) but it is not re-evaluated form by form for every
@@ -178,7 +187,9 @@ class Engine:
 
         Returns (verified hits or raw SAT count, gpu seconds, compositions
         counted, debug tuple or None).  In debug mode every visited composition
-        is returned in visiting order with its SAT flag.
+        is returned in visiting order with its SAT flag.  Arc vectors in both
+        the hits and the debug rows are in NATURAL arc order, whatever order the
+        tables were built with.
         """
         n, b = tab["n"], tab["b"]
         if n > self.n or b > self.b or len(tab["forms"]) > self.f or tab["vmax"] + 1 > self.v:
@@ -222,7 +233,7 @@ class Engine:
                     raise RuntimeError("debug record overflow: a prefix had more completions than MAXC")
                 for j in range(int(cn[t])):
                     row = arr[t, j]
-                    rows.append([int(x) for x in row[:b]])
+                    rows.append(PT.natural(tab, row[:b]))
                     flags.append(bool(row[self.b]))
                     coverage.append((int(cv[t, j, 0]), int(cv[t, j, 1])))
             dbg = (rows, flags, cn, coverage)
@@ -237,7 +248,7 @@ class Engine:
             w = n - s - v
             if (v, w) not in PT.completions(tab, st, s):
                 raise RuntimeError("GPU hit names a completion the CPU tables do not admit")
-            full = a + [v, w]
+            full = PT.natural(tab, a + [v, w])
             ch = materialise(tab["chords"], full)
             if not V.pancyclic(n, ch):
                 raise RuntimeError("independent verifier rejected GPU SAT")
@@ -277,18 +288,23 @@ WITNESSES = [(67, [(0, 2), (0, 60), (1, 13), (3, 61), (4, 31), (59, 62)]),
              (56, [(0, 2), (0, 53), (1, 39), (20, 39), (39, 48), (48, 53)])]
 
 
-def controls(engine, mutate=False, sample=20):
+def controls(engine, mutate=False, sample=20, rule=None):
     """Before every run: both witnesses lie in A, are found from a one-thread
     launch at their prefix rank, and sampled prefix ranks unrank identically on
-    the CPU and the GPU with SAT flags equal to search/verify.py."""
+    the CPU and the GPU with SAT flags equal to search/verify.py.
+
+    rule=None builds the control tables in natural order; naming a
+    pairwise_tables order rule runs the same controls against a permuted build,
+    so an order that loses or reorders a witness is caught here."""
     evidence, mismatches, sampled = [], 0, 0
     for n, ch in WITNESSES:
         b, canonical, a = canonical_witness(n, ch)
-        tab = PT.build(n, b, canonical)
+        order = None if rule is None else PT.choose_order(n, b, canonical, rule=rule)
+        tab = PT.build(n, b, canonical, order=order)
         if not PT.admitted(tab, a):
             raise RuntimeError(f"SOUNDNESS CONTROL FAILED: witness n={n} arcs {a} not in A "
                                f"(lows {tab['lows']}, hi {tab['hi']})")
-        r, st, s = PT.rank_prefix(tab, a[:b - 2])
+        r, st, s = PT.rank_prefix(tab, PT.permuted(tab, a)[:b - 2])
         test = dict(tab)
         if mutate:
             test["forms"] = [[0, 0]]
@@ -297,7 +313,7 @@ def controls(engine, mutate=False, sample=20):
         rows, flags = dbg[0], dbg[1]
         if not any(h["arcs"] == a for h in hits) or a not in rows or not flags[rows.index(a)]:
             raise RuntimeError("POSITIVE CONTROL FAILED")
-        evidence.append(dict(n=n, shape=canonical, arcs=a, prefix_rank=r, completions=comps,
+        evidence.append(dict(n=n, shape=canonical, arcs=a, order=tab["order"], prefix_rank=r, completions=comps,
                              total_prefixes=tab["total_prefixes"], total_compositions=tab["total_compositions"],
                              result="SAT", verified=[dict(h, chords=[list(c) for c in h["chords"]]) for h in hits]))
         rng = random.Random(n)
@@ -305,7 +321,7 @@ def controls(engine, mutate=False, sample=20):
         for rk in ranks:
             _, _, comps, (rows, flags, _, _) = engine.run(tab, rk, 1, debug=True, verify_hits=False)
             pa, pst, ps = PT.unrank_prefix(tab, rk)
-            expected = [pa + [v, w] for v, w in PT.completions(tab, pst, ps)]
+            expected = [PT.natural(tab, pa + [v, w]) for v, w in PT.completions(tab, pst, ps)]
             truth = [V.pancyclic(n, materialise(tab["chords"], e)) for e in expected]
             mismatches += int(rows != expected or list(flags) != truth or comps != len(expected))
             sampled += 1
@@ -318,6 +334,8 @@ def controls(engine, mutate=False, sample=20):
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--mutate-control", action="store_true")
+    p.add_argument("--order", default=None, choices=list(PT.ORDER_RULES),
+                   help="build the control tables with this arc-order rule")
     args = p.parse_args()
     eng = Engine()
-    print(json.dumps(controls(eng, args.mutate_control), indent=1))
+    print(json.dumps(controls(eng, args.mutate_control, rule=args.order), indent=1))
