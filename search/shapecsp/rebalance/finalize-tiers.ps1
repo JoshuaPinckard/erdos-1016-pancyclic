@@ -31,7 +31,8 @@ param(
     [int]$PollMinutes = 10,
     [string[]]$Tiers = @('69:11', '68:12', '69:12', '68:11', '70:11', '70:12',
                          '67:12:control', '67:11:control', '67:10:control', '67:9:control',
-                         '67:8:control', '67:7:control', '67:6:control')
+                         '67:8:control', '67:7:control', '67:6:control',
+                         '89:12:ext', '89:11:ext', '89:10:ext', '88:12:ext', '88:11:ext', '88:10:ext')
 )
 $ErrorActionPreference = 'Continue'
 $SC = Split-Path -Parent $PSScriptRoot
@@ -81,13 +82,18 @@ while ($true) {
         }
         $state = Join-Path $PW "pairwise-state-n$n-b$b.json"
         if (-not (Test-Path $state)) { continue }
-        & $PY (Join-Path $PROD 'verify_tier_exhaustion_pairwise.py') (Join-Path $SC 'gpu-blast') $state --n $n --b $b --tables (Join-Path $PW 'tables') 2>$null | Out-Null
+        # N:B:ext -- a whole-tier state over a census level (pairwise/gpu-blast-ext,
+        # tables under pairwise/tables-ext, no unrestricted side).
+        $src = Join-Path $SC 'gpu-blast'
+        $tab = Join-Path $PW 'tables'
+        if ($kind -eq 'ext') { $src = Join-Path $PW 'gpu-blast-ext'; $tab = Join-Path $PW 'tables-ext' }
+        & $PY (Join-Path $PROD 'verify_tier_exhaustion_pairwise.py') $src $state --n $n --b $b --tables $tab 2>$null | Out-Null
         if ($LASTEXITCODE -ne 0) { continue }
         Say "n=$n b=$b pairwise units complete (fast verifier exit 0); starting the claim tool with --rebuild -1"
         $ustate = Join-Path $SC "gpu-state-n$n-b$b.json"
-        $vargs = @((Join-Path $PROD 'verify_tier_combined.py'), (Join-Path $SC 'gpu-blast'), '--n', $n, '--b', $b,
-                   '--pairwise-state', $state, '--tables', (Join-Path $PW 'tables'), '--rebuild', '-1')
-        if (Test-Path $ustate) { $vargs += @('--unrestricted-state', $ustate) }
+        $vargs = @((Join-Path $PROD 'verify_tier_combined.py'), $src, '--n', $n, '--b', $b,
+                   '--pairwise-state', $state, '--tables', $tab, '--rebuild', '-1')
+        if ($kind -ne 'ext' -and (Test-Path $ustate)) { $vargs += @('--unrestricted-state', $ustate) }
         $p = Start-Process -FilePath $PY -ArgumentList $vargs -NoNewWindow -PassThru `
             -RedirectStandardOutput "$final.part" -RedirectStandardError "$final.err"
         try { $p.PriorityClass = 'BelowNormal'; $p.ProcessorAffinity = [IntPtr]0xFC } catch { Say "could not pin/deprioritise pid $($p.Id): $($_.Exception.Message)" }
