@@ -5,15 +5,77 @@ Python 3.13.3); `search/k6/fastcyc.exe` and every other CPU search were not run.
 
 ## Result in one paragraph
 
-**No witness was found at n = 67 or n = 66** (nor at n = 65). The neighbourhoods exhausted are named
-exactly in the section "Neighbourhoods exhausted" below; nothing here claims a witness does not
-exist, since the full 6-chord space at n = 67 is about C(2144,6) ~ 1.3e17 unordered chord sets
-(about 3.8e14 after the triangle case split of `gpu_pancyc128.py`), far beyond what was searched.
+**n = 67: WITNESS FOUND, three independent confirmations.** C_67 plus the six chords
+`(0,2) (0,60) (1,13) (3,61) (4,31) (59,62)` is pancyclic. **n = 66: WITNESS FOUND, independently
+confirmed.** C_66 plus `(0,2) (0,59) (1,13) (3,60) (4,31) (58,61)` is pancyclic. Hence t_6 >= 67
+(up from 56 in the draft). Both named closed forms for t_k are refuted at k = 6, their first
+genuine test: the rival 2^(k-2)(10-k) predicted 64 and the Fibonacci form 2*Fib(k+3) - 2 predicted
+66. The two witnesses share one structure, (0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5), which lies
+outside the family in the brief; lifted to n = 68 the same structure misses exactly one cycle length
+(33); the complete 3-of-6 neighbourhood of that n = 68 seed (35,784,518,700 candidates) contains no
+witness, and the 3-of-6 sweep around the n = 69 near-miss `(0,2)(0,62)(1,13)(3,63)(4,32)(61,64)`
+(missing only length 23) is likewise exhausted with no witness (39,145,060,480 candidates). Nothing
+here claims a witness does not exist at 68 or 69; GPU work is held at that level, at the manager's
+decision, pending Worker 7's exact shape/CSP query at n = 68, which can decide existence there in
+either direction.
+
+How they were found. The n = 66 witness came out of the GPU 3-of-6 neighbourhood sweep around the
+n = 66 near-miss seed `(0,2)(0,63)(1,13)(3,62)(4,31)(58,63)`, slot subset (1,3,5) (replacing
+`(0,63)`, `(3,62)`, `(58,63)` by `(0,59)`, `(3,60)`, `(58,61)`), after 22,335,424,500 candidates over
+15 of the 20 slot subsets. The n = 67 witness is that structure lifted by one vertex, suggested by
+Manager (f4d1e0af) as a seed for a 67 sweep; it turned out to be pancyclic as it stands, so no
+sweep at 67 was needed. The 3-of-6 sweep around the *old* n = 67 near-miss seed was left unfinished
+(6 of 20 subsets, 7,160,318,590 candidates, no witness) once the direct witness existed.
+
+Verification, all with pre-existing tools independent of the GPU kernel:
+
+```
+search/verify.py 66 "(0,2) (0,59) (1,13) (3,60) (4,31) (58,61)"  -> pancyclic [3, 4, ..., 66]   (search/k6/verify-66-gpu-joint.txt)
+search/verify.py 67 "(0,2) (0,60) (1,13) (3,61) (4,31) (59,62)"  -> pancyclic [3, 4, ..., 67]   (search/k6/verify-67-gpu-joint.txt)
+search/k6/cyclespace.py check 66 / 67 (same chords)               -> pancyclic missing=[]
+GPU kernel r=0 path, n=67 witness -> 1; n=67 old near-miss (0,2)(0,64)(1,13)(3,63)(4,31)(59,64) -> 0 (control, same session)
+```
+
+Manager (f4d1e0af) additionally re-checked the n = 66 witness with a separately written cycle-space
+evaluator (with the n = 64 witness and the n = 66 near-miss as its own controls) and reports 64
+distinct cycle lengths, exactly the 64 values 3..66 required. Both witnesses are appended to
+`search/k6/witnesses-v2.csv` in that file's row format.
+
 The positive control passed before any new run: the kernel reproduced the n = 56 witness
 `(0,2)(0,53)(1,39)(20,39)(39,48)(48,53)` both as a direct r = 0 evaluation and by re-finding it
-inside a complete 2-of-6 sweep around it. GPU utilisation: the sweeps run under an 80 % duty cycle (cap set by the manager
-mid-run); measured mean 78.8 % over 60 one-second `nvidia-smi` samples. The host-side Python
-process used 0.8 % of the machine's CPU.
+inside a complete 2-of-6 sweep around it. GPU utilisation: the sweeps run under an 80 % duty cycle
+(cap set by the manager mid-run); measured mean 78.8 % over 60 one-second `nvidia-smi`
+samples. The host-side Python process used 0.8 % of the machine's CPU.
+
+## The structure and how far it lifts (CPU reference evaluator, `cyclespace.py check`)
+
+(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5), with the two "inner" chords (1,13) and (4,31) held fixed:
+
+| n | 64 | 65 | 66 | 67 | 68 | 69 | 70 | 71 | 72 |
+|---|---|---|---|---|---|---|---|---|---|
+| missing lengths | none | none | none | none | [33] | [33,34] | [33,34,35] | [33..36] | [33..37] |
+
+The family is pancyclic at n = 64, 65, 66 and 67 (n = 64 and 65 pointed out by Manager (f4d1e0af),
+re-checked here with `search/verify.py`: `65 [(0, 2), (0, 58), (1, 13), (3, 59), (4, 31), (57, 60)]
+pancyclic`, `search/k6/verify-65-gpu-joint.txt`; likewise n = 64). The n = 65 member is appended to
+`witnesses-v2.csv`; it fills the h(65) gap without the 65 B / 65 C sweeps, which were stopped and
+are not resumed. Each further vertex adds one missing length starting at 33, so n = 68 is a
+missing-one near-miss of exactly the kind that the 3-of-6 sweep resolved at n = 66.
+
+Manager (f4d1e0af) also swept the two fixed interior chords, generalising to
+(0,2)(0,n-7)(1,a)(3,n-6)(4,b)(n-8,n-5) with a in 5..44, b in a+1..min(n-9,59): the control
+(n = 67, a = 13, b = 31) reproduces pancyclic; the best reachable is missing = 1 at n = 68
+(a = 13, b = 31, missing [33]) and at n = 69 (a = 13, b = 32, missing [23]; re-checked here:
+`69 [(0, 2), (0, 62), (1, 13), (3, 63), (4, 32), (61, 64)] NOT pancyclic missing=[23]`), then
+degrading. So varying the two interior chords alone does not crack 68, and the joint 3-of-6 sweep is
+the next step; the n = 69 seed `(0,2)(0,62)(1,13)(3,63)(4,32)(61,64)` is a second live target. The 2-of-6 sweep at n = 68 around
+`(0,2)(0,61)(1,13)(3,62)(4,31)(60,63)` is complete with no witness (36,481,725 candidates, 4 s), and
+so is the 3-of-6 sweep: all 20 slot subsets, 35,784,518,700 candidates, 4,168 GPU-seconds, zero
+witnesses (every per-subset `found_count` is 0). That is an informative negative: every 6-chord set
+within three chord replacements of the best known n = 68 near-miss fails, so escaping at 68 needs a
+4-chord move or a different seed. The n = 69 2-of-6 sweep is likewise empty (38,731,920 candidates)
+and its 3-of-6 sweep is also complete and empty: 20/20 subsets, 39,145,060,480 candidates,
+4,608 GPU-seconds, every per-subset `found_count` 0.
 
 ## Costliest finding first: both GPU engines' binomial table silently capped n at 46 (latent, now fixed)
 
@@ -158,21 +220,56 @@ exists, while the Fibonacci form says witnesses exist up to 66. Consequences for
   closest this project has come (missing exactly one cycle length each);
 * a witness at n = 66 refutes the rival and gives the Fibonacci form its floor; with no witness at
   n = 67 (which only an exhaustive lane can establish, not this one) that would pin t_6 = 66;
-* an exhausted, empty 3-of-6 neighbourhood at n = 65 or n = 66 is therefore evidence bearing on
-  which of two named hypotheses survives, not a null result, and is reported below with its exact
+* an exhausted, empty 3-of-6 neighbourhood at n = 65 or n = 66 would be evidence bearing on which
+  of two named hypotheses survives, not a null result, and is reported below with its exact
   candidate count.
+
+Outcome: the n = 66 3-of-6 sweep found a witness and its lift to n = 67 is a witness too (above),
+so both forms are refuted at k = 6: t_6 >= 67. n = 65 became moot for t_6 once 66 was confirmed
+(t_6 is the largest n with h(n) = 6; a 65 witness would only tidy the h(n) table), which is why
+the 65 sweeps were stopped. Note the witness does not lie in the brief's family
+(0,2)(0,n-3)(1,x)(3,n-4)(4,y)(n-8,n-3): its last three chords are (0,n-7), (3,n-6), (n-8,n-5).
 
 That two distinct closed forms fit the same four data points and diverge at the fifth is itself a
 finding: four points do not determine this sequence. The rival form is transparently a finite
 artefact (it reaches 0 at k = 10 and goes negative beyond), whereas the Fibonacci form grows; both
 match every known value, so that asymmetry is not evidence at k = 6.
 
-## Neighbourhoods exhausted (no witness in any of them)
+## Other witness structures lifted to 68 and 69 (CPU reference evaluator, seconds)
+
+At Manager (f4d1e0af)'s request, the two confirmed witnesses that do not belong to the main family
+were lifted to n = 66..69 with `cyclespace.py` (`missing`): n = 61
+`(0,2)(0,58)(1,44)(3,57)(28,53)(53,58)` and n = 62 `(0,2)(0,59)(1,11)(3,58)(3,28)(54,59)`. Two lifts
+were used: endpoint scaling (endpoints >= n/2 shifted by the vertex-count difference) and greedy
+single-vertex insertion (one vertex at a time at the position minimising the missing count).
+
+| lineage | lift | n=66 | n=67 | n=68 | n=69 |
+|---|---|---|---|---|---|
+| 61 | scaling | 10 missing | 12 | 14 | 16 |
+| 61 | greedy insertion | 5 missing [29..33] | 6 | 7 | 8 |
+| 62 | scaling | 3 missing [31,32,33] | 4 | 5 | 6 |
+| 62 | greedy insertion | **1 missing [41]**: (0,2)(0,63)(1,12)(3,62)(3,30)(58,63) | 2 [32,42] | 3 [22,42,51] | 3 [42,43,60] |
+
+A scan of the two interior chords of the n = 62 structure, (0,2)(0,n-3)(1,a)(3,n-4)(3,b)(n-8,n-3)
+over a in 3..n-4 and b in 5..n-10 (3,348 sets at n = 68, 3,465 at n = 69, 20 s of CPU in one
+process), reaches at best missing = 3 at both n (n = 68: a = 12, b = 30, missing [32,33,43];
+n = 69: a = 13, b = 32, missing [42,43,60]). So neither alternative structure gives a missing-one
+seed at 68 or 69; the main family's n = 68 seed (missing [33]) and n = 69 seed (missing [23]) remain
+the only near-misses, and the 62 lineage's missing-one seed at n = 66 is moot now that 66 has a
+witness. No GPU sweep was started from these; a 4-of-6 sweep at 68 (about 2e13 candidates, ~30
+GPU-days at the measured rate) was considered and rejected by the manager in favour of Worker 7's
+exact shape/CSP query at n = 68, which can decide existence in either direction.
+
+## Neighbourhoods swept
 
 Each row is a complete enumeration of every 6-chord set that differs from the seed in at most r
 chord slots, over all legal chords (`all_chords(n)`: a < b, b - a >= 2, not (0, n-1)). `tested` is
 the total kernel-evaluated candidate count summed over the C(6,r) slot subsets, from the
-`gpu-joint-state-*.json` state files / `gpu-joint-*.txt` logs.
+`gpu-joint-state-*.json` state files / `gpu-joint-*.txt` logs. Rows with "witnesses = 0" and all
+slot subsets done are complete exhaustions of that neighbourhood with no witness; the n = 66
+3-of-6 row stopped at the first hit (default, not `--all`), so its remaining 5 slot subsets
+(1,4,5), (2,3,4), (2,3,5), (2,4,5), (3,4,5) were not swept. The n = 66 witness was the only
+positive in the 15 subsets swept there (`found_counts` all 0 except `"1,3,5": 1`).
 
 | n | seed | r | slot subsets | tested candidates | GPU seconds | witnesses |
 |---|---|---|---|---|---|---|
@@ -180,10 +277,14 @@ the total kernel-evaluated candidate count summed over the C(6,r) slot subsets, 
 | 66 | (0,2)(0,63)(1,13)(3,62)(4,31)(58,63) | 2 | 15/15 | 32,276,625 | 3 | 0 |
 | 65 B | (0,2)(0,62)(1,13)(3,61)(4,30)(57,62) | 2 | 15/15 | 30,315,825 | 3 | 0 |
 | 65 C | (0,2)(0,62)(1,12)(3,61)(4,29)(57,62) | 2 | 15/15 | 30,315,825 | 3 | 0 |
-| 67 | (0,2)(0,64)(1,13)(3,63)(4,31)(59,64) | 3 | R3_67_SUBSETS | R3_67_TESTED | R3_67_SECONDS | R3_67_WITNESSES |
-| 66 | (0,2)(0,63)(1,13)(3,62)(4,31)(58,63) | 3 | R3_66_SUBSETS | R3_66_TESTED | R3_66_SECONDS | R3_66_WITNESSES |
-| 65 B | (0,2)(0,62)(1,13)(3,61)(4,30)(57,62) | 3 | R3_65B_SUBSETS | R3_65B_TESTED | R3_65B_SECONDS | R3_65B_WITNESSES |
-| 65 C | (0,2)(0,62)(1,12)(3,61)(4,29)(57,62) | 3 | R3_65C_SUBSETS | R3_65C_TESTED | R3_65C_SECONDS | R3_65C_WITNESSES |
+| 67 | (0,2)(0,64)(1,13)(3,63)(4,31)(59,64) | 3 | 6/20 (abandoned: direct witness found) | 7,160,318,590 | ~830 | 0 in the part swept |
+| 68 | (0,2)(0,61)(1,13)(3,62)(4,31)(60,63) | 2 | 15/15 | 36,481,725 | 4 | 0 |
+| 68 | (0,2)(0,61)(1,13)(3,62)(4,31)(60,63) | 3 | 20/20 | 35,784,518,700 | 4,168 | 0 |
+| 69 | (0,2)(0,62)(1,13)(3,63)(4,32)(61,64) | 2 | 15/15 | 38,731,920 | 4 | 0 |
+| 69 | (0,2)(0,62)(1,13)(3,63)(4,32)(61,64) | 3 | 20/20 | 39,145,060,480 | 4,608 | 0 |
+| 66 | (0,2)(0,63)(1,13)(3,62)(4,31)(58,63) | 3 | 15/20 (stopped at first hit) | 22,335,424,500 | 2,521 | **1: (0,2)(0,59)(1,13)(3,60)(4,31)(58,61)** |
+| 65 B | (0,2)(0,62)(1,13)(3,61)(4,30)(57,62) | 3 | 0/20 (stopped at manager's instruction after the n=66 witness; 1.2e9 of subset (0,1,2) done, resumable) | -- | -- | -- |
+| 65 C | (0,2)(0,62)(1,12)(3,61)(4,29)(57,62) | 3 | not started | -- | -- | -- |
 
 The 2-of-6 rows at n = 65 agree with the earlier CPU `fastcyc sweep2` runs
 (`sweep2-65-B-*.txt`, `sweep2-65-C-*.txt`: "best_missing=1" on every slot pair), which is an
@@ -218,7 +319,12 @@ the state file, so an overflow would be visible; none occurred.
   `2026/09/14 16:16:18.353, 100 %, 1063 MiB`).
 * With the duty cycle (`search/k6/gpu-joint-util-duty80.csv`, 60 one-second samples of
   `utilization.gpu,power.draw`): **mean 78.8 %**, 49 of 60 samples nonzero, about 73 W while
-  resident. Each individual sample reads 100 % while a chunk is on the card and 0 % in the gap; the
+  resident. Over the whole session the 10 s sampler (`gpu-joint-util.csv`, 1,271 samples from
+  16:14 to 19:46, including idle gaps between stages) averages **80.0 %**; restricted to samples
+  after the duty cycle was applied it averages 80.2 %. The 0.2 % excess is a harness detail found
+  afterwards: the gap was skipped after the last chunk of each slot subset, so a subset of 13 chunks
+  had only 12 gaps (81.2 % within the subset). `gpu_joint_sweep.py` now sleeps after every chunk;
+  the change was made after the last sweep finished, so no run in this report used it. Each individual sample reads 100 % while a chunk is on the card and 0 % in the gap; the
   time average is the figure under the cap. Chunk size does not move this number (the kernel keeps
   no per-candidate device memory, so the ~1,060 MiB footprint is independent of chunk size), only
   the idle gap does.

@@ -1119,6 +1119,35 @@ is of order 26x the hunt, i.e. weeks. **`t_6 = 67` is not deliverable by this
 lane.** As in section 6, that is a statement about the available allocation, not
 about the method.
 
+## 6b. The n=68 hunt was stopped, and why the descent dominates it
+
+The exact hunt at n=68 was stopped after 39 of 6059 shapes, all UNSAT, and
+replaced by a contiguous range-mode descent from n=93 downward (`descend.py`).
+The 39 decided shapes are kept in `hunt-k6-n68-exact.done` and remain true
+statements about exactly n=68; they are not evidence about any other value, which
+is the whole problem with the hunt.
+
+The comparison is not close, and it is worth stating as a general property of
+this reformulation rather than as a scheduling preference:
+
+| | exact hunt at 68 | descending block from 93 |
+|---|---|---|
+| a hit | `t_6 >= 68` | `t_6 >= n`, same kind of witness, same inline verification |
+| a clean miss on one level | proves nothing about 69..93 | extends the refuted block down by one, i.e. `t_6 <= n-1` |
+| cost of the first useful result | all 6059 shapes (~50h measured) | one level, and the top levels are the cheap ones (81 eligible at 94, 114 at 93) |
+
+So the descent **subsumes** the hunt on the upside and, unlike the hunt, its
+downside is also a result. Every level it completes cleanly is a permanent
+one-unit improvement to the upper bound; the hunt's miss is worth nothing.
+
+The reason the block has to be contiguous is the same non-monotonicity that made
+the single-level argument wrong in section 0a: eligibility is evaluated at the
+cutoff, Hall at the cutoff is not monotone in `n`, so a shape can be ineligible at
+94 and feasible at 100. A gap at any level voids every level below it. `descend.py`
+therefore halts on an UNKNOWN level rather than continuing past it, and records
+per-level cost to `descend-k6.csv` so the point where the curve turns is measured
+rather than guessed.
+
 ---
 
 ## 7. Why this is the right shape of algorithm even though k=6 did not close
