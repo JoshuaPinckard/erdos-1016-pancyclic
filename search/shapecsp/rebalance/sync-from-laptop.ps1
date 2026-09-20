@@ -134,7 +134,9 @@ foreach ($tier in $Tiers) {
 }
 
 $pairwiseDir = Join-Path $RepoDir 'pairwise'
-$pverify = Join-Path $pairwiseDir 'verify_tier_exhaustion_pairwise.py'
+# The verifier comes from the frozen production snapshot (pairwise-prod, commit
+# f63f9f3), never from pairwise/, which is edited in place between commits.
+$pverify = Join-Path (Join-Path $RepoDir 'pairwise-prod') 'verify_tier_exhaustion_pairwise.py'
 foreach ($tier in $PairwiseTiers) {
     $n, $b = $tier.Split(':')
     $name = "pairwise-state-n$n-b$b.json"
