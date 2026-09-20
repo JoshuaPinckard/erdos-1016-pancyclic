@@ -562,8 +562,8 @@ since the descent below 93 had not reported when this pass was written.
    `search/shapecsp/run-chain-desktop-v12.cmd`) either finds the first witness
    above 70 or closes the gap, at which point t_6 is known exactly.
 2. **The upper half of `h(n) = 6` on 41..67 is now kernel-checked in Lean.**
-   `Erdos1016/Family.lean` proves `family_pancyclic_41_67 : âˆ€ n, 41 â‰¤ n â†’ n â‰¤ 67
-   â†’ PancyclicWithChords n 6` from 27 certificates `Erdos1016/Family/W41.lean`
+   `Erdos1016/Family.lean` proves `family_pancyclic_41_67 : forall n, 41 <= n -> n <= 67
+   -> PancyclicWithChords n 6` (ASCII rendering of the Lean statement) from 27 certificates `Erdos1016/Family/W41.lean`
    .. `W67.lean` (the family `(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)`, one
    explicit vertex list per cycle length, all facts re-derived by `decide`);
    `lake build` clean, `#print axioms` gives `[propext, Classical.choice,
@@ -579,4 +579,45 @@ since the descent below 93 had not reported when this pass was written.
    forged-tier attacks D1-D4 rejected by the frozen claim tool) and the
    level-67 blind positive control (running; b = 12 passed) are the evidence
    standard for those.
+
+# 2026-09-20 - blind control passed at the decisive tier; draft updated to t_6 = 67 or 71 <= t_6 <= 88 (Manager (f4d1e0af))
+
+1. **The blind positive control found the family witness.** The production
+   pipeline, run over the whole of level 67 with no hint (every shape, every
+   b; `search/shapecsp/run-chain-desktop-v12.cmd`, `:control`), found
+   `(0,2)(0,60)(1,13)(3,61)(4,31)(59,62)` at b = 11, shape 20889, arcs
+   1,1,1,1,9,18,28,1,1,1,5, at 00:19 PDT (hit recorded in
+   `search/shapecsp/pairwise/control-state-n67-b11.json` with
+   `search/verify.py pancyclic=True`; re-run by hand: pancyclic, and the same
+   set minus one chord is not). b = 12 had passed earlier (1675 units, 0 hits,
+   `papers/verification/control-n67-b12.json`). The b = 11 verdict file is
+   written by `pairwise/check_control.py` when the tier completes and must
+   show `family_witness_found: true` with zero hits failing the verifier.
+2. **Draft brought to the settled facts** (`papers/draft/pancyclic-exact-values.md`,
+   `papers/draft/SOURCES.md`): abstract and Section 2.1 now state
+   t_6 = 67 or 71 <= t_6 <= 88; Section 3.3 records `family_pancyclic_41_67`;
+   Section 3.5 records the descent levels 93, 92, 91, 90, 89 with their
+   receipts (`REPORT-k6-level93-verify.md`, `REPORT-k6-level92-verify.md`,
+   `REPORT-k6-level89-91-verify.md`, all at the repository root, and
+   `papers/REPORT-k6-descent.md`), so the refuted block is 89..111; a new
+   Section 3.6 describes the GPU exhaustion of levels 68..70 (pairwise plan,
+   claim files, controls, review); Section 5's recurrence discussion now has
+   nine surviving members {72, 74, ..., 88}, the t = -1 and t = -2 members
+   (68, 70) having fallen to the level exhaustions; Section 6.3's "t_6 >= 68
+   is open" is replaced. SOURCES.md rows updated and a Section 3.6 table
+   added. The 0-byte `search/shapecsp/level-k6-n92.txt`/`n93.txt` are named
+   as abandoned first attempts, not evidence.
+3. **Descent bookkeeping.** Level 71 b = 12 claimed exact on the laptop
+   (271 shapes, 2182 units, 1.087e13 compositions counted = manifest, zero
+   hits; `papers/verification/n71-b12-combined.json`). The hourly sync
+   (`search/shapecsp/rebalance/sync-from-laptop.ps1`) now pulls the laptop
+   finalizer's claim files into `papers/verification/`, pulls every laptop
+   state file as a backup copy and pushes the desktop's own states to
+   `~/erdos-n70/backup-desktop-states/`. `papers/REPORT-k6-gpu-descent-71-88.md`
+   is regenerated from the claim files by
+   `search/shapecsp/pairwise/update_report_descent.py`; both report updaters
+   now splice up to an end marker so hand-written sections after the tables
+   survive (the old splice deleted the Lean section once; restored from git).
+4. **Correction to item 2 of the 2026-09-19 entry:** the Lean statement was
+   written with mis-encoded Unicode; it is now given in ASCII.
 

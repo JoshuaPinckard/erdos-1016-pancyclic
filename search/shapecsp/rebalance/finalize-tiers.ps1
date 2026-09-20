@@ -54,7 +54,8 @@ New-Item -ItemType Directory -Force -Path $OUT | Out-Null
 $log = Join-Path $PSScriptRoot 'finalize.log'
 function Say { param([string]$m) Add-Content -LiteralPath $log -Value ("[finalize] " + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + " " + $m) -Encoding ASCII }
 function Field { param([string]$Path, [string]$Name)
-    $m = Select-String -LiteralPath $Path -Pattern ('"' + $Name + '": ([A-Za-z0-9]+)') | Select-Object -First 1
+    # Quoted string fields ("status": "passed") as well as bare booleans and numbers.
+    $m = Select-String -LiteralPath $Path -Pattern ('"' + $Name + '": "?([A-Za-z0-9_-]+)"?') | Select-Object -First 1
     if ($m) { $m.Matches[0].Groups[1].Value } else { '?' } }
 $env:PYTHONUTF8 = '1'
 $running = @{}

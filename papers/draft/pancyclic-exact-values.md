@@ -42,17 +42,20 @@ Computation has since refuted the two members that had been singled out
 ($2\,\mathrm{Fib}(k+3)-2$, predicting $66$, and $2^{k-2}(10-k)$, predicting
 $64$): the family above is pancyclic at every $n$ from $41$ to $67$, and
 eleven separately found 6-chord graphs cover $n=57,\dots,67$, each re-checked
-by an independent verifier, so $67\le t_6\le93$.
-The upper end is an exhaustive result, not a counting one: the shape/CSP
-algorithm below refutes every $n$ from $94$ up to $111$, and $111$ is the
-largest $n$ any $6$-chord shape can reach at all. The counting ceiling $129$ is
-now only a trivial prior bound. The upper end is the best the completed levels
-support and may yet fall: the levels at $n=92$ and $n=93$ are undecided, and a
-non-existence descent from $93$ downwards is in progress. We also describe an exact per-shape
-feasibility algorithm (a $C_n$ plus $k$ chords is a subdivision of one of
-finitely many multigraphs, so pancyclicity becomes a covering problem in the
-arc lengths) that reproduces $t_2,t_3,t_4$ from scratch and is the tool for
-deciding $t_6$ exactly.
+by an independent verifier, so $t_6\ge67$. The upper end is an exhaustive
+result, not a counting one: the shape/CSP algorithm below refutes every $n$
+from $89$ up to $111$, and $111$ is the largest $n$ any $6$-chord shape can
+reach at all, so $t_6\le88$; the counting ceiling $129$ is now only a trivial
+prior bound. A GPU implementation of the same shape reduction, with a pairwise
+Hall prune and exhaustion claims re-derived by an independent tool, has since
+refuted the three levels just above the family: no $6$-chord pancyclic graph
+exists on $68$, $69$ or $70$ vertices. So $t_6=67$, the last value of the
+family, unless a $6$-chord pancyclic graph exists at some $n$ with
+$71\le n\le88$, a range the same pipeline is now deciding level by level. We
+also describe the exact per-shape feasibility algorithm (a $C_n$ plus $k$
+chords is a subdivision of one of finitely many multigraphs, so pancyclicity
+becomes a covering problem in the arc lengths) that reproduces $t_2,t_3,t_4$
+from scratch and is the tool behind both computations.
 
 ## 1. Introduction
 
@@ -201,15 +204,19 @@ $$t_1=5,\quad t_2=8,\quad t_3=14,\quad t_4=24,\quad t_5=40.$$
 (Source: `notes/01-subdivision-reformulation.md`, "Update 2026-09-14 evening,"
 consistent with Griffin Table 1 for $t_1..t_4$ and with this project's
 exhaustive $n=41,k=5$ elimination for $t_5=40$.) The next threshold is not yet
-known exactly: $67\le t_6\le93$, the lower end from explicit 6-chord witnesses
-on every $n$ from $57$ to $67$ (Section 6.3), the upper end from the exhaustive
-shape/CSP refutation of the contiguous block $94\le n\le111$ (Section 3.5), in
-which $111$ is the largest $n$ attainable by any $6$-chord shape. The counting
-ceiling $2^{k+1}+1=129$ at $k=6$ is superseded by this and is retained only as
-the trivial prior bound. The upper end is stated as what the completed levels
-establish, not as a final value: the levels at $n=92$ and $n=93$ are not yet
-decided — they are counted on neither side — and a non-existence descent
-from $93$ downwards is running, so any level it closes lowers this end by one.
+known exactly, but it is pinned to one value or a short range:
+$$t_6=67\quad\text{or}\quad 71\le t_6\le88.$$
+The lower end comes from explicit 6-chord witnesses on every $n$ from $57$ to
+$67$ (Section 6.3); the upper end from the exhaustive shape/CSP refutation of
+the contiguous block $89\le n\le111$ (Section 3.5), in which $111$ is the
+largest $n$ attainable by any $6$-chord shape; and the three levels just above
+the family, $68\le n\le70$, are closed by the GPU exhaustion of Section 3.6,
+which finds no $6$-chord pancyclic graph at any of them. The counting ceiling
+$2^{k+1}+1=129$ at $k=6$ is superseded by this and is retained only as the
+trivial prior bound. The levels $71\le n\le88$ are being decided by the
+pipeline of Section 3.6, the even levels from $88$ downwards on one card and
+level $71$ then the odd levels from $87$ downwards on the other; the first
+witness found, if any, settles $t_6$, and if none is found then $t_6=67$.
 
 **Between the two ends, $h$ is known exactly and unconditionally.**
 
@@ -418,6 +425,21 @@ the partial chord set is abandoned (`search/pancyc.c`, comment block and the
   `pancyclicWithChords_39_5`, `pancyclicWithChords_40_5`,
   `pancyclicWithChords_41_6`, and `pancyclicWithChords_56_6` all report
   exactly `[propext, Classical.choice, Quot.sound]`.
+
+  Since 2026-09-20 the whole upper half of the range result is kernel-checked
+  as well: `Erdos1016/Family.lean` proves
+  `family_pancyclic_41_67 : ∀ n, 41 ≤ n → n ≤ 67 → PancyclicWithChords n 6`
+  from 27 per-level certificates `Erdos1016/Family/W41.lean` .. `W67.lean`,
+  in which the family $F_n$ of Section 6.3 is given one explicit vertex list
+  per cycle length and Lean re-derives by `decide` that each list is a cycle
+  of the stated length in the stated graph, that the six chords are distinct
+  non-cycle edges, and that the Bool adjacency equals `baseCycle n ⊔
+  fromEdgeSet cs`. `lake build` is clean (8743 jobs, no `sorry`) and
+  `Axioms.lean` reports `[propext, Classical.choice, Quot.sound]` for the
+  range theorem and for every certificate. The lists were generated by
+  `search/k6/gen_family_lean.py` and are certificates only; nothing computed
+  by that script is trusted. Every non-existence result in this note remains
+  computational (Sections 3.4, 3.5 and 3.6).
 
 ### 3.4 Which program established which bound
 
@@ -657,12 +679,63 @@ cap and Hall bounds without any search, and levels $101$ down to $94$ with
 every eligible shape decided (`search/shapecsp/level-k6-n94.txt` …
 `level-k6-n111.txt`; the aggregate `search/shapecsp/k6-levels.log` is missing
 the $n=94$ and $n=95$ rows, which were run separately and are recorded in
-their own per-level files). This contiguous block is what gives
-$t_6\le93$; no single level in it is redundant. The two levels below it,
-$n=93$ and $n=92$, are $0$-byte files — started, not finished — so they are
-UNKNOWN and are counted on neither side of the bracket; a descent from $93$
-downwards is running, and each level it closes with `gaveup=0`, joined onto
-the block, lowers the upper end by one.
+their own per-level files). The descent has since
+closed the five levels below it the same way: $n=93$ (114 eligible shapes, all
+UNSAT, `REPORT-k6-level93-verify.md`), $n=92$ (152 of 152 UNSAT, with an
+independent re-enumeration differing in nothing, `REPORT-k6-level92-verify.md`)
+and $n=91,90,89$ (all UNSAT, enumeration diff $0$, the same `bb` build as the
+block above, `REPORT-k6-level89-91-verify.md`; the run itself is documented in
+`papers/REPORT-k6-descent.md`). The $0$-byte `level-k6-n92.txt` and
+`level-k6-n93.txt` in `search/shapecsp/` are the abandoned first attempts at
+those two levels and are not the evidence. The contiguous block is therefore
+$89\le n\le111$ and is what gives $t_6\le88$; no single level in it is
+redundant. Below $89$ the per-level branch-and-bound grows too expensive for
+one CPU, and the levels $68$ to $88$ are handled by the GPU pipeline of the
+next subsection.
+
+### 3.6 GPU exhaustion of the levels between the family and the block (`search/shapecsp/pairwise/`)
+
+Between the witnesses at $n\le67$ and the CPU block at $n\ge89$ the same shape
+reduction is run on GPUs, one level at a time, with the per-shape question
+decided by enumeration rather than branch-and-bound. The census of a level
+(`census_level.py`: the enumeration of the $21{,}878$ shapes of Section 3.5,
+restricted to the shapes whose cap and interval-Hall test admit that $n$, and
+reproducing the earlier $n=68,69,70$ manifests byte for byte) lists, per
+shape, the arc lower bounds and the cycle forms; every composition of the arc
+lengths summing to $n$ is then tested on the GPU against the forms, one thread
+per prefix of the composition, the last two arcs enumerated in-thread with two
+64-bit coverage words. Two facts make the count feasible. Shapes with at most
+$10$ branch vertices are enumerated unrestrictedly. For $b=11,12$ the
+enumeration is restricted to the *pairwise-admissible* set $A$: the
+interval-Hall test is necessary for pancyclicity and monotone in the arc lower
+bounds, so raising any two lower bounds to the values a pancyclic composition
+takes keeps it true, and every pancyclic composition therefore lies in
+$A=\{a:\ \sum_i a_i=n,\ \text{low}\le a\le\text{high},\ a_j\le T[i][j][a_i]\ \text{for every ordered pair }(i,j)\}$,
+which per-shape tables enumerate exactly and which admits one composition in
+roughly $42$ to $47$ at $b=12$ and one in $10$ to $15$ at $b=11$
+(`search/shapecsp/pairwise/SPEC.md`). Every unit of work records the number of
+compositions it visited; a level is claimed exhausted only when an independent
+tool, run from a frozen snapshot of the code, re-derives the unit set of every
+tier from the hashed census manifest and finds every unit present and none
+extra, and, for the pairwise tiers, rebuilds every shape's tables from its
+census row with matching hashes and finds the visited counts equal to the
+manifest totals shape by shape. Controls: the runner refuses to start unless
+the known witnesses at $n=56$ and $n=67$ are found at their ranks and sampled
+ranks unrank identically on CPU and GPU; and a blind run of the whole pipeline
+over the whole of level $67$, every shape and every $b$, found the family
+member $F_{67}$ at its shape ($b=11$, shape $20889$) and nothing else
+(`papers/verification/control-n67-b*.json`).
+
+*Result.* Levels $68$, $69$ and $70$ are exhausted with zero hits in every
+tier: $21$ claim files under `papers/verification/`, rendered and totalled in
+`papers/REPORT-k6-gpu-pairwise-68-70.md`, with the independent review of the
+prune, the tables, the kernel and the claim tool in
+`papers/REPORT-review-pairwise.md`. Hence $h(68)=h(69)=h(70)\ge7$, the first
+three levels above the family, and $t_6\notin\{68,69,70\}$. The levels
+$71\le n\le88$ are being run by the same pipeline
+(`papers/REPORT-k6-gpu-descent-71-88.md`, regenerated from the claim files as
+they land), each card working downwards so that the first witness found, if
+any, is $t_6$ itself; if none is found, $t_6=67$.
 
 ## 4. The subdivision lemma, and what counting can and cannot give
 
@@ -835,38 +908,38 @@ re-checked with the independent `search/verify.py` (networkx
 `simple_cycles`; full output in `papers/draft/verify-rerun-20260914.txt`),
 exist at every $n$ from $57$ to $67$ (chord sets in Section 6.3), and the
 family $F_n$ of Section 6.3 is pancyclic at every $n$ from $41$ to $67$, so
-$$67\ \le\ t_6\ \le\ 93.$$
+$$t_6=67\quad\text{or}\quad 71\le t_6\le88.$$
 The upper end is the exhaustive shape/CSP block of Section 3.5: every level
-from $n=94$ to $n=111$ answers `sat=0` with zero abandoned searches
-(`search/shapecsp/level-k6-n94.txt` ... `level-k6-n111.txt`), and $111$ is the
-largest $n$ any $6$-chord shape admits, so no $6$-chord pancyclic graph exists
-on $94$ or more vertices. It supersedes the trivial counting ceiling
-$129=2^{6+1}+1$ ($N_0$ in `papers/REPORT-cyclecounts.md`'s notation), which is
-kept here only as the prior bound this computation replaced. Two levels inside
-the gap, $n=92$ and $n=93$, have not been decided and are counted on neither
-side; a non-existence descent from $93$ downwards is running, and each level it
-closes lowers this upper end by one. What the computation does to the family is sharper
-than "refutes it," and an earlier revision of this note over-claimed here. The
-bracket $67\le t_6\le93$ removes the members at both ends and leaves a middle
-band. A member predicting $66-2t$ is refuted from below whenever $66-2t<67$,
-i.e. for every $t\ge0$: that kills the predictions $66,64,62,\dots$, and with
-them **both named fits** (Fibonacci at $66$, the rival at $64$). It is refuted
-from above whenever $66-2t>93$, i.e. for every $t\le-14$. What survives is the
-thirteen members with $-13\le t\le-1$, predicting
-$t_6\in\{68,70,72,\dots,92\}$. In particular the member $t=-1$,
-$(a,b,c)=(-2,6,4)$ — check: $-2\cdot14+6\cdot8+4=24$ and
-$-2\cdot24+6\cdot14+4=40$ — predicts $t_6=68$ and is **not** refuted by
-anything computed here. An odd witness does not by itself refute the family:
-a witness at $n=67$ shows $t_6\ge67$, which is consistent with a prediction of
-$68$. It is only if $t_6$ turns out to be *odd* that every member falls at
-once, and $t_6$ is not known. The family $(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)$
-that establishes $h(n)\le6$ on all of $41\le n\le67$ has spectrum
+from $n=89$ to $n=111$ answers `sat=0` with zero abandoned searches
+(`search/shapecsp/level-k6-n94.txt` ... `level-k6-n111.txt` for the block
+closed first; `REPORT-k6-level93-verify.md`, `REPORT-k6-level92-verify.md` and
+`REPORT-k6-level89-91-verify.md` for the descent that extended it down to
+$89$), and $111$ is the largest $n$ any $6$-chord shape admits, so no
+$6$-chord pancyclic graph exists on $89$ or more vertices. It supersedes the
+trivial counting ceiling $129=2^{6+1}+1$ ($N_0$ in
+`papers/REPORT-cyclecounts.md`'s notation), which is kept here only as the
+prior bound this computation replaced. The three levels just above the family,
+$n=68,69,70$, are exhausted by the GPU pipeline of Section 3.6 with no witness.
+What the computation does to the family is sharper than "refutes it," and an
+earlier revision of this note over-claimed here. The bracket removes the
+members at both ends and leaves a middle band. A member predicting $66-2t$ is
+refuted from below whenever $66-2t<67$, i.e. for every $t\ge0$: that kills the
+predictions $66,64,62,\dots$, and with them **both named fits** (Fibonacci at
+$66$, the rival at $64$). It is refuted from above whenever $66-2t>88$, i.e.
+for every $t\le-12$, and the members $t=-1$ and $t=-2$, predicting $68$ and
+$70$, fall to the level exhaustions of Section 3.6. What survives is the nine
+members with $-11\le t\le-3$, predicting $t_6\in\{72,74,\dots,88\}$. An odd
+witness does not by itself refute the family: a witness at $n=67$ shows
+$t_6\ge67$, which is consistent with a prediction of $72$. Every surviving
+member falls at once if $t_6$ turns out to be *odd*, and in particular if
+$t_6=67$. The family $(0,2)(0,n-7)(1,13)(3,n-6)(4,31)(n-8,n-5)$ that
+establishes $h(n)\le6$ on all of $41\le n\le67$ has spectrum
 $[3,32]\cup[n-34,n]$, so it covers $[3,n]$ exactly while $n\le67$ and misses
-exactly the single length $33$ at $n=68$ (Section 6.3). $t_6=67$ is therefore
-possible but not established;
-the exact value is the target of the shape/CSP algorithm of Section 3.5, whose
-$k=6$ ladder has closed the range $94\le n\le111$ and is now descending
-through the $68\le n\le93$ gap that separates the two ends of the bracket.
+exactly the single length $33$ at $n=68$ (Section 6.3), and Section 3.6 shows
+that nothing else works at $68$, $69$ or $70$ either. $t_6=67$ is therefore
+the value unless a $6$-chord pancyclic graph exists at some $n$ in $71..88$;
+the GPU pipeline of Section 3.6 is deciding those eighteen levels now, and the
+first witness it finds, if any, is $t_6$.
 
 **Wallis's monotonicity question.** W. D. Wallis's open-problem sheet presented
 at IWOCA 2014 [Wa14] poses exactly two questions about $m(v)$: "1. Is it always
@@ -1024,9 +1097,11 @@ joint-neighbourhood sweeps, raw data in `search/k6/`) established:
   does not repair $n=68$ (best is still missing one length), and a complete
   2-of-6 slot sweep around the $n=68$ member finds no witness
   ($36{,}481{,}725$ candidates); the 3-of-6 sweep at $n=68$ was in flight when
-  `papers/REPORT-k6-gpu-joint.md` was written. So $n=68$ is a
+  `papers/REPORT-k6-gpu-joint.md` was written. So $n=68$ was a
   missing-one near-miss of exactly the kind the 3-of-6 sweep resolved at
-  $n=66$, and $t_6\ge68$ is open, not excluded.
+  $n=66$; the exhaustion of Section 3.6 has since shown that no $6$-chord
+  pancyclic graph exists on $68$, $69$ or $70$ vertices at all, so
+  $t_6\ge68$ is excluded and $t_6=67$ unless a witness exists in $71..88$.
 * **Both closed forms of Section 5 are refuted at their first genuine test.**
   The rival form $2^{k-2}(10-k)$ predicted $t_6=64$; the $n=65$ witness
   refutes it. The Fibonacci form $2\,\mathrm{Fib}(k+3)-2$ predicted
