@@ -1,0 +1,16 @@
+{
+  "n": 69,
+  "b": 7,
+  "source_sha256": "bceb4eee4bd6bd23e43cc83b7128a4230f9d542397f2bb1763ec5fb64a2fe828",
+  "expected_unit_count": 6,
+  "covered_unit_count": 6,
+  "missing_unit_count": 0,
+  "extra_unit_count": 0,
+  "manifest_rank_total": 574262263,
+  "covered_rank_total": 574262263,
+  "rank_totals_match": true,
+  "exact_match": true,
+  "hits": [],
+  "missing_sample": [],
+  "extra_sample": []
+}
