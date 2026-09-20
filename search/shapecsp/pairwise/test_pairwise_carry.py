@@ -93,6 +93,39 @@ def cpu_coverage(n, forms, a):
     return (c0, c1)
 
 
+# A dihedral image of the n=67 family witness whose long arc sits at index b-2:
+# the kernel reaches the SAT composition only after 27 sweep steps, and the
+# required length 64 is realised solely by a form carried across the word
+# boundary (found by review/w20_probe_carry_case.py: 4 carry-critical images
+# among the 110 usable dihedral images of the five n>=64 witnesses).
+CARRY_WITNESS = dict(n=67, chords=[[0, 3], [1, 6], [2, 10], [3, 5], [4, 8], [7, 9]],
+                     arcs=[1, 1, 5, 1, 1, 1, 1, 9, 18, 28, 1])
+
+
+def carry_witness_case(stock, mutant):
+    """Verdict-level check: the stock kernel must report this composition SAT,
+    the carry mutant must not, and search/verify.py must agree it is pancyclic."""
+    n, chords, arcs = CARRY_WITNESS["n"], CARRY_WITNESS["chords"], CARRY_WITNESS["arcs"]
+    b = len(arcs)
+    tab = PT.build(n, b, chords)
+    ok_admitted = PT.admitted(tab, arcs)
+    truth = G.V.pancyclic(n, G.materialise(tab["chords"], arcs))
+    r, st, s = PT.rank_prefix(tab, arcs[:b - 2])
+    hits, _, _, (rows, flags, _, _) = stock.run(tab, r, 1, debug=True)
+    _, _, _, (mrows, mflags, _, _) = mutant.run(tab, r, 1, debug=True, verify_hits=False)
+    idx = rows.index(arcs) if arcs in rows else -1
+    midx = mrows.index(arcs) if arcs in mrows else -1
+    rec = dict(case="carry-critical witness (dihedral image of the n=67 family witness)", n=n, b=b,
+               prefix_rank=r, admitted=ok_admitted, pancyclic_by_verify=truth,
+               visited_by_stock=idx >= 0, stock_flag=bool(flags[idx]) if idx >= 0 else None,
+               stock_verified_hit=any(h["arcs"] == arcs for h in hits),
+               mutant_flag=bool(mflags[midx]) if midx >= 0 else None,
+               sweep_steps_before_verdict=arcs[b - 2] - PT.completions(tab, st, s)[0][0])
+    rec["passes"] = bool(ok_admitted and truth and rec["stock_flag"] and rec["stock_verified_hit"] and rec["mutant_flag"] is False)
+    print(json.dumps(rec), flush=True)
+    return rec
+
+
 def main():
     src = HERE.parent / "gpu-blast"
     stock = G.Engine()
@@ -146,12 +179,15 @@ def main():
             picked += 1
             if picked >= 3:
                 break
+    witness = carry_witness_case(stock, mutant)
     summary = dict(cases=len(cases), crossing_prefixes=total_prefixes, compositions_checked=total_rows,
                    stock_all_match=stock_ok, mutant_differences=mutant_diffs,
                    mutation_detected=mutant_diffs > 0,
-                   note="coverage words compared bit-exactly against the CPU; the carry mutant must differ")
+                   carry_witness_sat_on_stock_and_not_on_mutant=witness["passes"],
+                   note="coverage words compared bit-exactly against the CPU; the carry mutant must differ, "
+                        "and the carry-critical witness must flip its verdict")
     print(json.dumps(summary), flush=True)
-    return 0 if stock_ok and mutant_diffs > 0 and cases else 1
+    return 0 if stock_ok and mutant_diffs > 0 and cases and witness["passes"] else 1
 
 
 if __name__ == "__main__":
