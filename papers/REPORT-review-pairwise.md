@@ -713,6 +713,272 @@ w20_probe_carry_case.py       find the dihedral image that DOES depend on it, an
                               separate stock from mutant on it
 w20_probe_newcarry_mutation.py  break the SHIPPED carry and check the new
                               test_pairwise_carry.py gate goes red (addendum 2)
+w20_probe_verifier2.py        addendum 3: D1/D2 re-run, D3 empty-A forgery, D4
+                              stale state hash, manifest reproducibility
+w20_probe_rebuild_determinism.py  addendum 3: why --rebuild -1 rejects an honest
+                              tier, on a real production tier
 w20-*.out / w20-*.err         raw output of every run above
-vattack/, det-a/, det-b/      the synthetic tiers the verifier probes built
+vattack/, vattack2/, det-*/   the synthetic tiers the verifier probes built
 ```
+
+---
+
+# Addendum 3, 2026-09-19 late: --rebuild -1 currently rejects honest tiers
+
+Measured against the working tree at the time of writing, which is **not** a
+clean checkout: `git status` reports `pairwise_tables.py`, `gpu_search_pairwise.py`
+and `test_pairwise_tables.py` modified and uncommitted, with scratch patch
+scripts under `pairwise/_w21scratch/`. An arc-order heuristic (`choose_order`,
+`ORDER_HEURISTICS = ("narrow-first", "wide-first", "natural")`,
+`build(..., order=None)`, `build_tier(..., heuristic="narrow-first")`) is in the
+working tree and in no commit. The two faults below are consequences of that
+in-flight work plus the header change that did land, and both are **false
+negatives on the honest path**, never false passes.
+
+`--rebuild -1` is now declared the sole gate for the final exhaustion claim
+(`verify_tier_combined.py` appends an error unless `args.rebuild == -1`). It
+currently fails on honest input, which is the condition under which a gate gets
+weakened rather than fixed.
+
+### Fault A — no tier built before the header change can ever match a rebuild
+
+`_HEADER_KEYS` is now
+`("format","n","b","shape_index","chords","order","lows","hi","vmax","forms","nstates","total_prefixes","total_compositions","empty")`
+— it gained `shape_index` (the repair I suggested for finding 1) and `order`.
+`FORMAT` was **not** bumped: it is still `"pairwise-tables-v1"`. The shipped
+production tables predate the change; `pairwise/tables/n68-b11/shape-19023.npz`
+has header keys `['b','chords','empty','format','forms','hi','lows','n','nstates','total_compositions','total_prefixes','vmax']`
+and declares the same format string.
+
+`PT.load` on those files still works and rehashes to the manifest's value
+(`9d8ab40070a81e21` both ways), so the runner and the verifier's header check are
+unaffected. `--rebuild` is not, because it compares against a *fresh* build whose
+header now carries the two new keys. Rebuilding three real shapes of the live
+`n68-b11` tier (`w20-rebuilddet.out`):
+
+```
+19023  hash_matches false  prefixes_match true  compositions_match true
+19026  hash_matches false  prefixes_match true  compositions_match true
+19027  hash_matches false  prefixes_match true  compositions_match true
+```
+
+Totals reproduce exactly; only the hash disagrees, and only because the hashed
+header changed shape under an unchanged format tag.
+
+### Fault B — the verifiers rebuild in natural order; build_tier no longer builds in natural order
+
+`_build_one` now computes
+`order = None if heuristic == "natural-order" else choose_order(n, row["b"], row["chords"], row["lows"], heuristic=heuristic)`
+and passes it to `build`. Both `verify_tier_exhaustion_pairwise.main` and
+`verify_tier_combined.main` rebuild with
+`PT.build(args.n, r["b"], r["chords"], r["lows"], shape_index=idx)` — **no
+`order` argument**, so `order=None`, so the natural order. On a tier I built
+with the current code minutes earlier (`w20-vattack3.out`, `w20-rebuilddet.out`):
+
+```
+manifest (narrow-first)  total_prefixes 38466   total_compositions 165418
+fresh build (natural)    total_prefixes 38784   total_compositions 165418
+verify_tier_combined --rebuild -1 on the HONEST tier:
+  exit 1, rebuilt_count 2, rebuilt_mismatches 2,
+  errors ["rebuilt tables disagree for shape 2082", "rebuilt tables disagree for shape 2083"]
+```
+
+`total_compositions` is invariant under the order — the module docstring says so
+and the measurement confirms it — so the number the exhaustion claim rests on is
+untouched. Only `total_prefixes`, and therefore the hash, move. `_build_one`
+already records `order=tab["order"]` in the manifest meta, so the repair is to
+pass it back: `PT.build(..., order=mshapes[idx]["order"])` in both verifiers.
+
+### D3 (new) — a manifest that claims a shape's `A` is empty passes by default
+
+The case the first pass did not cover. Forge `shape-2083.npz` to claim emptiness
+while describing the real shape: right `n`, `b`, `chords`, `lows`,
+`total_prefixes 0`, `total_compositions 0`, the array shapes `build()` produces
+on its `empty` branch, and a `tables_sha256` recomputed over that header. Put
+that hash and those zeros in the manifest and add the shape to `excluded`.
+Nothing contradicts it: the header check compares npz against manifest and both
+say zero, the shape contributes no units, and the per-shape composition check is
+guarded by `int(meta["total_prefixes"]) > 0`.
+
+```
+default (--rebuild 0):  exit 0, exact_match TRUE, errors []
+                        shapes_with_empty_admissible_set 1
+                        tier_total_compositions_manifest 165418  (true tier total 330681)
+                        165263 compositions of shape 2083 never enumerated
+--rebuild -1:           exit 1
+verify_tier_combined --rebuild -1: exit 1
+```
+
+So the default verifier still accepts a tier that silently drops a whole shape by
+declaring its admissible set empty, and only a rebuild catches it. That is the
+intended design — but it makes faults A and B blocking rather than cosmetic,
+because today `--rebuild -1` rejects honest tiers too, so its rejection of D3
+carries no information. **D3 must be re-run once A and B are fixed**; until then
+the empty-`A` case is not demonstrably caught by anything.
+
+### Closed by 83e8915
+
+* D1 and D2 remain closed: both exit 1 with
+  `"1 shape table files do not describe their gpu-blast shape: ['2083']"`, and
+  the honest control still exits 0 with `exact_match true`.
+* **D4 (new)** — a state whose `tier_manifest_sha256` does not match the file on
+  disk is now rejected: exit 1,
+  `"state tier_manifest_sha256 != hash of the tier manifest on disk (review finding 3)"`.
+* `tier-manifest.json` is now byte-reproducible across two builds of the same
+  tier (timings moved to a `tier-build.json` sidecar, which is present). With D4
+  that closes **finding 3** completely.
+* `order` is now in the hashed header, which closes the `SPEC.md` divergence
+  noted under finding 6.
+* `test_pairwise_tables.py` now requires `sound_evaluated`, closing **finding 4**
+  (not re-measured here; the change is in the working tree).
+
+### Caveat on this addendum
+
+`pairwise_tables.py` was being edited while these measurements ran. Faults A and
+B are reproducible from the recorded outputs, but the file may differ by the
+time they are read; the totals and hashes above name the exact tier and shapes
+so they can be re-taken.
+
+### Correction to this addendum
+
+Above I recorded finding 4 as closed "in the working tree". That was wrong about
+provenance: it is committed in 83e8915, which changes
+`test_pairwise_tables.run_case` to set `rec["sound_evaluated"] = unrestricted_size <= LIMIT_U`
+and adds `r["sound_evaluated"]` to the pass criterion in `__main__`, so a case
+above `LIMIT_U` now fails instead of scoring green on a missing key. The finding
+is closed; my citation was not.
+
+---
+
+# Addendum 4, 2026-09-19: closing verdict
+
+Commit references, each checked against the repository rather than taken from
+the change report:
+
+| item | commit | checked by |
+|---|---|---|
+| Runner compares every loaded table's `n`/`b`/`chords`/`lows` with the gpu-blast row (findings 1, 5 / D2) | 8bf6087 | diff read; D2 exits 1 |
+| Verifier per-shape header check, unconditional; `--rebuild -1` | 8bf6087 | diff read; D1 and D2 exit 1 |
+| `build_tier` writes no timing into `tier-manifest.json` (timings to `tier-build.json`); both verifiers compare the state's `tier_manifest_sha256` with the file on disk (finding 3) | 83e8915 | commit message and diff; D4 exits 1; two builds byte-identical |
+| `test_pairwise_tables.py` scores `sound_evaluated` as a hard requirement (finding 4) | 83e8915 | diff hunks `rec["sound_evaluated"] = unrestricted_size <= LIMIT_U` and the `__main__` criterion |
+| Kernel debug mode exports the coverage words; `test_pairwise_carry.py` (finding 2) | e852461 | diff read; stock exit 0, broken-shipped-carry exit 1 |
+| Verifier reports `exact_match_full_rebuild` and `claim_grade`; carry test requires **every** case to separate the mutant; `[3,n]` vs `[0,127]` mask agreement documented | f63f9f3 | `claim_grade` at line 181 of the verifier, `cases_not_separating` at line 189 of the carry test |
+| `shape_index` in the hashed header (finding 6) scheduled with Worker 21's arc-order change, so the tables hash breaks once | not yet committed | `pairwise_tables.py` still shows as modified |
+
+## Closing verdict
+
+**(1) Is `A` a provable superset of every pancyclic composition? YES.** The
+monotonicity of `Shape.hall_raises` in the arc lower bounds is provable and was
+measured at 15,600 comparable pairs with 0 violations; downward closure follows,
+which is what makes the forward-only staircase in `build()` and `pair_count_dp`
+equal to the both-direction set (2,172,074 box points, 0 disagreements);
+`per_arc_caps`' first-failure scan is monotone over its whole range (0
+violations). Every counterexample attempt failed: 29 real pancyclic witnesses
+all lie in `A`, and 58,461 exhaustively-found SAT compositions lost 0. The
+premises I did not verify are named under question (1) and are inherited from
+the unrestricted search: `shapes.cycle_forms` must be complete, and
+`bound.intervals`' `lows` rule.
+
+**(2) Do the tables and the kernel enumerate exactly `A`? YES**, on everything
+testable, and the one hole is now closed. 810,048 compositions matched the
+independent reference recursion in order with zero duplicates, missing or extra;
+172,829 prefix ranks round-tripped; `need0`/`need1` are exact for every `n` in
+3..70 including the 63/64 boundary; the live kernel matches the CPU tables at
+`n=68, 69, 70`. The cross-word carry was executed constantly and tested by
+nothing (a green mutant); it is now covered bit-exactly, and I confirmed the new
+gate goes red when the *shipped* carry is broken, not only when the test breaks
+its own copy.
+
+**(3) Is an incomplete or wrongly-planned tier impossible to report as
+exhausted? NOT YET, but for one remaining reason only.** D1, D2 and D4 are
+closed and re-measured. D3 — a manifest that declares a shape's admissible set
+empty, with a self-consistent forged table — still passes the default verifier
+with `exit 0, exact_match true`, and is caught only by a rebuild. That is the
+intended design, and `verify_tier_combined.py` refuses anything but
+`--rebuild -1`, so the claim path covers it. **The blocker is that `--rebuild -1`
+currently rejects honest tiers**, for the two faults in addendum 3. Fault A is
+scheduled (one coordinated hash break with the order change). Fault B is not:
+`verify_tier_exhaustion_pairwise.py` line 147 and `verify_tier_combined.py`
+line 155 both still call
+`PT.build(args.n, r["b"], r["chords"], r["lows"], shape_index=idx)` with no
+`order`, while `_build_one` builds with `choose_order(...)`. Until that one
+argument is passed, a full rebuild cannot succeed on a tier built by the current
+`build_tier`, and D3's rejection carries no information. Tracked as T563.
+
+Nothing in faults A or B can turn an unexhausted tier into a reported-exhausted
+one: both are false negatives on the honest path, and `total_compositions` — the
+quantity the exhaustion claim rests on — is invariant under the arc order
+(165,418 either way, measured). The soundness of `A` and the exactness of the
+enumeration are not affected by them.
+
+### Addendum 5 — D3 against the frozen claim path, and the scope of faults A and B
+
+Faults A and B are confined to the working tree. Since 18:25 the chains, the
+hourly sync and the unattended finalizers run from
+`search/shapecsp/pairwise-prod`, a snapshot of commit `f63f9f3`. I verified the
+snapshot rather than accepting it: every one of the ten `.py` files there is
+**byte-identical** to `git show f63f9f3:search/shapecsp/pairwise/<name>`
+(compared as bytes, not text). The frozen module reports
+
+```
+pairwise-prod/pairwise_tables.py
+_HEADER_KEYS ("format","n","b","chords","lows","hi","vmax","forms","nstates",
+              "total_prefixes","total_compositions","empty")     -- the v1 12-key tuple
+build(n, b, chords, lows=None, shape_index=None, check=True)     -- no order parameter
+FORMAT "pairwise-tables-v1"
+```
+
+so neither the `_HEADER_KEYS` growth nor `build_tier`'s `choose_order` is in the
+code any claim is made with. `search/shapecsp/review/w20_probe_d3_prod.py` puts
+that directory first on `sys.path` and invokes
+`pairwise-prod/verify_tier_combined.py` by path
+(`w20-d3prod.out`):
+
+**Honest scratch tier, claim tool, `--rebuild -1`:**
+
+```
+exit 0, exact_match true, errors []
+rebuilt_count 2, rebuilt_mismatches 0, rebuild_covers_every_pairwise_shape true
+pairwise_compositions_manifest 330681 == pairwise_compositions_counted 330681
+union_covers_tier true
+```
+
+A full rebuild of every shape succeeds on the frozen path. Faults A and B do not
+reach it.
+
+**D3 (one shape's tables forged to claim an empty admissible set, manifest
+agreeing), claim tool, `--rebuild -1`:**
+
+```
+exit 1, exact_match false
+errors ["rebuilt tables disagree for shape 2083"]
+rebuilt_count 2, rebuilt_mismatches 1, rebuild_covers_every_pairwise_shape true
+```
+
+D3 is rejected, and rejected for the right reason — the rebuild from the
+gpu-blast row, not an incidental mismatch. 165,263 compositions would otherwise
+have gone unenumerated.
+
+**D3 through the exhaustion verifier with the default `--rebuild 0`:**
+
+```
+exit 0, exact_match true, errors []
+claim_grade "manifest-consistent-only", exact_match_full_rebuild false
+shapes_with_empty_admissible_set 1, tier_total_compositions_manifest 165418
+```
+
+The default run still accepts it, as designed — but `f63f9f3` now makes that
+result label itself: `claim_grade "manifest-consistent-only"` and
+`exact_match_full_rebuild false` say on the face of the output that this is not
+a claim. That is the difference between a gap and a trap, and it closes my last
+open point from addendum 2.
+
+So, for the tiers being claimed tonight: the claim tool accepts an honest tier
+under a full rebuild and rejects the empty-`A` forgery, and a run that did not
+do a full rebuild cannot be mistaken for one. Faults A and B remain open against
+the working tree and are tracked for Worker 21's arc-order adoption (v2 format
+string, a legacy path that rebuilds v1 tiers hash-identically, the verifiers
+passing `order=mshapes[idx]["order"]`, and permuted-order GPU and carry tests);
+T563 covers re-running D3 against that code when it lands.
+
+End of review.
