@@ -34,7 +34,7 @@ def visit_all(engine, tab):
     off, total = 0, tab["total_prefixes"]
     while off < total:
         cnt = min(G.DEBUG_MAX, total - off)
-        found, _, c, (r, f, _) = engine.run(tab, off, cnt, debug=True, verify_hits=False)
+        found, _, c, (r, f, _, _) = engine.run(tab, off, cnt, debug=True, verify_hits=False)
         rows.extend(r)
         flags.extend(f)
         comps += c

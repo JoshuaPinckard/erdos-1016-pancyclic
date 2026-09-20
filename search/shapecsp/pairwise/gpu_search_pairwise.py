@@ -57,7 +57,7 @@ extern "C" __global__ void scan(int n, int b, int vmax, int nf,
  const int* Tlast_g, const int* masks_g, const int* cs_g,
  U total_prefixes, U offset, U count,
  int* nhit, U* hits, int maxhit, U* ncomp, int* viol,
- int debug, int* arcs_out, int* cnt_out) {
+ int debug, int* arcs_out, int* cnt_out, U* cov_out) {
  __shared__ int lows[MAX_B];
  __shared__ int Tlast[MAX_V];
  __shared__ int masks[MAX_F];
@@ -126,6 +126,10 @@ extern "C" __global__ void scan(int n, int b, int vmax, int nf,
            for (int i = 0; i < b - 2; i++) row[i] = a[i];
            row[b - 2] = v; row[b - 1] = w;
            row[MAX_B] = sat;
+           /* the full coverage words, so a test can compare bit-exact
+              coverage rather than only the verdict */
+           cov_out[((long long)t * MAXC + j) * 2] = cov0;
+           cov_out[((long long)t * MAXC + j) * 2 + 1] = cov1;
          }
          j++;
        }
@@ -190,6 +194,7 @@ class Engine:
         viol = cp.zeros(1, cp.int32)
         arcs = cp.full((count * MAXC * (self.b + 1) if debug else 1,), -1, cp.int32)
         cnt = cp.zeros(count if debug else 1, cp.int32)
+        covs = cp.zeros((count * MAXC * 2 if debug else 2,), cp.uint64)
         t0 = time.perf_counter()
         self.kernel(((count + 127) // 128,), (128,),
                     (np.int32(n), np.int32(b), np.int32(tab["vmax"]), np.int32(len(tab["forms"])),
@@ -197,7 +202,7 @@ class Engine:
                      dev["capA"], dev["capB"], dev["Tlast"], dev["masks"], dev["cs"],
                      np.uint64(tab["total_prefixes"]), np.uint64(offset), np.uint64(count),
                      nhit, hits, np.int32(len(hits)), ncomp, viol,
-                     np.int32(debug), arcs, cnt))
+                     np.int32(debug), arcs, cnt, covs))
         self.done.record()
         self.done.synchronize()
         elapsed = time.perf_counter() - t0
@@ -209,8 +214,9 @@ class Engine:
         dbg = None
         if debug:
             arr = arcs.get().reshape(count, MAXC, self.b + 1)
+            cv = covs.get().reshape(count, MAXC, 2)
             cn = cnt.get()
-            rows, flags = [], []
+            rows, flags, coverage = [], [], []
             for t in range(count):
                 if int(cn[t]) > MAXC:
                     raise RuntimeError("debug record overflow: a prefix had more completions than MAXC")
@@ -218,7 +224,8 @@ class Engine:
                     row = arr[t, j]
                     rows.append([int(x) for x in row[:b]])
                     flags.append(bool(row[self.b]))
-            dbg = (rows, flags, cn)
+                    coverage.append((int(cv[t, j, 0]), int(cv[t, j, 1])))
+            dbg = (rows, flags, cn, coverage)
         if not verify_hits:
             return found, elapsed, comps, dbg
         if found > len(hits):
@@ -287,7 +294,7 @@ def controls(engine, mutate=False, sample=20):
             test["forms"] = [[0, 0]]
             test["tables_sha256"] = "mutated-" + tab["tables_sha256"]
         hits, _, comps, dbg = engine.run(test, r, 1, debug=True)
-        rows, flags, _ = dbg
+        rows, flags = dbg[0], dbg[1]
         if not any(h["arcs"] == a for h in hits) or a not in rows or not flags[rows.index(a)]:
             raise RuntimeError("POSITIVE CONTROL FAILED")
         evidence.append(dict(n=n, shape=canonical, arcs=a, prefix_rank=r, completions=comps,
@@ -296,7 +303,7 @@ def controls(engine, mutate=False, sample=20):
         rng = random.Random(n)
         ranks = [0, tab["total_prefixes"] - 1] + [rng.randrange(tab["total_prefixes"]) for _ in range(sample)]
         for rk in ranks:
-            _, _, comps, (rows, flags, _) = engine.run(tab, rk, 1, debug=True, verify_hits=False)
+            _, _, comps, (rows, flags, _, _) = engine.run(tab, rk, 1, debug=True, verify_hits=False)
             pa, pst, ps = PT.unrank_prefix(tab, rk)
             expected = [pa + [v, w] for v, w in PT.completions(tab, pst, ps)]
             truth = [V.pancyclic(n, materialise(tab["chords"], e)) for e in expected]
