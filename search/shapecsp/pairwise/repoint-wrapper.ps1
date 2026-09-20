@@ -43,8 +43,16 @@ try {
         ForEach-Object { Say "  stopping chain process $($_.ProcessId) $($_.Name)"; Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
     Start-Sleep -Seconds 2
     $r = Get-Runner
-    if ($r) { Say "stopping runner $($r.ProcessId) (unit in flight lost; state file atomic)"; Stop-Process -Id $r.ProcessId -Force; Start-Sleep -Seconds 3 }
-    if (Get-Runner) { throw "runner still alive" }
+    if ($r) {
+        Say "stopping runner $($r.ProcessId) (unit in flight lost; state file atomic)"
+        Stop-Process -Id $r.ProcessId -Force
+        # A runner inside a CUDA call can take more than the 3 s this used to
+        # wait (2026-09-19 18:47: it died at ~4 s, after the throw, leaving the
+        # wrapper un-edited and the card idle).  Wait up to 30 s.
+        $waited = 0
+        while ((Get-Runner) -and $waited -lt 30) { Start-Sleep -Seconds 1; $waited++ }
+    }
+    if (Get-Runner) { throw "runner still alive after 30 s" }
     Get-ChildItem (Join-Path $PW '*.json.lock') -ErrorAction SilentlyContinue | ForEach-Object { Remove-Item $_.FullName -Force; Say "removed lock $($_.Name)" }
     $new = $text -replace ('run-chain-desktop-' + [regex]::Escape($From) + '\.cmd'), "run-chain-desktop-$To.cmd"
     Set-Content -LiteralPath $vbs -Value $new -Encoding ASCII -NoNewline
