@@ -77,6 +77,21 @@ while ($true) {
             } else { $pending++ }
             continue
         }
+        # A claim tool started by an EARLIER finalizer instance (this script is
+        # restarted whenever its tier list changes) is adopted by command line,
+        # never duplicated: while it runs the entry stays pending; once it is
+        # gone its .part output becomes the result file.
+        if ($kind -ne 'control') {
+            $alive = Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+                Where-Object { $_.CommandLine -like '*verify_tier_combined.py*' -and $_.CommandLine -like "*--n $n --b $b *" }
+            $part = "$final.part"
+            if ($alive) { $pending++; continue }
+            if ((Test-Path $part) -and (Get-Item $part).Length -gt 0) {
+                Move-Item -LiteralPath $part -Destination $final -Force
+                Say "n=$n b=$b claim tool (earlier finalizer) finished: exact_match=$(Field $final 'exact_match') rebuilt_mismatches=$(Field $final 'rebuilt_mismatches') rebuild_covers_every_pairwise_shape=$(Field $final 'rebuild_covers_every_pairwise_shape') -> $final"
+                continue
+            }
+        }
         $pending++
         if ($kind -eq 'control') {
             $state = Join-Path $PW "control-state-n$n-b$b.json"
