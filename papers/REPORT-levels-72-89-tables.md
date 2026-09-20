@@ -9,16 +9,21 @@ integrity-clean.
 
 ## Leading finding: 11 tiers were built with an uncommitted worktree module before the frozen module was restored -- fixed, no data was actually wrong
 
-**Corrected mechanism (per Manager, who made the edits and has the first-hand
-account -- my original write-up below had the causal direction backwards):**
-laptop `pairwise_tables.py` had been overwritten at ~18:14 PDT with a copy of
-Worker 21's uncommitted desktop worktree module (14-key hashed header, arc
-order permuted); Worker 20 never touched this file. The 11 tiers below were
-built with that copy, roughly 18:03-18:22 PDT. At **18:22:48 PDT the Manager
-restored the committed module** on the laptop (`cp` from `pairwise-prod`, md5
-`92636a0d`) -- that restore, not a new edit, is the file-change event my own
-mtime/hash evidence below caught; I had misread it as the corruption landing
-when it was actually the fix landing.
+**Corrected mechanism and exact fault window (per Manager, who made the
+restore and recorded these mtimes on the laptop at 18:18:58 PDT -- my
+original write-up below had the causal direction backwards):** laptop
+`search/shapecsp/pairwise/pairwise_tables.py` had mtime `18:14:31.969` and
+md5 `4b765c08` -- the desktop worktree version with the 14-key hashed header
+and permuted arc order -- most likely Worker 21 testing its patch; not this
+task, and as far as the Manager can tell not Worker 20 either.
+`gpu_search_pairwise.py`, `gpu_state_runner_pairwise.py` and
+`test_pairwise_tables.py` were untouched, mtime `18:12:43` at their committed
+md5s. **The fault window is `18:14:31` to `18:22:48` PDT**: the 11 tiers
+below were built inside it, with the 14-key worktree module. The write I
+measured at `18:22:48.315` was the Manager restoring the committed module
+(`cp` from `pairwise-prod`, md5 `92636a0d`) after finding the worktree
+copy -- **`18:22:48` is the end of the fault, not its start**; I had misread
+it as the corruption landing when it was the fix landing.
 
 Evidence I gathered directly (still accurate as observations, only the
 causal reading above is corrected):
@@ -36,8 +41,9 @@ causal reading above is corrected):
   "pairwise-tables-v1"` with no such fields (confirmed empty
   `MANIFESTS_WITH_ORDER_FIELDS` sweep below).
 
-`grep '^tier' build-ext-all.log` timestamps this exactly against the restore:
-`tier 72 9 rc=0 ...18:22:42`, then the file changed at `18:22:48`, then
+`grep '^tier' build-ext-all.log` timestamps the end of the fault window exactly
+against the restore: `tier 72 9 rc=0 ...18:22:42`, then the restore at
+`18:22:48`, then
 `tier 72 8 rc=0 ...18:22:49`. Everything built **before** 18:22:48 -- all of
 n=88, n=89, and n=72's b=8..12 -- was built with the uncommitted worktree
 module. Everything built **after** -- n=72's b=6,7 and all of n=73..87 -- was
