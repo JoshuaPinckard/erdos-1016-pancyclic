@@ -14,7 +14,11 @@ out = subprocess.run([sys.executable, str(HERE / "render_claims.py"), "--levels"
 text = report.read_text(encoding="utf-8")
 start = text.index("<!-- render_claims.py output")
 start = text.index("\n", start) + 1
-end = text.index("## Provenance")
+# The generated block ends at its own end marker; anything written by hand
+# between that marker and '## Provenance' (the Lean section, 2026-09-20) is
+# kept.  Splicing up to '## Provenance' deleted that section once.
+END = "<!-- end render_claims.py output -->"
+end = text.index(END)
 text = text[:start] + "\n" + out + "\n\n" + text[end:]
 verdicts = [l for l in out.splitlines() if l.startswith("* n = ")]
 complete = [l for l in verdicts if "EXHAUSTED" in l]

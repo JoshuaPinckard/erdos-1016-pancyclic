@@ -89,6 +89,8 @@ Pairwise plan (cutover tiers), claim tool verify_tier_combined.py --rebuild -1:
 * n = 69: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 11 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 11 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
 * n = 70: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 11 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 11 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
 
+<!-- end render_claims.py output -->
+
 ## What is machine-checked in Lean, and what is not
 
 Lean 4 (v4.33.1, Mathlib v4.33.1), project root `lakefile.toml`, library

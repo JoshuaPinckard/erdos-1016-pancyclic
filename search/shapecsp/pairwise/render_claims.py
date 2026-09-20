@@ -61,24 +61,29 @@ def main():
     claims = load(args.dir, "combined")
     reasons = {n: [] for n in levels}
 
-    print("Unrestricted plan (b below the cutover), unit set re-derived from the census manifest:")
-    print()
-    print("| tier | units | ranks covered = manifest | hits | exact_match | claim file |")
-    print("|---|---|---|---|---|---|")
-    for n in levels:
-        for b in tiers_of_level(n, args.source):
-            if b >= args.exhausted_b_below:
-                continue
-            j = unres.get((n, b))
-            if j is None:
-                reasons[n].append(f"b={b}: no unrestricted claim file")
-                continue
-            if not (j.get("exact_match") and j.get("rank_totals_match") and not j.get("hits")):
-                reasons[n].append(f"b={b}: exact_match={j.get('exact_match')} hits={len(j.get('hits') or [])}")
-            print(f"| n={n} b={b} | {j['covered_unit_count']} of {j['expected_unit_count']} | {j['covered_rank_total']:,}"
-                  f"{' = manifest' if j['rank_totals_match'] else ' MISMATCH'} | {len(j.get('hits') or [])} | {j['exact_match']} | {j['_file']} |")
-    print()
-    print("Pairwise plan (cutover tiers), claim tool verify_tier_combined.py --rebuild -1:")
+    # Levels run entirely under the pairwise plan (71 and above: whole-tier
+    # states, census under pairwise/gpu-blast-ext) have no unrestricted tiers;
+    # --exhausted-b-below 0 selects that and drops the empty table.
+    if args.exhausted_b_below > 0:
+        print("Unrestricted plan (b below the cutover), unit set re-derived from the census manifest:")
+        print()
+        print("| tier | units | ranks covered = manifest | hits | exact_match | claim file |")
+        print("|---|---|---|---|---|---|")
+        for n in levels:
+            for b in tiers_of_level(n, args.source):
+                if b >= args.exhausted_b_below:
+                    continue
+                j = unres.get((n, b))
+                if j is None:
+                    reasons[n].append(f"b={b}: no unrestricted claim file")
+                    continue
+                if not (j.get("exact_match") and j.get("rank_totals_match") and not j.get("hits")):
+                    reasons[n].append(f"b={b}: exact_match={j.get('exact_match')} hits={len(j.get('hits') or [])}")
+                print(f"| n={n} b={b} | {j['covered_unit_count']} of {j['expected_unit_count']} | {j['covered_rank_total']:,}"
+                      f"{' = manifest' if j['rank_totals_match'] else ' MISMATCH'} | {len(j.get('hits') or [])} | {j['exact_match']} | {j['_file']} |")
+        print()
+    print("Pairwise plan" + (" (cutover tiers)" if args.exhausted_b_below > 0 else " (every tier of the level)")
+          + ", claim tool verify_tier_combined.py --rebuild -1:")
     print()
     print("| tier | shapes | unrestricted-done shapes | pairwise shapes | pairwise units | compositions (manifest = counted) | rebuilt shapes | mismatches | hits | exact_match | claim file |")
     print("|---|---|---|---|---|---|---|---|---|---|---|")
