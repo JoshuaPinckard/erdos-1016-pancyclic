@@ -50,7 +50,10 @@ param(
     [string[]]$Tiers = @('70:10', '68:11', '70:11', '70:12'),
     # Pairwise-plan state files (2026-09-19 cutover): same file name on both
     # machines, under search/shapecsp/pairwise/.  Same two guards as above.
-    [string[]]$PairwiseTiers = @('68:11', '70:11', '70:12'),
+    # Level 71 (whole-tier pairwise states, tables under pairwise/tables-ext,
+    # census under pairwise/gpu-blast-ext) is pulled for safekeeping; its claim
+    # is finalized on the laptop, which holds the table files.
+    [string[]]$PairwiseTiers = @('68:11', '70:11', '70:12', '71:12', '71:11', '71:10', '71:9', '71:8', '71:7', '71:6'),
     [string]$RemotePairwiseDir = '~/erdos-n70/search/shapecsp/pairwise',
     [switch]$WhatIfOnly
 )
@@ -184,7 +187,13 @@ foreach ($tier in $PairwiseTiers) {
     $vOut = $null
     try {
         $ErrorActionPreference = 'Continue'
-        $vOut = & $python $pverify $blast $localPath --n $n --b $b --tables (Join-Path $pairwiseDir 'tables') 2>&1
+        $psrc = $blast
+        $ptab = Join-Path $pairwiseDir 'tables'
+        if (-not (Test-Path (Join-Path $blast "n$n.jsonl"))) {
+            $psrc = Join-Path $pairwiseDir 'gpu-blast-ext'
+            $ptab = Join-Path $pairwiseDir 'tables-ext'
+        }
+        $vOut = & $python $pverify $psrc $localPath --n $n --b $b --tables $ptab 2>&1
         $vExit = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = 'Stop'

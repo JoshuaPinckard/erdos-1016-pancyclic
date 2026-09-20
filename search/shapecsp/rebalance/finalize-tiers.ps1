@@ -1,23 +1,37 @@
 <#
 .SYNOPSIS
-  Turn each finished production tier into a claim file without anyone watching.
+  Turn each finished tier into a claim file (or a control verdict) without
+  anyone watching.
 
 .DESCRIPTION
-  Every PollMinutes, for each tier in Tiers that has no claim file yet under
-  papers/verification/: run the fast monitoring verifier
-  (pairwise-prod/verify_tier_exhaustion_pairwise.py) on the pairwise state file;
-  when it exits 0 the tier's pairwise units are all present, so start the CLAIM
-  tool (pairwise-prod/verify_tier_combined.py --rebuild -1: every shape rebuilt
-  from its gpu-blast row, hash compared) as a low-priority background process
-  pinned off the runner's cores, and rename its output to
-  papers/verification/n{N}-b{B}-combined.json when it exits.  Laptop tiers
-  (68/11, 70/11, 70/12) arrive through the hourly sync task, so they are
-  finalized here as well, on the desktop copies.  Exits when every tier has a
-  claim file.  All code comes from the frozen pairwise-prod snapshot.
+  Every PollMinutes, for each entry in Tiers that has no result file yet under
+  papers/verification/:
+
+    N:B           production tier.  Run the fast monitoring verifier
+                  (pairwise-prod/verify_tier_exhaustion_pairwise.py) on the
+                  pairwise state; when it exits 0 the tier's pairwise units are
+                  all present, so start the CLAIM tool
+                  (pairwise-prod/verify_tier_combined.py --rebuild -1: every
+                  shape rebuilt from its gpu-blast row, hash compared) as a
+                  low-priority background process pinned off the runner's
+                  cores; its JSON becomes n{N}-b{B}-combined.json.
+    N:B:control   blind positive control (level 67).  pairwise/check_control.py
+                  exits 2 while the control state is incomplete, 0 when complete
+                  and passed, 1 when complete and failed; the JSON becomes
+                  control-n{N}-b{B}.json as soon as it is complete.
+
+  Laptop production tiers (68/11, 70/11, 70/12) arrive through the hourly sync
+  task and are finalized here on the desktop copies.  Exits when every entry has
+  a result file.  All verification code comes from the frozen pairwise-prod
+  snapshot; check_control.py only reads state, manifest and census files.
+  Start it through the scheduled task Erdos1016-finalize (schtasks /run): a
+  helper launched from an agent shell dies with that shell.
 #>
 param(
     [int]$PollMinutes = 10,
-    [string[]]$Tiers = @('69:11', '68:12', '69:12', '68:11', '70:11', '70:12')
+    [string[]]$Tiers = @('69:11', '68:12', '69:12', '68:11', '70:11', '70:12',
+                         '67:12:control', '67:11:control', '67:10:control', '67:9:control',
+                         '67:8:control', '67:7:control', '67:6:control')
 )
 $ErrorActionPreference = 'Continue'
 $SC = Split-Path -Parent $PSScriptRoot
@@ -29,14 +43,19 @@ $OUT = Join-Path $REPO 'papers\verification'
 New-Item -ItemType Directory -Force -Path $OUT | Out-Null
 $log = Join-Path $PSScriptRoot 'finalize.log'
 function Say { param([string]$m) Add-Content -LiteralPath $log -Value ("[finalize] " + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + " " + $m) -Encoding ASCII }
+function Field { param([string]$Path, [string]$Name)
+    $m = Select-String -LiteralPath $Path -Pattern ('"' + $Name + '": ([A-Za-z0-9]+)') | Select-Object -First 1
+    if ($m) { $m.Matches[0].Groups[1].Value } else { '?' } }
 $env:PYTHONUTF8 = '1'
 $running = @{}
-Say "start tiers=$($Tiers -join ',') poll=${PollMinutes}m prod=$PROD"
+Say "start pid=$PID tiers=$($Tiers -join ',') poll=${PollMinutes}m prod=$PROD"
 while ($true) {
     $pending = 0
     foreach ($t in $Tiers) {
-        $n, $b = $t.Split(':')
-        $final = Join-Path $OUT "n$n-b$b-combined.json"
+        $parts = $t.Split(':')
+        $n, $b = $parts[0], $parts[1]
+        $kind = if ($parts.Count -ge 3) { $parts[2] } else { 'prod' }
+        $final = if ($kind -eq 'control') { Join-Path $OUT "control-n$n-b$b.json" } else { Join-Path $OUT "n$n-b$b-combined.json" }
         if (Test-Path $final) { continue }
         if ($running.ContainsKey($t)) {
             $p = $running[$t]
@@ -44,15 +63,22 @@ while ($true) {
                 $running.Remove($t)
                 $part = "$final.part"
                 if (Test-Path $part) { Move-Item -LiteralPath $part -Destination $final -Force }
-                $m = Select-String -LiteralPath $final -Pattern '"exact_match": (true|false)' | Select-Object -First 1
-                $grade = if ($m) { $m.Matches[0].Groups[1].Value } else { 'unparsed' }
-                $mm = Select-String -LiteralPath $final -Pattern '"rebuilt_mismatches": (\d+)' | Select-Object -First 1
-                $bad = if ($mm) { $mm.Matches[0].Groups[1].Value } else { '?' }
-                Say "n=$n b=$b combined verifier exit=$($p.ExitCode) exact_match=$grade rebuilt_mismatches=$bad -> $final"
+                Say "n=$n b=$b claim tool exit=$($p.ExitCode) exact_match=$(Field $final 'exact_match') rebuilt_mismatches=$(Field $final 'rebuilt_mismatches') rebuild_covers_every_pairwise_shape=$(Field $final 'rebuild_covers_every_pairwise_shape') -> $final"
             } else { $pending++ }
             continue
         }
         $pending++
+        if ($kind -eq 'control') {
+            $state = Join-Path $PW "control-state-n$n-b$b.json"
+            if (-not (Test-Path $state)) { continue }
+            $part = "$final.part"
+            & $PY (Join-Path $PW 'check_control.py') --n $n --b $b --state $state 2>"$final.err" | Set-Content -LiteralPath $part -Encoding ASCII
+            $rc = $LASTEXITCODE
+            if ($rc -eq 2) { continue }
+            Move-Item -LiteralPath $part -Destination $final -Force
+            Say "control n=$n b=$b complete: status=$(Field $final 'status') hits=$(Field $final 'hits') failing=$(Field $final 'hits_failing_independent_verifier') family_witness_found=$(Field $final 'family_witness_found') exit=$rc -> $final"
+            continue
+        }
         $state = Join-Path $PW "pairwise-state-n$n-b$b.json"
         if (-not (Test-Path $state)) { continue }
         & $PY (Join-Path $PROD 'verify_tier_exhaustion_pairwise.py') (Join-Path $SC 'gpu-blast') $state --n $n --b $b --tables (Join-Path $PW 'tables') 2>$null | Out-Null
@@ -68,6 +94,6 @@ while ($true) {
         $running[$t] = $p
         Say "n=$n b=$b claim tool pid $($p.Id)"
     }
-    if ($pending -eq 0) { Say 'all tiers have claim files; exiting'; break }
+    if ($pending -eq 0) { Say 'all entries have result files; exiting'; break }
     Start-Sleep -Seconds (60 * $PollMinutes)
 }
