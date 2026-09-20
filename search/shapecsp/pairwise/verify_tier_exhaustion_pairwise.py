@@ -144,13 +144,18 @@ def main():
         bad = 0
         for idx in picked:
             r = tshapes[idx]
-            # rebuild in the manifest's own format and order, not this version's
-            # defaults: a v1 tier has neither key and must still rebuild to its
-            # recorded v1 hash, and a v2 shape must rebuild against the order it
-            # was actually filed with rather than whatever rule is default today
-            tab = PT.build(args.n, r["b"], r["chords"], r["lows"], shape_index=idx,
-                           order=mshapes[idx].get("order") or manifest.get("order_rule", "natural"),
-                           fmt=manifest.get("format", PT.FORMAT))
+            # rebuild in the manifest's own format and in the order RECORDED for
+            # this shape -- never the manifest's rule re-run by name, which
+            # rebuilds a different tier when the default rule has moved
+            try:
+                tab = PT.build(args.n, r["b"], r["chords"], r["lows"], shape_index=idx,
+                               order=PT.rebuild_order(manifest, mshapes[idx]),
+                               fmt=manifest.get("format", PT.FORMAT))
+            except ValueError as exc:
+                out["errors"].append(f"shape {idx}: {exc}")
+                bad += 1
+                rebuilt.append({"shape_index": idx, "hash_and_totals_match": False, "why": str(exc)})
+                continue
             ok = (tab["tables_sha256"] == mshapes[idx]["tables_sha256"]
                   and tab["total_prefixes"] == int(mshapes[idx]["total_prefixes"])
                   and tab["total_compositions"] == int(mshapes[idx]["total_compositions"]))

@@ -246,10 +246,54 @@ and the old one is kept working in two distinct senses:
 - **Rebuildable**: 30 sampled shapes rebuilt from the gpu-blast source in the
   manifest's own format reproduce that same hash. This is what
   `verify_tier_exhaustion_pairwise.py --rebuild -1` and `verify_tier_combined.py`
-  need to earn their claim; both now pass the manifest's `format` and the
-  per-shape recorded `order` back into `PT.build` rather than using this
-  version's defaults.
+  need to earn their claim.
 - **Distinct**: a v2 build of the same shape never collides with the v1 hash.
+
+### A verifier must rebuild by the RECORDED order, not by the rule name
+
+The reviewer measured a real failure on an honest tier: manifest
+`total_prefixes` 38466 from a narrow-first build against a 38784 natural
+rebuild, `rebuilt_mismatches` 2, exit 1. The cause is that a rebuild keyed on
+the manifest's **rule name** rebuilds in whatever that name means at rebuild
+time — and this change moved the default rule to `natural`, so the name no
+longer reproduced the tier it named. A rule is a default that can move; the
+recorded order is the thing the stored `tables_sha256` actually covers.
+
+`pairwise_tables.rebuild_order(manifest, meta)` is now the single source of that
+decision and both verifiers call it: the per-shape recorded `order` for a v2
+manifest, `None` (natural) for a v1 manifest, and a raised error — never a
+guess — for a v2 manifest that has lost a shape's order. The verifiers catch
+that error, count the shape as a mismatch and name it in `errors`, so a damaged
+manifest fails loudly instead of quietly rebuilding a different tier.
+
+Reproduced and closed on a scratch v2 tier built with a non-natural rule
+(`_w21scratch/check_rebuild.py`, 4 real n68-b11 shapes):
+
+| shape | manifest total_prefixes | rebuilt by rule name | rebuilt by recorded order |
+|---|---|---|---|
+| 19023 | 1,121,070,054 | 1,970,052,395 (hash differs) | 1,121,070,054 (hash matches) |
+| 19026 | 3,061,685,271 | 3,881,282,441 (hash differs) | 3,061,685,271 (hash matches) |
+| 19027 | 1,123,841,802 | 803,473,669 (hash differs) | 1,123,841,802 (hash matches) |
+| 19029 | 848,363,629 | 1,133,198,608 (hash differs) | 848,363,629 (hash matches) |
+
+```
+{"shapes": 4, "RED_rule_name_rebuild_mismatches": 4,
+ "GREEN_recorded_order_rebuild_matches": 4, "LOUD_missing_order_raises": true,
+ "refusal": "pairwise-tables-v2 tier manifest records no order for this shape,
+             so its tables_sha256 cannot be reproduced; rebuild the tier",
+ "V1_rebuild_order_is_natural": true, "passes": true}
+```
+
+That is the RED/GREEN for this gate: the old rule-name rebuild fails all four
+shapes, the recorded-order rebuild reproduces all four, a missing order refuses
+by name, and a v1 manifest still rebuilds natural in the legacy header. The
+4504-load / 30-legacy-rebuild check above was re-run after this change and is
+still 0 mismatches.
+
+`rebuild_order` is reached only from the two verifiers, and no test imports
+either verifier, so the GPU and carry tests cannot be affected by it; they were
+not re-run for this change. `test_pairwise_tables.py` was re-run and is
+unchanged (18 order runs, 524,231 prefix blocks OK, 0 failures).
 
 ## What changed, by symbol
 
@@ -285,7 +329,9 @@ and the old one is kept working in two distinct senses:
 order and format cases described above.
 
 `verify_tier_exhaustion_pairwise.py`, `verify_tier_combined.py`: rebuild in the
-manifest's format and recorded order.
+manifest's format and the shape's recorded order, through
+`pairwise_tables.rebuild_order`; a manifest that cannot supply one is counted as
+a mismatch and named in `errors`.
 
 `gpu_state_runner_pairwise.py`: `load_manifest` accepts any format in
 `PT.FORMATS` instead of only v1 — without this a v2 tier could never be run.
@@ -307,7 +353,8 @@ python _w21scratch/pinned.py test_pairwise_tables.py --format pairwise-tables-v1
 python _w21scratch/pinned.py test_pairwise_gpu.py    --format pairwise-tables-v1
 python _w21scratch/pinned.py test_pairwise_carry.py  --format pairwise-tables-v1
 
-python _w21scratch/check_formats.py      # 4504 loads + 30 legacy rebuilds + v1 refusal
+python _w21scratch/pinned.py _w21scratch/check_formats.py   # 4504 loads + 30 legacy rebuilds
+python _w21scratch/pinned.py _w21scratch/check_rebuild.py   # rule-name RED vs recorded-order GREEN
 python _w21scratch/mutate_natural.py     # GREEN / RED / GREEN on natural()
 python _w21scratch/sweep_pairs2.py       # every completion pair, 20 shapes per tier
 python _w21scratch/analyse_sweep.py      # scores each rule against the measured optimum

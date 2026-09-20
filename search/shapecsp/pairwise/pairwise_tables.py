@@ -469,6 +469,33 @@ def tables_sha256(tab, hdr=None):
     return h.hexdigest()
 
 
+def rebuild_order(manifest, meta):
+    """The arc order a verifier must rebuild one shape with.
+
+    It is the order RECORDED for that shape, never the manifest's rule re-run by
+    name.  A rule is a default that can change between builds; the recorded
+    order is the thing the stored tables_sha256 actually covers, and rebuilding
+    by rule produced a real false alarm (manifest total_prefixes 38466 from a
+    narrow-first build against a 38784 natural rebuild, two mismatches and exit
+    1 on an honest tier).
+
+    A v1 manifest records no order and is natural by construction.  A v2
+    manifest that has lost a shape's order is a DEFECT, not a natural-order
+    tier: that shape's hash cannot be reproduced, so this raises instead of
+    rebuilding something that is guaranteed to disagree.
+    """
+    fmt = manifest.get("format", FORMAT)
+    if fmt not in FORMATS:
+        raise ValueError(f"unknown tables format {fmt!r} in tier manifest")
+    if fmt == FORMAT:
+        return None
+    order = meta.get("order")
+    if order is None:
+        raise ValueError(f"{fmt} tier manifest records no order for this shape, so its "
+                         f"tables_sha256 cannot be reproduced; rebuild the tier")
+    return [int(x) for x in order]
+
+
 def save(path, tab):
     arrays = {name: arr for name, arr in _array_items(tab)}
     np.savez_compressed(str(path), header=np.frombuffer(
