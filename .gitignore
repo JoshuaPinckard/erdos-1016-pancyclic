@@ -60,6 +60,10 @@ papers/draft/*.pdf
 # shape/CSP cycle-form caches: derived, rebuilt by search/shapecsp/level.py
 search/shapecsp/*.pkl
 
+# claim files under papers/verification are tracked; the finalizers' partial
+# outputs are not
+papers/verification/*.part
+
 # shape/CSP evidence cited by papers/REPORT-shape-csp.md
 !search/shapecsp/control-k2-k5.log
 !search/shapecsp/k5-levels.log
