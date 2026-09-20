@@ -140,7 +140,11 @@ and `lake env lean Axioms.lean` reports every listed theorem depending only on
   identically on CPU and GPU with flags equal to `search/verify.py`. A blind
   positive control over the whole of level 67 (every shape, every b, known to
   contain the family witness (0,2)(0,60)(1,13)(3,61)(4,31)(59,62) at shape
-  20889, b = 11) runs on the desktop after the production tiers; its verdict
+  20889, b = 11) ran on the desktop after the production tiers: b = 12 passed
+  (1675 units, 0 hits, 22:18 PDT on 2026-09-19), and b = 11 found the family
+  witness at shape 20889 at 00:19 PDT on 2026-09-20 (1 hit, arcs
+  1,1,1,1,9,18,28,1,1,1,5, recorded with `search/verify.py pancyclic=True`;
+  re-run by hand: pancyclic, and the same set minus one chord is not); its verdict
   `papers/verification/control-n67-b{B}.json` is written by
   `pairwise/check_control.py` and must show the witness found and every hit
   re-verified by `search/verify.py`.
