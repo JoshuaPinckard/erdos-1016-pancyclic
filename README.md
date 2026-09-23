@@ -20,7 +20,7 @@ A graph on n vertices is *pancyclic* if it has a cycle of every length 3, ..., n
 - m(38) = 43, m(39) = 44 and m(40) = 45 were first published by P. White and Claude, [Erdős #1016 working report](https://www.erdosproblemaday.com/report/1016), 2026-07-29.
 - m(41) = 47 was first published in [Robinfxa/JSP-000846](https://github.com/Robinfxa/JSP-000846) on 2026-09-17, with a Lean-checked exclusion.
 
-This project found those four values independently in September 2026, without knowing of either source. The long draft in `papers/draft/` was written before these sources turned up, and it says so at the top. We have found no earlier source for h(n) = 6 on 42 ≤ n ≤ 67 or for the bounds on t_6. The body of George, Khodkar and Wallis (2016), Chapter 4.5, was not available to us.
+The project's own literature sweep had found the White and Claude report (`papers/REPORT-lit-1.md`), but the long draft in `papers/draft/` still called m(38..40) new. The Robinfxa release was not known to the project. A note at the top of the draft records both points. We have found no earlier source for h(n) = 6 on 42 ≤ n ≤ 67 or for the bounds on t_6. The body of George, Khodkar and Wallis (2016), Chapter 4.5, was not available to us.
 
 ### What is formal and what is computational
 
