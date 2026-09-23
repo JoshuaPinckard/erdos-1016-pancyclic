@@ -2,6 +2,15 @@
 
 **Authors:** AUTHORS TBD
 
+> **Status note (2026-09-23).** This is the project's long working draft as of 2026-09-20, kept for its
+> method sections and evidence trail. The one-page paper in `paper/` supersedes it where they differ.
+> Two priority corrections: the values $m(38)=43$, $m(39)=44$, $m(40)=45$ first appeared publicly in
+> P. White and Claude, "Erdős #1016 working report" (erdosproblemaday.com/report/1016, 2026-07-29), and
+> $m(41)=47$ in the GitHub repository Robinfxa/JSP-000846 (2026-09-17). Statements below that call those
+> four values new were written before these were found. Since this draft, levels 71, 80, 82, 86, 87, 88 and 89
+> have also been exhausted with zero hits, so $t_6=67$ or $t_6\in\{72,\dots,79,81,83,84,85\}$
+> (`papers/REPORT-k6-gpu-descent-71-88.md`).
+
 ## Abstract
 
 A graph on $n$ vertices is *pancyclic* if it contains a cycle of every length

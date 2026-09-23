@@ -593,6 +593,12 @@ since the descent below 93 had not reported when this pass was written.
    `papers/verification/control-n67-b12.json`). The b = 11 verdict file is
    written by `pairwise/check_control.py` when the tier completes and must
    show `family_witness_found: true` with zero hits failing the verifier.
+   At 00:41 PDT the same tier produced two further hits at shape 21106,
+   `(0,27)(18,30)(28,37)(29,37)(31,38)(32,39)` and its mirror image
+   (isomorphic to each other, NOT isomorphic to F_67; vertex 37 carries two
+   chords): a second 6-chord pancyclic graph on 67 vertices, not among the
+   witnesses tabulated in the draft, independently verified pancyclic by
+   `search/verify.py`. The control found a witness nobody had pointed it at.
 2. **Draft brought to the settled facts** (`papers/draft/pancyclic-exact-values.md`,
    `papers/draft/SOURCES.md`): abstract and Section 2.1 now state
    t_6 = 67 or 71 <= t_6 <= 88; Section 3.3 records `family_pancyclic_41_67`;

@@ -1,0 +1,33 @@
+{
+ "n": 84,
+ "b": 9,
+ "source_sha256": "62efd0b80fceaff7f23949b92e1fda5afa7e8afc409cd0f727d1b3f1f6194d69",
+ "shapes": 2,
+ "unrestricted_done_shapes": 0,
+ "unrestricted_ranks_done": 0,
+ "pairwise_shapes": 2,
+ "pairwise_expected_units": 4,
+ "pairwise_covered_units": 4,
+ "pairwise_missing": 0,
+ "pairwise_extra": 0,
+ "pairwise_compositions_manifest": 24750120698,
+ "pairwise_compositions_counted": 24750120698,
+ "composition_mismatch_shapes": [],
+ "union_covers_tier": true,
+ "hits": [],
+ "rebuilt": [
+  {
+   "shape_index": 12895,
+   "match": true
+  },
+  {
+   "shape_index": 13294,
+   "match": true
+  }
+ ],
+ "rebuilt_count": 2,
+ "rebuilt_mismatches": 0,
+ "rebuild_covers_every_pairwise_shape": true,
+ "errors": [],
+ "exact_match": true
+}

@@ -21,18 +21,49 @@ Pairwise plan (every tier of the level), claim tool verify_tier_combined.py --re
 
 | tier | shapes | unrestricted-done shapes | pairwise shapes | pairwise units | compositions (manifest = counted) | rebuilt shapes | mismatches | hits | exact_match | claim file |
 |---|---|---|---|---|---|---|---|---|---|---|
+| n=89 b=10 | 20 | 0 | 20 | 35 of 35 | 176,654,681,465 = counted | 20 | 0 | 0 | True | n89-b10-combined.json |
+| n=89 b=11 | 173 | 0 | 173 | 1155 of 1155 | 6,362,121,095,845 = counted | 173 | 0 | 0 | True | n89-b11-combined.json |
+| n=89 b=12 | 86 | 0 | 86 | 852 of 852 | 6,351,482,709,727 = counted | 86 | 0 | 0 | True | n89-b12-combined.json |
+| n=88 b=10 | 29 | 0 | 29 | 55 of 55 | 237,168,418,323 = counted | 29 | 0 | 0 | True | n88-b10-combined.json |
+| n=88 b=11 | 212 | 0 | 212 | 1690 of 1690 | 8,557,459,926,912 = counted | 212 | 0 | 0 | True | n88-b11-combined.json |
+| n=88 b=12 | 89 | 0 | 89 | 881 of 881 | 6,527,257,742,964 = counted | 89 | 0 | 0 | True | n88-b12-combined.json |
+| n=87 b=10 | 83 | 0 | 83 | 179 of 179 | 745,056,265,416 = counted | 83 | 0 | 0 | True | n87-b10-combined.json |
+| n=87 b=11 | 269 | 0 | 269 | 2699 of 2699 | 10,895,442,844,592 = counted | 269 | 0 | 0 | True | n87-b11-combined.json |
+| n=87 b=12 | 100 | 0 | 100 | 938 of 938 | 6,481,343,754,051 = counted | 100 | 0 | 0 | True | n87-b12-combined.json |
+| n=86 b=10 | 134 | 0 | 134 | 341 of 341 | 1,353,469,193,010 = counted | 134 | 0 | 0 | True | n86-b10-combined.json |
+| n=86 b=11 | 299 | 0 | 299 | 2768 of 2768 | 11,952,493,238,074 = counted | 299 | 0 | 0 | True | n86-b11-combined.json |
+| n=86 b=12 | 106 | 0 | 106 | 947 of 947 | 6,337,942,535,605 = counted | 106 | 0 | 0 | True | n86-b12-combined.json |
+| n=85 b=11 | 366 | 0 | 366 | 4308 of 4308 | 21,386,814,189,490 = counted | 366 | 0 | 0 | True | n85-b11-combined.json |
+| n=85 b=12 | 121 | 0 | 121 | 2460 of 2460 | 16,949,594,924,263 = counted | 121 | 0 | 0 | True | n85-b12-combined.json |
+| n=84 b=9 | 2 | 0 | 2 | 4 of 4 | 24,750,120,698 = counted | 2 | 0 | 0 | True | n84-b9-combined.json |
+| n=84 b=10 | 282 | 0 | 282 | 763 of 763 | 2,528,550,866,292 = counted | 282 | 0 | 0 | True | n84-b10-combined.json |
+| n=84 b=12 | 129 | 0 | 129 | 2262 of 2262 | 15,405,486,106,597 = counted | 129 | 0 | 0 | True | n84-b12-combined.json |
+| n=82 b=9 | 20 | 0 | 20 | 23 of 23 | 58,758,892,187 = counted | 20 | 0 | 0 | True | n82-b9-combined.json |
+| n=82 b=10 | 460 | 0 | 460 | 1334 of 1334 | 5,450,700,511,521 = counted | 460 | 0 | 0 | True | n82-b10-combined.json |
+| n=82 b=11 | 466 | 0 | 466 | 4789 of 4789 | 26,606,801,877,006 = counted | 466 | 0 | 0 | True | n82-b11-combined.json |
+| n=82 b=12 | 144 | 0 | 144 | 2402 of 2402 | 16,005,883,308,587 = counted | 144 | 0 | 0 | True | n82-b12-combined.json |
+| n=80 b=9 | 98 | 0 | 98 | 110 of 110 | 206,502,701,220 = counted | 98 | 0 | 0 | True | n80-b9-combined.json |
+| n=80 b=10 | 616 | 0 | 616 | 1760 of 1760 | 8,466,260,817,994 = counted | 616 | 0 | 0 | True | n80-b10-combined.json |
+| n=80 b=11 | 547 | 0 | 547 | 5163 of 5163 | 28,876,862,466,923 = counted | 547 | 0 | 0 | True | n80-b11-combined.json |
+| n=80 b=12 | 173 | 0 | 173 | 2161 of 2161 | 13,883,565,056,898 = counted | 173 | 0 | 0 | True | n80-b12-combined.json |
+| n=71 b=6 | 1 | 0 | 1 | 1 of 1 | 3,849,216 = counted | 1 | 0 | 0 | True | n71-b6-combined.json |
+| n=71 b=7 | 6 | 0 | 6 | 6 of 6 | 109,982,743 = counted | 6 | 0 | 0 | True | n71-b7-combined.json |
+| n=71 b=8 | 209 | 0 | 209 | 206 of 206 | 45,680,089,835 = counted | 209 | 0 | 0 | True | n71-b8-combined.json |
+| n=71 b=9 | 1146 | 0 | 1146 | 1143 of 1143 | 2,398,015,173,490 = counted | 1146 | 0 | 0 | True | n71-b9-combined.json |
+| n=71 b=10 | 1836 | 0 | 1836 | 3697 of 3697 | 18,907,227,378,582 = counted | 1836 | 0 | 0 | True | n71-b10-combined.json |
+| n=71 b=11 | 1090 | 0 | 1090 | 6158 of 6158 | 34,529,689,878,118 = counted | 1090 | 0 | 0 | True | n71-b11-combined.json |
 | n=71 b=12 | 271 | 0 | 271 | 2182 of 2182 | 10,872,434,200,010 = counted | 271 | 0 | 0 | True | n71-b12-combined.json |
 
-* n = 89: INCOMPLETE -- b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 88: INCOMPLETE -- b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 87: INCOMPLETE -- b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 86: INCOMPLETE -- b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 85: INCOMPLETE -- b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 84: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
+* n = 89: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+* n = 88: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+* n = 87: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+* n = 86: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+* n = 85: INCOMPLETE -- b=10: no claim file
+* n = 84: INCOMPLETE -- b=11: no claim file
 * n = 83: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 82: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
+* n = 82: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
 * n = 81: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 80: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
+* n = 80: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
 * n = 79: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
 * n = 78: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
 * n = 77: INCOMPLETE -- b=8: no claim file; b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
@@ -41,7 +72,7 @@ Pairwise plan (every tier of the level), claim tool verify_tier_combined.py --re
 * n = 74: INCOMPLETE -- b=8: no claim file; b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
 * n = 73: INCOMPLETE -- b=7: no claim file; b=8: no claim file; b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
 * n = 72: INCOMPLETE -- b=6: no claim file; b=7: no claim file; b=8: no claim file; b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 71: INCOMPLETE -- b=6: no claim file; b=7: no claim file; b=8: no claim file; b=9: no claim file; b=10: no claim file; b=11: no claim file
+* n = 71: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
 
 <!-- end render_claims.py output -->
 
@@ -51,16 +82,16 @@ Census: search/shapecsp/pairwise/gpu-blast-ext/n{N}.jsonl (md5 of every level fi
 
 ## Status
 
-* n = 89: INCOMPLETE -- b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 88: INCOMPLETE -- b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 87: INCOMPLETE -- b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 86: INCOMPLETE -- b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 85: INCOMPLETE -- b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 84: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
+* n = 89: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+* n = 88: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+* n = 87: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+* n = 86: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
+* n = 85: INCOMPLETE -- b=10: no claim file
+* n = 84: INCOMPLETE -- b=11: no claim file
 * n = 83: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 82: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
+* n = 82: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
 * n = 81: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 80: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
+* n = 80: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
 * n = 79: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
 * n = 78: INCOMPLETE -- b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
 * n = 77: INCOMPLETE -- b=8: no claim file; b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
@@ -69,7 +100,8 @@ Census: search/shapecsp/pairwise/gpu-blast-ext/n{N}.jsonl (md5 of every level fi
 * n = 74: INCOMPLETE -- b=8: no claim file; b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
 * n = 73: INCOMPLETE -- b=7: no claim file; b=8: no claim file; b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
 * n = 72: INCOMPLETE -- b=6: no claim file; b=7: no claim file; b=8: no claim file; b=9: no claim file; b=10: no claim file; b=11: no claim file; b=12: no claim file
-* n = 71: INCOMPLETE -- b=6: no claim file; b=7: no claim file; b=8: no claim file; b=9: no claim file; b=10: no claim file; b=11: no claim file
+* n = 71: EXHAUSTED. Every tier of the gpu-blast census manifest is covered: b < 0 by the unrestricted plan (unit sets re-derived, rank totals equal), b >= 0 by the pairwise plan (every pairwise shape's tables rebuilt from its gpu-blast row with matching hashes, unrestricted-done shapes re-derived from the unrestricted state). Zero hits in every tier.
 
-0 of 18 bracket levels exhausted with zero hits; t_6 = 67 or lies in {71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88}.
+6 of 18 bracket levels exhausted with zero hits (88, 87, 86, 82, 80, 71); t_6 = 67 or lies in {72, 73, 74, 75, 76, 77, 78, 79, 81, 83, 84, 85}.
+Level 89 is also exhausted on the GPU, agreeing with the CPU descent (T573 cross-check).
 The T ledger (T3, T543, T573) carries the checkpoints.
