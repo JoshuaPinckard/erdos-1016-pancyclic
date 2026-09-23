@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use these results, proofs or code, please cite them as below."
-title: "Six chords are exactly enough for 41 <= n <= 67: minimal pancyclic graphs found by AI agents (Erdős Problem #1016)"
+title: "ToolsEnabled: AI Agents Determine Minimal Pancyclic Graphs with Six Chords, Demonstrated on Erdős Problem #1016"
 type: software
 authors:
   - family-names: Pinckard

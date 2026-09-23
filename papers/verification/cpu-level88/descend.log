@@ -1,0 +1,37 @@
+descend k=6 levels 93..75 jobs=5 nodecap=8000000000/shape
+descend k=6 levels 93..88 jobs=11 nodecap=8000000000/shape
+descend k=6 levels 93..88 jobs=12 nodecap=8000000000/shape
+descend k=6 levels 93..88 jobs=4 nodecap=8000000000/shape
+LEVEL n=93 eligible=114 29814.3s exit=0 :: RESULT no eligible shape reaches n >= 93; all 114 decided, gaveup=0 errors=0; 29809.5s
+LEVEL n=92 eligible=152 57151.9s exit=0 :: RESULT no eligible shape reaches n >= 92; all 152 decided, gaveup=0 errors=0; 57146.8s
+descend k=6 levels 93..88 jobs=4 nodecap=8000000000/shape
+LEVEL n=93 eligible=114 0.6s exit=0 :: RESULT no eligible shape reaches n >= 93; all 114 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=92 eligible=152 0.5s exit=0 :: RESULT no eligible shape reaches n >= 92; all 152 decided, gaveup=0 errors=0; 0.0s
+descend k=6 levels 93..88 jobs=4 nodecap=8000000000/shape
+LEVEL n=93 eligible=114 0.7s exit=0 :: RESULT no eligible shape reaches n >= 93; all 114 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=92 eligible=152 0.5s exit=0 :: RESULT no eligible shape reaches n >= 92; all 152 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=91 eligible=181 1213.9s exit=0 :: RESULT no eligible shape reaches n >= 91; all 181 decided, gaveup=0 errors=0; 1213.4s
+descend k=6 levels 93..88 jobs=4 nodecap=8000000000/shape
+LEVEL n=93 eligible=114 0.7s exit=0 :: RESULT no eligible shape reaches n >= 93; all 114 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=92 eligible=152 0.5s exit=0 :: RESULT no eligible shape reaches n >= 92; all 152 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=91 eligible=181 0.5s exit=0 :: RESULT no eligible shape reaches n >= 91; all 181 decided, gaveup=0 errors=0; 0.0s
+descend k=6 levels 93..88 jobs=4 nodecap=8000000000/shape
+LEVEL n=93 eligible=114 0.8s exit=0 :: RESULT no eligible shape reaches n >= 93; all 114 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=92 eligible=152 0.5s exit=0 :: RESULT no eligible shape reaches n >= 92; all 152 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=91 eligible=181 0.5s exit=0 :: RESULT no eligible shape reaches n >= 91; all 181 decided, gaveup=0 errors=0; 0.0s
+descend k=6 levels 93..88 jobs=4 nodecap=8000000000/shape
+LEVEL n=93 eligible=114 0.5s exit=0 :: RESULT no eligible shape reaches n >= 93; all 114 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=92 eligible=152 0.5s exit=0 :: RESULT no eligible shape reaches n >= 92; all 152 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=91 eligible=181 0.5s exit=0 :: RESULT no eligible shape reaches n >= 91; all 181 decided, gaveup=0 errors=0; 0.0s
+descend k=6 levels 93..88 jobs=4 nodecap=8000000000/shape
+LEVEL n=93 eligible=114 15.7s exit=0 :: RESULT no eligible shape reaches n >= 93; all 114 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=92 eligible=152 0.5s exit=0 :: RESULT no eligible shape reaches n >= 92; all 152 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=91 eligible=181 0.5s exit=0 :: RESULT no eligible shape reaches n >= 91; all 181 decided, gaveup=0 errors=0; 0.0s
+descend k=6 levels 93..88 jobs=4 nodecap=8000000000/shape
+LEVEL n=93 eligible=114 0.7s exit=0 :: RESULT no eligible shape reaches n >= 93; all 114 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=92 eligible=152 0.6s exit=0 :: RESULT no eligible shape reaches n >= 92; all 152 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=91 eligible=181 0.5s exit=0 :: RESULT no eligible shape reaches n >= 91; all 181 decided, gaveup=0 errors=0; 0.0s
+LEVEL n=90 eligible=214 20952.0s exit=0 :: RESULT no eligible shape reaches n >= 90; all 214 decided, gaveup=0 errors=0; 20951.5s
+LEVEL n=89 eligible=279 38354.7s exit=0 :: RESULT no eligible shape reaches n >= 89; all 279 decided, gaveup=0 errors=0; 38354.2s
+LEVEL n=88 eligible=330 56945.8s exit=0 :: RESULT no eligible shape reaches n >= 88; all 330 decided, gaveup=0 errors=0; 56945.2s
+DESCEND COMPLETE -- levels 93..88 all clean UNSAT with gaveup=0; the block now runs 88..max_cap, so t_6 <= 87

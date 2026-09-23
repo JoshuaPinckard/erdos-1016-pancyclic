@@ -1,64 +1,59 @@
 \documentclass[10pt]{article}
-\usepackage[letterpaper,margin=0.62in,top=0.55in,bottom=0.6in]{geometry}
+\usepackage[letterpaper,margin=0.6in,top=0.5in,bottom=0.55in]{geometry}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{microtype}
 \usepackage{titlesec}
 \usepackage[hidelinks]{hyperref}
-\usepackage{enumitem}
 
-\titleformat{\section}[runin]{\normalfont\bfseries}{\thesection.}{0.4em}{}[.]
-\titlespacing*{\section}{0pt}{0.55ex}{0.6em}
+\titleformat{\section}[runin]{\normalfont\bfseries}{}{0em}{}[.]
+\titlespacing*{\section}{0pt}{0.5ex}{0.6em}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{0.45ex}
+\setlength{\parskip}{0.4ex}
 \pagestyle{empty}
-\newtheorem*{thmA}{Theorem 1}
-\newtheorem*{thmB}{Theorem 2}
 \newcommand{\ch}[2]{\{#1,#2\}}
 
 \begin{document}
 
 \begin{center}
-{\large\bfseries Six chords are exactly enough for $41\le n\le 67$:\\[1pt]
-minimal pancyclic graphs found by AI agents (Erd\H{o}s Problem \#1016)}\\[4pt]
-Joshua Pinckard, ToolsEnabled \quad\texttt{josh@toolsenabled.ai}\quad 23 September 2026\\[1pt]
-{\small Working draft. The research was carried out by LLM agents (Section 4). Code, proofs and data: \url{https://github.com/JoshuaPinckard/erdos-1016-pancyclic}}
+{\large\bfseries ToolsEnabled: AI Agents Determine Minimal Pancyclic Graphs with Six Chords,\\[1pt]
+Demonstrated on Erd\H{o}s Problem \#1016}\\[3pt]
+Joshua Pinckard, ToolsEnabled, Inc.\quad\texttt{josh@toolsenabled.ai}\quad September 2026\\[1pt]
+{\small Working draft. Code, proofs and data: \url{https://github.com/JoshuaPinckard/erdos-1016-pancyclic}}
 \end{center}
-\vspace{-0.6ex}
+\vspace{-0.8ex}
 
-\textbf{Abstract.} A graph on $n$ vertices is \emph{pancyclic} if it has a cycle of every length $3,\dots,n$. Let $m(n)=n+h(n)$ be the fewest edges of a pancyclic graph on $n$ vertices. We show $h(n)=6$ for every $41\le n\le 67$, so $m(n)=n+6$ there, and that the largest $n$ with a 6-chord pancyclic graph is $67$ or lies in $\{72,\dots,79,81,83,84,85\}$. The upper bounds are checked in Lean~4. The lower bounds are exhaustive computer searches. AI agents did the work: literature search, algorithms, GPU kernels, Lean proofs and adversarial review.
+\textbf{Abstract.}
+Open problems about extremal graphs often come down to finite cases that have to be settled by computer search, and each search has to be designed, written, run and checked before anyone can rely on it. We introduce agent research in ToolsEnabled, where a manager agent assigns lanes to worker agents that do this work, and other agents review what they produce. We demonstrate it on Erd\H{o}s Problem \#1016 (Bloom, n.d.), which asks for the fewest edges $m(n)=n+h(n)$ of a pancyclic graph on $n$ vertices. Griffin (2013) determined $m(n)$ for $n\le37$, and White and Claude (2026) and Robinfxa (2026) published $m(38)$ to $m(41)$. The agents show that $h(n)=6$ for every $41\le n\le67$, and that the largest $n$ with a 6-chord pancyclic graph is $67$ or lies in $\{72,\dots,79,81,83,84,85\}$.
+
+The agents reduce each graph, a cycle $C_n$ with $k$ added chords, to one of finitely many shapes. The upper bounds are explicit chord sets checked in Lean~4, and the lower bounds are exhaustive searches on a CPU and two GPUs, with every GPU result re-derived by a separate claim tool. Additionally other agents review the work as a referee would and attack the claim tool with forged results.
 
 \section{Problem}
-A pancyclic graph contains a Hamilton cycle, so $h(n)$ is the least number of chords whose addition to the cycle $C_n$ gives a pancyclic graph. Bondy~[1] stated $\log_2(n-1)-1\le h(n)\le \log_2 n+\log_* n+O(1)$, and a proof of the upper bound is attributed to~[6, Ch.~4.5]. Erd\H{o}s asked whether $h(n)-\log_2 n\to\infty$~[2]. Griffin~[3] determined $m(n)$ for $n\le 37$. White and Claude~[4] gave $h(n)=5$ for $34\le n\le 40$, and Robinfxa~[5] proved $m(41)=47$ with a Lean-checked exclusion. Let $t_k=\max\{n: h(n)\le k\}$. Griffin's table gives $t_1,\dots,t_4=5,8,14,24$.
+A pancyclic graph has a cycle of every length $3,\dots,n$, so it has a Hamilton cycle, and $h(n)$ is the fewest chords that make $C_n$ pancyclic. Bondy (1971) stated $\log_2(n-1)-1\le h(n)\le\log_2 n+\log_* n+O(1)$. Erd\H{o}s believed the upper bound is closer to the truth but could not prove that $h(n)-\log_2 n\to\infty$. We write $t_k$ for the largest $n$ with $h(n)\le k$. Griffin's table gives $t_1,\dots,t_4=5,8,14,24$.
 
-\section{Results}
-\begin{thmA}
-$h(n)=6$ for every $41\le n\le 67$. Hence $m(n)=n+6$ on this range, and $t_5=40$.
-\end{thmA}
-\emph{Upper bound.} For $41\le n\le 67$, let $F_n$ be $C_n$ (vertices $0,\dots,n-1$) plus the chords
-$\ch{0}{2}$, $\ch{0}{n{-}7}$, $\ch{1}{13}$, $\ch{3}{n{-}6}$, $\ch{4}{31}$, $\ch{n{-}8}{n{-}5}$.
-Its cycle lengths are exactly $[3,32]\cup[n-34,n]$, which is all of $[3,n]$ precisely when $n\le 67$. $F_{68}$ misses only length $33$. The Lean~4/Mathlib theorem \texttt{family\_pancyclic\_41\_67} checks every case in the kernel, using only the axioms \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound}.
-\emph{Lower bound.} No $C_n$ plus 5 chords is pancyclic for any $n\ge 41$. An exhaustive shape search (Section 3) refutes every $n$ from $41$ to $58$, and no 5-chord shape can be pancyclic beyond $n=58$. At $n=41$ a complete GPU enumeration of all 5-chord sets agrees. This confirms [5] by a different method.
+\textbf{Theorem 1.} \emph{$h(n)=6$ for every $41\le n\le67$. Hence $m(n)=n+6$ on this range, and $t_5=40$.}
+For $41\le n\le67$ let $F_n$ be $C_n$ (vertices $0,\dots,n-1$) with the chords $\ch{0}{2}$, $\ch{0}{n{-}7}$, $\ch{1}{13}$, $\ch{3}{n{-}6}$, $\ch{4}{31}$, $\ch{n{-}8}{n{-}5}$. Its cycle lengths are exactly $[3,32]\cup[n-34,n]$, which is all of $[3,n]$ when $n\le67$, and $F_{68}$ misses only the length $33$. The Lean theorem \texttt{family\_pancyclic\_41\_67} checks every case in the kernel and uses only the axioms \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound}. For the lower bound, an exhaustive shape search finds no pancyclic $C_n$ with 5 chords at any $n$ from $41$ to $58$, and no 5-chord shape can reach beyond $n=58$. At $n=41$ a complete GPU enumeration of all 5-chord sets agrees, which confirms $m(41)=47$ (Robinfxa, 2026) by a second method.
 
-\begin{thmB}
-No 6-chord pancyclic graph exists for $n\in\{68,69,70,71,80,82\}$ or for any $n\ge 86$. Hence $t_6=67$ or $t_6\in\{72,\dots,79,81,83,84,85\}$.
-\end{thmB}
-A CPU branch-and-bound refutes every $n$ from $88$ to $111$, and $111$ is the largest $n$ any 6-chord shape can reach. GPU exhaustion refutes $68$--$71$, $80$, $82$ and $86$--$89$, so $88$ and $89$ are refuted twice, by two different programs. The runs stopped on 20 September. Levels $84$ and $85$ each lack one tier. A blind control run over all of level $67$ recovered $F_{67}$ at its expected shape and also found a second 67-vertex witness, not isomorphic to $F_{67}$: chords $\ch{0}{27}$, $\ch{18}{30}$, $\ch{28}{37}$, $\ch{29}{37}$, $\ch{31}{38}$, $\ch{32}{39}$.
+\textbf{Theorem 2.} \emph{No 6-chord pancyclic graph exists for $n\in\{68,69,70,71,80,82\}$ or for any $n\ge86$. Hence $t_6=67$ or $t_6\in\{72,\dots,79,81,83,84,85\}$.}
+A CPU branch and bound rules out every $n$ from $88$ to $111$, and $111$ is the largest $n$ any 6-chord shape can reach. The GPU runs rule out $68$ to $71$, $80$, $82$ and $86$ to $89$, so $88$ and $89$ are ruled out by two different programs that share the same shape census. The runs stopped on 20 September, when levels $84$ and $85$ each lacked one tier. A blind control run over all of level $67$ found $F_{67}$ at its expected shape, and it also found a second 67-vertex graph that is not isomorphic to $F_{67}$, with the chords $\ch{0}{27}$, $\ch{18}{30}$, $\ch{28}{37}$, $\ch{29}{37}$, $\ch{31}{38}$, $\ch{32}{39}$.
 
 \section{Method}
-$C_n$ plus $k$ chords is a subdivision of one of finitely many multigraphs, called \emph{shapes}: $1{,}236$ for $k=5$ and $21{,}878$ for $k=6$. Each cycle is a fixed set of arcs, so its length is a sum of arc lengths, and pancyclicity becomes a covering problem in the arc lengths. A shape with $F$ distinct cycle forms can be pancyclic only if $n\le F+2$, which bounds every search. The CPU solver decides each pair of shape and $n$ by branch and bound. The GPU pipeline enumerates arc-length compositions. It prunes them with a pairwise interval-Hall test, which is necessary for pancyclicity and monotone in the arc bounds, and which keeps roughly 1 composition in 42 to 47 at 12 branch vertices. A level is claimed only when a separate tool, run from a frozen code snapshot, does three things: it re-derives every work unit from a hashed census manifest, rebuilds every pruning table, and matches the composition counts shape by shape. The prune's arithmetic and Hall inequalities are also proved in Lean, conditional on the shape census being complete. \emph{Scope:} every non-existence result rests on exhaustive computation, not on a Lean proof.
+A cycle with $k$ chords is a subdivision of one of finitely many multigraphs, the shapes, and there are $1{,}236$ shapes for $k=5$ and $21{,}878$ for $k=6$. Each cycle of the graph uses a fixed set of arcs, so its length is a sum of arc lengths. A shape with $F$ distinct cycle forms can be pancyclic only if $n\le F+2$, which bounds every search. The CPU solver decides each pair of a shape and an $n$ by branch and bound. The GPU pipeline enumerates the arc lengths directly, and in most tiers it prunes them with a pairwise interval-Hall test that is necessary for pancyclicity. A tier counts as done only when a separate tool re-derives all of its work units from the hashed census, and for the pruned tiers the tool also runs from a frozen copy of the code, rebuilds every pruning table and matches the composition counts shape by shape. The arithmetic of the prune and its Hall inequalities are proved in Lean, on the condition that the shape census is complete.
 
-\section{How the agents did it}
-The research ran from 14 to 20 September 2026 in a ToolsEnabled agent tree. A manager agent assigned lanes to worker agents and merged their results. The workers surveyed the literature, built the shape reduction, CUDA kernels and Lean certificates, and ran the searches on two consumer GPUs, an RTX~5060~Ti desktop and an RTX~4070 laptop. Other agents reviewed the work adversarially. They wrote a referee-style report that caught overclaims, re-implemented the verifiers independently, and attacked the claim tool with forged tiers, which it rejected. The blind control above was set up to test the pipeline, and it found a witness no one had pointed it at. J.~Pinckard posed the problem, set its direction and compute limits, selected and evaluated the outputs, and is responsible for the claims. The repository holds the agents' reports, reviews, claim files and full commit history.
+\section{Agent process}
+The work ran from 13 to 20 September 2026 in one ToolsEnabled agent tree. The manager agent split the problem into lanes and merged the results. The worker agents searched the literature, built the shape reduction, the CUDA kernels and the Lean certificates, and ran the searches on an RTX~5060~Ti desktop and an RTX~4070 laptop. Other agents wrote a referee-style report that found overclaims in the draft and re-implemented the verifiers. They also attacked the claim tool with forged tiers, and two of the forgeries passed until the tool was fixed. The author set the problem, the direction and the compute limits, and checked the outputs.
 
-\vspace{0.3ex}
+\section{Limitations}
+Every non-existence result rests on exhaustive computation and is not a Lean proof. The shape census is the one reduction step that is not checked in Lean, and the CPU and GPU checks both depend on it. Twelve levels were not finished, so $t_6$ is not yet known exactly. The values $m(38)$ to $m(41)$ were published before this work (White \& Claude, 2026; Robinfxa, 2026), and the body of the chapter on minimal pancyclicity in George, Khodkar and Wallis (2016) was not obtained. The author of this paper is the founder of ToolsEnabled, Inc., generating a conflict of interest.
+
+\vspace{0.2ex}
 {\footnotesize\textbf{References.}
-[1]~J.~A.~Bondy, Pancyclic graphs I, \emph{J.\ Combin.\ Theory Ser.\ B} 11 (1971) 80--84.
-[2]~T.~F.~Bloom, Erd\H{o}s Problem \#1016, \url{https://www.erdosproblems.com/1016}.
-[3]~S.~Griffin, Minimal pancyclicity, arXiv:1312.0274 (2013).
-[4]~P.~White and Claude, Erd\H{o}s \#1016 working report (2026-07-29), \url{https://www.erdosproblemaday.com/report/1016}.
-[5]~Robinfxa, JSP-000846: $m(41)=47$ (2026-09-17), \url{https://github.com/Robinfxa/JSP-000846}.
-[6]~J.~C.~George, A.~Khodkar, W.~D.~Wallis, \emph{Pancyclic and Bipancyclic Graphs}, Springer (2016); not consulted here.}
+Bloom, T.~F. (n.d.). Erd\H{o}s Problem \#1016. \url{https://www.erdosproblems.com/1016}.
+Bondy, J.~A. (1971). Pancyclic graphs I. \emph{Journal of Combinatorial Theory, Series B}, 11, 80--84.
+George, J.~C., Khodkar, A., \& Wallis, W.~D. (2016). \emph{Pancyclic and bipancyclic graphs}. Springer.
+Griffin, S. (2013). Minimal pancyclicity. arXiv:1312.0274.
+Robinfxa. (2026). \emph{JSP-000846: m(41)=47} [computer-assisted proof September 17, Lean proof September 22]. \url{https://github.com/Robinfxa/JSP-000846}.
+White, P., \& Claude. (2026, July 29). \emph{Erd\H{o}s \#1016 working report}. \url{https://www.erdosproblemaday.com/report/1016}.}
 
 \end{document}

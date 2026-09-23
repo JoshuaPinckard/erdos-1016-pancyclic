@@ -1,0 +1,15 @@
+{
+  "n": 88,
+  "cutoff_mode": "range",
+  "eligible_from_cache": 330,
+  "distinct_unsat_rows": 330,
+  "index_set_exact": true,
+  "record_caps_branch_counts_match": true,
+  "eligible_forms_and_bounds_recomputed": 330,
+  "gpu_census_shape_set_matches": true,
+  "solver_sha256": "e2fde07b69d7a0d84b67d7954304da50feebd84a3cbd0e192faf706a8a7f562c",
+  "driver_sha256": "4aa2d636c39ffa5ef04b4fae7ac59443a7ca2a133f886a240b8973f414582c50",
+  "cache_sha256": "781957f2fe5e60f235f76693b9f41b91f84cb457d7c14adb6e045caafaadaf55",
+  "limitation": "Eligibility universe uses the existing 21878-shape cache; no new uncached census or solver rerun. Earlier 89..111 evidence is not rechecked here.",
+  "at": "2026-09-20T16:58:04.902612+00:00"
+}
