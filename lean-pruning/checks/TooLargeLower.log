@@ -1,0 +1,23 @@
+/home/j/erdos-n70/lean-pruning/checks/TooLargeLower.lean:64:2: error: omega could not prove the goal:
+a possible counterexample may satisfy the constraints
+  g ≥ 0
+  e ≥ 0
+  e - g ≥ 0
+  d ≥ 0
+  c ≥ 0
+  c - e ≤ 0
+  c + d ≤ 3
+  b ≥ 0
+  b - d ≥ 0
+  b + e ≥ 0
+  b + c ≥ 3
+  b + c ≤ 3
+where
+ b := ↑(selectedSum indices (fun i => f.mask.testBit i) a)
+ c := ↑f.chords
+ d := ↑(selectedSum indices (fun i => f.mask.testBit i) lo)
+ e := ↑(selectedSum indices (fun i => !f.mask.testBit i) a)
+ g := ↑(selectedSum indices (fun i => !f.mask.testBit i) lo)
+'Erdos1016.Pruning.length_in_interval' depends on axioms: [propext, sorryAx, Quot.sound]
+'Erdos1016.Pruning.intervals_shrink' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Erdos1016.Pruning.pair_interval_contains_solution' depends on axioms: [propext, sorryAx, Quot.sound]

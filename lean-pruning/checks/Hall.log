@@ -1,0 +1,7 @@
+'Erdos1016.Pruning.hall_necessary' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Erdos1016.Pruning.hall_of_raised' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Erdos1016.Pruning.pairwise_hall_necessary' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Erdos1016.Pruning.pairwise_rejection_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Erdos1016.Pruning.hallCheck_correct' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Erdos1016.Pruning.failed_check_rejects' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Erdos1016.Pruning.pair_threshold_rejection_sound' depends on axioms: [propext, Classical.choice, Quot.sound]

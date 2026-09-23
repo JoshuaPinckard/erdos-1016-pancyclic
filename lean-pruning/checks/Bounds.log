@@ -1,0 +1,3 @@
+'Erdos1016.Pruning.length_in_interval' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Erdos1016.Pruning.intervals_shrink' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Erdos1016.Pruning.pair_interval_contains_solution' depends on axioms: [propext, Classical.choice, Quot.sound]

@@ -1,0 +1,25 @@
+/home/j/erdos-n70/lean-pruning/checks/TooSmallUpper.lean:64:2: error: omega could not prove the goal:
+a possible counterexample may satisfy the constraints
+  g ≥ 0
+  e ≥ 0
+  e ≥ 0
+  e + g ≥ -1
+  d ≥ 0
+  d - g ≥ 0
+  c ≥ 0
+  c - d ≥ 0
+  c - d - e ≤ -2
+  c - d ≤ 0
+  c - d + g ≥ 0
+  c - e - g ≤ 1
+  b ≥ 0
+  b + c - e - g ≤ 1
+where
+ b := ↑(selectedSum indices (fun i => f.mask.testBit i) lo)
+ c := ↑(selectedSum indices (fun i => !f.mask.testBit i) a)
+ d := ↑(selectedSum indices (fun i => !f.mask.testBit i) lo)
+ e := ↑(n - (1 + (selectedSum indices (fun i => !f.mask.testBit i) lo - f.chords)))
+ g := ↑(selectedSum indices (fun i => !f.mask.testBit i) lo - f.chords)
+'Erdos1016.Pruning.length_in_interval' depends on axioms: [propext, sorryAx, Quot.sound]
+'Erdos1016.Pruning.intervals_shrink' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Erdos1016.Pruning.pair_interval_contains_solution' depends on axioms: [propext, sorryAx, Quot.sound]

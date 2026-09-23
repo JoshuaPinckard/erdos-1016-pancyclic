@@ -1,0 +1,22 @@
+erdos-1016-pancyclic
+Copyright (c) 2026 Joshua Pinckard
+
+This repository is released under the MIT License (see LICENSE).
+
+ToolsEnabled was founded and created by Joshua Pinckard.
+
+Attribution (academic form)
+
+Joshua Pinckard conceived the project, defined its objectives and requirements,
+directed the autonomous agent workflows, selected and evaluated outputs, and
+assumes responsibility for the research methodology and conclusions. AI agents
+running in ToolsEnabled agent trees carried out the research: the literature
+search, the search algorithms and GPU kernels, the Lean proofs, the
+computations, the reviews and the written reports and drafts.
+
+Third-party material
+
+Full texts of third-party papers collected during the research are not
+included. Quotations in the reports are short excerpts for citation.
+
+Contact: josh@toolsenabled.ai - https://toolsenabled.ai

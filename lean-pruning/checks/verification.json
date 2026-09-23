@@ -1,0 +1,35 @@
+{
+  "lean_version": "Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release)",
+  "proof_modules": [
+    "Bounds.lean",
+    "Hall.lean"
+  ],
+  "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+  ],
+  "proof_holes": 0,
+  "production_arithmetic_cases": 42,
+  "cycle_form_intervals_compared": 3082,
+  "production_hall_decisions_compared": 4,
+  "hand_checked_graph_examples": 2,
+  "incorrect_bounds_rejected": [
+    "TooLargeLower",
+    "TooSmallUpper"
+  ],
+  "sha256": {
+    "Bounds.lean": "6d5dc14d0d47c47a333d3a3df0044a108e032754fcc7f1e073fd5e7d0552689b",
+    "Hall.lean": "8aa67b7828dd992cd84d0fa444ca380f0f96de02a3b0b471dd32b3a625abbc57",
+    "check.py": "16f619e60e09142ce79e79d50a23bb6e1641037b74a8119b83c644a9638656aa",
+    "/home/j/erdos-n70/search/shapecsp/bound.py": "66323898e94d4d49e6d7abdc93227f23acc239da7c6e38eef33aa3b8deda783f",
+    "/home/j/erdos-n70/search/shapecsp/shapes.py": "38215a0d9acfb283e92692f1f890cd5a48ac26319b9cb0e3249c10adfbc4a66f",
+    "checks/ProductionComparison.lean": "f9980e08b576b6daca4f83dfaef43eb9791d35f8b12cf29b08d5a7cfe9a0a19a"
+  },
+  "scope": "Proves the mathematical pruning condition and a Lean checker; comparison tests tie sampled production arithmetic to it.",
+  "remaining": [
+    "Graph-to-form census completeness",
+    "Python/CUDA correspondence for every input and historical execution",
+    "Whole-level nonexistence certificates"
+  ]
+}
