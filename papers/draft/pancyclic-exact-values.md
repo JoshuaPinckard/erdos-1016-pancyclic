@@ -1,6 +1,6 @@
 # Exact values of the minimum pancyclic edge count $m(n)$ for $3\le n\le 41$
 
-**Authors:** AUTHORS TBD
+**Author:** Joshua Pinckard
 
 > **Status note (2026-09-23).** This is the project's long working draft as of 2026-09-20, kept for its
 > method sections and evidence trail. The one-page paper in `paper/` supersedes it where they differ.
